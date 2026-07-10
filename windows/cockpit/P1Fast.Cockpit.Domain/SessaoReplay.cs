@@ -54,10 +54,6 @@ public sealed class SessaoReplay
         GpsValidos = gpsValidos;
     }
 
-    // Linha de chegada oficial de Brasília (mesmos pontos do Program.cs).
-    private static readonly PontoGps ChegadaA = new(-15.7728816, -47.9000707);
-    private static readonly PontoGps ChegadaB = new(-15.7725493, -47.9001926);
-
     /// <summary>Lê a sessão gravada e devolve os eventos ordenados. Aceita DOIS formatos (item 3.3):
     ///  (a) 1 documento JSON com raiz <c>{"amostras":[…]}</c> — a sessão web de 21/06 (camelCase);
     ///  (b) <c>.jsonl</c> do PRÓPRIO gravador do .exe (SessionRecorder/FileSessionStore): N registros
@@ -147,8 +143,8 @@ public sealed class SessaoReplay
         {
             var p0 = new PontoGps(gpsDet[k - 1].Lat, gpsDet[k - 1].Lng);
             var p1 = new PontoGps(gpsDet[k].Lat, gpsDet[k].Lng);
-            if (Math.Sign(TrechoDetector.SideOfLine(p1, ChegadaA, ChegadaB)) != Math.Sign(TrechoDetector.SideOfLine(p0, ChegadaA, ChegadaB))
-                && TrechoDetector.CaminhoCruzaLinha(p0, p1, ChegadaA, ChegadaB))
+            if (Math.Sign(TrechoDetector.SideOfLine(p1, PistaBrasilia.ChegadaA, PistaBrasilia.ChegadaB)) != Math.Sign(TrechoDetector.SideOfLine(p0, PistaBrasilia.ChegadaA, PistaBrasilia.ChegadaB))
+                && TrechoDetector.CaminhoCruzaLinha(p0, p1, PistaBrasilia.ChegadaA, PistaBrasilia.ChegadaB))
                 cruzamentos.Add(gpsDet[k].T);
         }
 

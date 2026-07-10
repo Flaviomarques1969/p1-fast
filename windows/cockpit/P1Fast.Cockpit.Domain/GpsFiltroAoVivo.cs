@@ -34,8 +34,10 @@ public sealed class GpsFiltroAoVivo
     /// acima disto (glitch de posição/tempo) é DESCARTADO — não pode virar referência de curva.</summary>
     public const double KmhTetoPlausivel = 260;
 
-    // Caixa de Brasília (mesmos limites do detector de voltas em SessaoReplay).
-    public const double LatMin = -16.1, LatMax = -15.4, LonMin = -48.3, LonMax = -47.6;
+    // Caixa de Brasília — fonte única em PistaBrasilia (faxina onda 2). Mantém a superfície
+    // pública destes consts (QualidadeOk os usa), mas o valor vem de um lugar só.
+    public const double LatMin = PistaBrasilia.LatMin, LatMax = PistaBrasilia.LatMax,
+                        LonMin = PistaBrasilia.LonMin, LonMax = PistaBrasilia.LonMax;
 
     private PontoGps? _prev;
     private double _prevT;

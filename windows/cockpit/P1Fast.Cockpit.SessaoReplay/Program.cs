@@ -95,8 +95,8 @@ foreach (var a in root.GetProperty("amostras").EnumerateArray())
             var hacc = GetNum(gd, "hacc") ?? double.MaxValue;
             var lat  = GetNum(gd, "lat") ?? 0;
             var lon  = GetNum(gd, "lon") ?? 0;
-            // mesmo filtro do detector de voltas: fix 3, hacc<50, dentro de Brasília
-            if (fix >= 3 && hacc < 50 && lat >= -16.1 && lat <= -15.4 && lon >= -48.3 && lon <= -47.6)
+            // mesmo filtro do detector de voltas: fix 3, hacc<50, dentro da caixa de Brasília (PistaBrasilia)
+            if (fix >= 3 && hacc < 50 && lat >= PistaBrasilia.LatMin && lat <= PistaBrasilia.LatMax && lon >= PistaBrasilia.LonMin && lon <= PistaBrasilia.LonMax)
             {
                 gpsValidos.Add(new PontoGps(lat, lon));
                 gpsT.Add(a.TryGetProperty("tWall", out var twv) && twv.ValueKind == JsonValueKind.Number ? twv.GetDouble() : 0);
@@ -342,8 +342,8 @@ if (barrasPath is not null && File.Exists(barrasPath))
 
         // Isolar UMA volta: detecta os cruzamentos da linha de chegada oficial de
         // Brasília e corta a janela [cruzamento N, cruzamento N+1]. --volta=2 = a de 2:39.
-        var chgA = new PontoGps(-15.7728816, -47.9000707);
-        var chgB = new PontoGps(-15.7725493, -47.9001926);
+        var chgA = PistaBrasilia.ChegadaA;
+        var chgB = PistaBrasilia.ChegadaB;
         var cruz = new List<double>();
         for (var k = 1; k < gpsDet.Count; k++)
         {
