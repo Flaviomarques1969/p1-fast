@@ -64,7 +64,8 @@ public sealed partial class MainWindow
     // supervisor do motor — L3 —, não mais aqui no boot.)
     private void StartLive()
     {
-        StatusText.Text = "ao vivo: procurando T4000…";
+        _statusVivo = "ao vivo: procurando T4000…";   // 2.3: região efêmera, composta com o resto
+        RenderStatus();
 
         // Fechamento limpo assinado JÁ na thread da UI (M6): se a janela fechar antes do
         // IniciarLive assíncrono rodar, StopLive ainda encerra a sessão e cancela os laços —
@@ -132,7 +133,19 @@ public sealed partial class MainWindow
         try
         {
             var anon = Environment.GetEnvironmentVariable("P1FAST_SUPABASE_ANON");
-            if (!string.IsNullOrWhiteSpace(anon))
+            if (string.IsNullOrWhiteSpace(anon))
+            {
+                // 2.5 — sem a chave, NENHUM publisher nasce: o --live roda 100% LOCAL. Antes
+                // isso era SILENCIOSO (modo de falha do bug de campo de 28/06 por outra porta).
+                // Agora vira aviso VISÍVEL e persistente no status — mais duro com --producao,
+                // que pediu nuvem e não terá efeito nenhum.
+                _liveCanalRotulo = _options.Producao
+                    ? "SEM NUVEM — falta P1FAST_SUPABASE_ANON (--producao SEM efeito; 100% local)"
+                    : "SEM NUVEM — falta P1FAST_SUPABASE_ANON (100% local; app não recebe)";
+                _statusCanal = _liveCanalRotulo;
+                RenderStatus();
+            }
+            else
             {
                 // Canal: TESTE por padrão (seguro). Só vai pra PRODUÇÃO (cockpit-bubi-live,
                 // o que o app/Command Box assistem) com --producao — ordem expressa do
@@ -149,7 +162,10 @@ public sealed partial class MainWindow
                 _liveCanalRotulo = _options.Producao
                     ? "nuvem AO VIVO: PRODUÇÃO (cockpit-bubi-live) — app/Box recebem"
                     : "nuvem AO VIVO: TESTE (cockpit-bubi-dev-teste) — app NÃO recebe; suba com --producao";
-                StatusText.Text = _liveCanalRotulo;
+                // 2.3 — o rótulo do canal é uma REGIÃO persistente do status (não mais escrito
+                // cru em StatusText.Text, que o diagnóstico a 10-25 Hz apagava).
+                _statusCanal = _liveCanalRotulo;
+                RenderStatus();
                 System.Diagnostics.Debug.WriteLine($"[nuvem ao vivo] canal={canal} producao={_options.Producao}");
             }
         }
@@ -169,7 +185,7 @@ public sealed partial class MainWindow
 
         // GPS ao vivo: RaceBox Mini por Bluetooth — INDEPENDE da T4000. Best-effort:
         // sem RaceBox, segue varrendo; sem GPS a tela mostra o motor mesmo assim.
-        _raceBox = new RaceBoxBleReader(OnLiveGps, txt => DispatcherQueue.TryEnqueue(() => StatusText.Text = txt));
+        _raceBox = new RaceBoxBleReader(OnLiveGps, txt => DispatcherQueue.TryEnqueue(() => { _statusVivo = txt; RenderStatus(); }));
         _raceBox.Start(_liveCts.Token);
 
         // Motor: T4000 pela USB. O aparelho REAL (Injepro T4000, chip Microchip
@@ -217,18 +233,20 @@ public sealed partial class MainWindow
                     if (!avisouEsperando)
                     {
                         avisouEsperando = true;
-                        DispatcherQueue.TryEnqueue(() => StatusText.Text = $"ao vivo: GPS ok; esperando a T4000 (USB) plugar… · {_liveCanalRotulo}");
+                        // 2.3 — status efêmero na sua região (o canal é região à parte, não
+                        // mais concatenado aqui; a composição junta os dois sem se apagarem).
+                        DispatcherQueue.TryEnqueue(() => { _statusVivo = "ao vivo: GPS ok; esperando a T4000 (USB) plugar…"; RenderStatus(); });
                     }
                     try { await Task.Delay(1500, ct).ConfigureAwait(false); } catch { break; }
                     continue;
                 }
                 avisouEsperando = false;
-                DispatcherQueue.TryEnqueue(() => StatusText.Text = $"ao vivo: {fonte} + GPS RaceBox…");
+                DispatcherQueue.TryEnqueue(() => { _statusVivo = $"ao vivo: {fonte} + GPS RaceBox…"; RenderStatus(); });
 
                 var reader = new T3000UsbLiveReader(
                     canal,
                     onSample: OnLiveMotor,
-                    onStatus: (txt, nivel) => DispatcherQueue.TryEnqueue(() => StatusText.Text = $"ao vivo [{nivel}]: {txt}"),
+                    onStatus: (txt, nivel) => DispatcherQueue.TryEnqueue(() => { _statusVivo = $"ao vivo [{nivel}]: {txt}"; RenderStatus(); }),
                     onLog: _ => { });
                 try { await reader.RunAsync(ct).ConfigureAwait(false); }
                 catch (OperationCanceledException) { break; }
@@ -270,9 +288,11 @@ public sealed partial class MainWindow
                         AtualizarSensores(_ultimaAlerta);
                         AtualizarTelaTermica();   // ~1 Hz: a água muda devagar, mas a tela térmica acompanha
                         // H6: perda de gravação NUNCA silenciosa — o alarme do gravador (disco
-                        // cheio/morto) aparece no status (sem tocar o layout aprovado).
-                        if (alarme is not null)
-                            StatusText.Text = $"GRAVACAO com perda: {alarme} · {_liveCanalRotulo}";
+                        // cheio/morto) aparece no status (sem tocar o layout aprovado). 2.3: é
+                        // REGIÃO própria e persistente (não some com o diagnóstico a 10-25 Hz) e
+                        // se LIMPA quando o alarme cessa — antes ficava concatenado e piscava.
+                        _statusAlarme = alarme is not null ? $"GRAVACAO com perda: {alarme}" : "";
+                        RenderStatus();
                     });
                 }
             }
