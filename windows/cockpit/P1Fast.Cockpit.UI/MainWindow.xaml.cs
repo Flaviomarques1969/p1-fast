@@ -1490,13 +1490,14 @@ public sealed partial class MainWindow : Window
     // — a composição pura (AvisosCockpit.ComporStatus) junta tudo sem clobber.
     private string _statusAlarme = "";   // gravação com perda (disco cheio/morto) — 2.3
     private string _statusAviso = "";    // aviso de flags conflitantes — 2.7
+    private string _statusPista = "";    // honestidade do mapeamento de pista nova (PISTA-C)
     private string _statusCanal = "";    // rótulo do canal de nuvem / SEM NUVEM — 2.3/2.5
     private string _statusVivo = "";     // efêmero: motor/GPS subindo, esperando T4000…
     private string _statusDiag = "";     // diagnóstico: display/trecho/shift/Δ
 
     private void RenderStatus()
         => StatusText.Text = P1Fast.Cockpit.Domain.AvisosCockpit.ComporStatus(
-            _statusAlarme, _statusAviso, _statusCanal, _statusVivo, _statusDiag);
+            _statusAlarme, _statusAviso, _statusCanal, _statusVivo, _statusDiag, _statusPista);
 
     private void UpdateStatusText()
     {

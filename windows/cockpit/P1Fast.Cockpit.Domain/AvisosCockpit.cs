@@ -22,17 +22,21 @@ public static class AvisosCockpit
 
     /// <summary>
     /// Junta as regiões numa linha só, na ordem de prioridade (mais importante primeiro):
-    /// alarme de gravação → aviso de flags → rótulo do canal → status vivo → diagnóstico.
-    /// Vazias/nulas são puladas; tudo vazio → "—". Assim o diagnóstico rápido não clobbera
-    /// o canal/alarme (eles são compostos SEMPRE, não sobrescritos).
+    /// alarme de gravação → aviso de flags → PISTA (mapeamento honesto) → rótulo do canal →
+    /// status vivo → diagnóstico. Vazias/nulas são puladas; tudo vazio → "—". Assim o diagnóstico
+    /// rápido não clobbera o canal/alarme (eles são compostos SEMPRE, não sobrescritos).
+    /// <paramref name="pista"/> é opcional (nova região da honestidade do mapeamento de pista nova)
+    /// e vem por último na assinatura pra não quebrar quem já chama com 5 argumentos; a ORDEM de
+    /// exibição é controlada aqui, não pela posição do parâmetro.
     /// </summary>
     public static string ComporStatus(
-        string? alarme, string? aviso, string? canal, string? vivo, string? diag)
+        string? alarme, string? aviso, string? canal, string? vivo, string? diag, string? pista = null)
     {
-        var partes = new List<string>(5);
+        var partes = new List<string>(6);
         void Add(string? s) { if (!string.IsNullOrWhiteSpace(s)) partes.Add(s!); }
         Add(alarme);
         Add(aviso);
+        Add(pista);   // honestidade do mapeamento de pista nova — logo após os avisos de flags
         Add(canal);
         Add(vivo);
         Add(diag);

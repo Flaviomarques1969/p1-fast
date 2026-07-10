@@ -108,6 +108,7 @@ public sealed partial class MainWindow
         IniciarFeedReal(segs, alertaLimites, aprendizadoLimites);  // timers off + cria _orquestrador com os limites do carro
         CarregarAprendizado();    // Fase 2: restaura a máxima normal do carro (memória entre sessões)
         CarregarLuzMarcha();      // Onda 7: restaura a reação por marcha (antecipação da luz) do carro
+        InicializarPistaCoordenador();   // PISTA-C: mapeamento automático de pista nova (inerte em Brasília)
         AtualizarSensores(null);  // motor sem amostra ainda → tudo "a comunicar"
 
         _liveCts = new CancellationTokenSource();
@@ -314,6 +315,9 @@ public sealed partial class MainWindow
         //    próxima). Antes de tudo (rápido, síncrono) — best-effort, não trava o fechamento.
         SalvarAprendizado();
         SalvarLuzMarcha();     // Onda 7: grava a reação por marcha aprendida NESTA sessão (memória do carro)
+        // PISTA-C (item 5): pista congelada mas ainda não salva (corrida rara entre congelar e fechar)
+        // → salva agora, best-effort (nunca trava o fechamento).
+        try { _pistaCoordenador?.TentarSalvarPendente(); } catch { /* best-effort */ }
         // 1) Encerra a sessão JÁ (síncrono, rápido): fecha o meta, nunca deixa órfã.
         //    Captura o id ANTES (Encerrar zera a sessão) pra o upload achar o .jsonl.
         string? sessaoFechada = null;
@@ -583,6 +587,15 @@ public sealed partial class MainWindow
         // fixes crus; só o maestro recebe o filtrado, pra fix impreciso/jitter parado não gerar
         // curva/ápice/freada falsos na tela do piloto.
         var cerebro = _gpsFiltro.Aceitar(f.Lat, f.Lng, f.Fix, f.HaccM, tWall, f.HeadingDeg, f.GX, f.GY, f.GZ);
+
+        // PISTA NOVA (PISTA-C): fix BOM (mesmos gates de qualidade — fix 3D, hacc<50) mas FORA da
+        // caixa de Brasília. O filtro do cérebro o reprova (cerebro==null) e continua reprovando; aqui
+        // ele passa a alimentar o PistaCoordenador, que aprende a pista. O filtro de Brasília NÃO é
+        // afrouxado — este é um DESVIO à parte, só pra fora da caixa.
+        bool qualidadeBoa = f.Fix >= 3 && f.HaccM < GpsFiltroAoVivo.HaccMaxM;
+        bool foraDeBrasilia = !(f.Lat >= GpsFiltroAoVivo.LatMin && f.Lat <= GpsFiltroAoVivo.LatMax
+                                && f.Lng >= GpsFiltroAoVivo.LonMin && f.Lng <= GpsFiltroAoVivo.LonMax);
+
         DispatcherQueue.TryEnqueue(() =>
         {
             if (cerebro is not null)
@@ -590,6 +603,10 @@ public sealed partial class MainWindow
                 _orquestrador?.IngestGps(cerebro);
                 AtualizarStint();
                 RegistrarCruzamentoLive(cerebro.Lat, cerebro.Lng);   // etapa 4: halo da volta atual ao vivo
+            }
+            else if (qualidadeBoa && foraDeBrasilia)
+            {
+                ProcessarFixPistaNova(f.Lat, f.Lng, f.Kmh, f.HeadingDeg, tWall, f.GX, f.GY, f.GZ);
             }
             AtualizarSensores(_ultimaAlerta);
             AtualizarTelaTermica();   // telas dedicadas de aquecimento/resfriamento (Flávio 2026-07-06)
