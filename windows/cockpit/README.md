@@ -30,7 +30,7 @@
 
 Em construção. Próximos passos seguem a ordem da ADR-023 amendment 4:
 
-1. ⏳ Portar lógica pura JS → C# (5 módulos: CockpitState, T4000PacketParser, TransportSelector, LiveDataBridge, T4000Provider)
+1. ⏳ Portar lógica pura JS → C# (módulos: CockpitState, T4000PacketParser, LiveDataBridge, T4000Provider)
 2. ⏳ Configurar GitHub Actions pra rodar checks automaticamente
 3. ⏳ Implementar a tela XAML 1:1 com o mockup canônico
 4. ⏳ Driver do T4000 (USB) + cliente do cabo iPhone

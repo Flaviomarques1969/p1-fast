@@ -22,10 +22,8 @@ namespace P1Fast.Cockpit.UI;
 
 public sealed partial class MainWindow
 {
-    // Linha de chegada de Brasília — MESMOS pontos de SessaoReplay (fronteira de volta). Duplicado
-    // aqui porque a UI conta o cruzamento AO VIVO (o Domain só conta offline, no replay).
-    private static readonly PontoGps ChegadaA = new(-15.7728816, -47.9000707);
-    private static readonly PontoGps ChegadaB = new(-15.7725493, -47.9001926);
+    // Linha de chegada de Brasília — fonte única em PistaBrasilia (Domain). A UI conta o
+    // cruzamento AO VIVO (o Domain só conta offline, no replay), mas o valor vem de um lugar só.
     private static readonly Color VoltaAtualHaloCor = Color.FromArgb(0xFF, 0xF0, 0xC0, 0x40); // dourado (=Current/Foco)
 
     private int _voltaAtualIdx = -1;          // 0-based; -1 = nenhuma ainda
@@ -113,8 +111,8 @@ public sealed partial class MainWindow
         var p = new PontoGps(lat, lng);
         if (_ultimoFixChegada is { } prev)
         {
-            if (Math.Sign(TrechoDetector.SideOfLine(p, ChegadaA, ChegadaB)) != Math.Sign(TrechoDetector.SideOfLine(prev, ChegadaA, ChegadaB))
-                && TrechoDetector.CaminhoCruzaLinha(prev, p, ChegadaA, ChegadaB))
+            if (Math.Sign(TrechoDetector.SideOfLine(p, PistaBrasilia.ChegadaA, PistaBrasilia.ChegadaB)) != Math.Sign(TrechoDetector.SideOfLine(prev, PistaBrasilia.ChegadaA, PistaBrasilia.ChegadaB))
+                && TrechoDetector.CaminhoCruzaLinha(prev, p, PistaBrasilia.ChegadaA, PistaBrasilia.ChegadaB))
             {
                 // Cruzou a linha: fecha a volta. Item 3.2: uma volta conta só entre DOIS cruzamentos
                 // REAIS da linha. O 1º cruzamento apenas ARMA o cronômetro (não registra) — assim o

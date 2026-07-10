@@ -1,26 +1,32 @@
-// LiveDataBridge — cola entre os dados que chegam (transports + T4000) e o
-// CockpitState (modelo do painel). Roda no notebook Windows.
+// LiveDataBridge — cola entre os samples T4000 e o CockpitState (modelo do painel).
+// Roda no notebook Windows.
 //
 // Equivalente JS: web/cockpit/live-data-bridge.js
-// Spec: PLANO_FASE_1.md §6 MS-13.4 + ADR-023 amendment 2 (Flávio 2026-05-09)
 //
-// Fontes:
-// 1. TransportSelector → IMU/GPS do iPhone (envelope { tMono, source, payload })
-//    ingerido por IngestImuGps; armazenado pra detector consumir mais tarde.
-// 2. T4000Provider local → samples T4000 (RPM, marcha, MAP, λ, temperaturas,
-//    pressões, erro ECU, etc.) ingeridos por IngestT4000.
+// Fonte: T4000Provider local → samples T4000 (RPM, marcha, MAP, λ, temperaturas,
+// pressões, erro ECU, etc.) ingeridos por IngestT4000.
 //
-// O bridge faz duas tarefas:
-// - Mapear T4000 → estado direto do cockpit (shift light + alertas críticos).
-// - Armazenar último IMU/GPS pra detector futuro (MS-13.5) consumir.
+// O caminho VIVO do cockpit usa daqui SÓ o helper estático RpmToShift (a luz de
+// marcha, chamada pelo CockpitOrchestrator). O mapeamento de alertas críticos por
+// VALOR (IngestT4000 → CheckCriticalAlerts) é LEGADO e só sobrevive pro
+// p1fast-t4000-live-demo — ver os comentários DUROS nesses membros.
+//
+// A antiga fonte de IMU/GPS do iPhone (TransportSelector, ADR-023 iPhone-cabo) foi
+// removida na faxina de código morto (onda 2, 2026-07-10): o GPS vivo entra hoje
+// pelo RaceBox/GpsFiltroAoVivo, não por esta ponte.
 
 namespace P1Fast.Cockpit.Domain;
 
 /// <summary>Limites de calibração (DEFAULT_LIMITS no JS). Cada carro pode ter override.</summary>
 public sealed record LiveLimits(
+    // Parâmetros da luz de marcha — CAMINHO VIVO (RpmToShift, chamado pelo CockpitOrchestrator).
     int RedlineRpm            = 7500,
     double FireThresholdRatio = 0.95,
     double LitStartRatio      = 0.50,
+    // LEGADO — limiares de alerta crítico por VALOR, usados SÓ por CheckCriticalAlerts.
+    // NÃO usar no cockpit do piloto: divergem do catálogo v2 (água aqui 110/80 vs 70 no v2;
+    // óleo por valor dispara falso quando o sensor está ausente lendo 0). A cadeia canônica é
+    // AlertasCriticos (AlertaLimites). Ficam só pro p1fast-t4000-live-demo.
     double OilPressMinBar     = 0.5,
     int OilPressMinAtRpm      = 2000, // só alerta abaixo do mínimo se RPM > este
     double OilTempMaxC        = 130,
@@ -54,17 +60,7 @@ public sealed record ShiftDecision(ShiftMode Mode, int Level);
 /// <summary>Alerta crítico do T4000 — { tipo, texto } pra ShowMessage.</summary>
 public sealed record LiveAlert(MsgTipo Tipo, string Texto);
 
-/// <summary>Payload típico do iPhone IMU/GPS (campos mínimos pra detector consumir).</summary>
-public sealed record ImuGpsPayload(
-    double X,
-    double Y,
-    double? AccLong  = null,
-    double? AccLat   = null,
-    double? SpeedKmh = null
-);
-
 public sealed record LiveDataBridgeStats(
-    int ImuGpsCount,
     int T4000Count,
     int AlertsRaised,
     int AlertsCleared
@@ -79,11 +75,9 @@ public sealed class LiveDataBridge
     private readonly LiveLimits _limits;
     private readonly Action<LiveBridgeEvent>? _onEvent;
 
-    private object? _lastImuGps;
     private T4000ProviderSample? _lastT4000;
     private string? _activeAlertTexto;
 
-    private int _imuGpsCount;
     private int _t4000Count;
     private int _alertsRaised;
     private int _alertsCleared;
@@ -99,15 +93,9 @@ public sealed class LiveDataBridge
         _onEvent      = onEvent;
     }
 
-    /// <summary>Plugado no TransportSelector — recebe envelope do cabo OU do realtime, indistinto.</summary>
-    public void IngestImuGps(TransportEnvelope envelope)
-    {
-        if (envelope is null || envelope.Source != "iphone-imu" || envelope.Payload is null) return;
-        _lastImuGps = envelope.Payload;
-        _imuGpsCount++;
-    }
-
-    /// <summary>Plugado no T4000Provider — recebe sample já parseado e validado.</summary>
+    /// <summary>LEGADO — plugado no T4000Provider (hoje só o p1fast-t4000-live-demo). Aplica
+    /// shift + alertas críticos por VALOR ao cockpit. NÃO usar no cockpit do piloto: os limiares
+    /// de CheckCriticalAlerts divergem do catálogo v2 (AlertasCriticos é a cadeia canônica).</summary>
     public void IngestT4000(T4000ProviderSample sample)
     {
         if (sample is null) return;
@@ -116,11 +104,9 @@ public sealed class LiveDataBridge
         ApplyT4000ToCockpit(sample);
     }
 
-    public object? GetLastImuGps() => _lastImuGps;
     public T4000ProviderSample? GetLastT4000() => _lastT4000;
 
     public LiveDataBridgeStats GetStats() => new(
-        ImuGpsCount:   _imuGpsCount,
         T4000Count:    _t4000Count,
         AlertsRaised:  _alertsRaised,
         AlertsCleared: _alertsCleared);
@@ -153,6 +139,10 @@ public sealed class LiveDataBridge
     }
 
     /// <summary>
+    /// LEGADO — NÃO usar no cockpit do piloto; os limiares divergem do catálogo v2 aprovado
+    /// (água 80/110 aqui vs 70 no v2; óleo por VALOR dispara alerta falso com sensor ausente
+    /// lendo 0). A cadeia canônica é AlertasCriticos (a mesma do .exe). Este método sobrevive só
+    /// pro p1fast-t4000-live-demo (painel de diagnóstico), via IngestT4000.
     /// Avalia condições críticas do T4000. Retorna alerta de maior prioridade ou null.
     /// Ordem: erro ECU &gt; água &gt; óleo (temp) &gt; pressão óleo (com RPM) &gt; EGT.
     /// </summary>
