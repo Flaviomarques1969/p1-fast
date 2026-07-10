@@ -45,7 +45,6 @@ public sealed class LuzMarchaAntecipacao
     private double _ultimoTpsT = double.NegativeInfinity;
     // Troca detectada aguardando o acelerador confirmar (pico/instante já capturados no evento):
     private ReactionEvent? _pendEvento;
-    private double _pendTSeg;                               // instante da queda (relógio do evento)
     private double _pendDeadline;                           // até quando o acelerador pode confirmar
 
     public LuzMarchaAntecipacao(string? carroId = null) { _carroId = carroId; }
@@ -117,13 +116,16 @@ public sealed class LuzMarchaAntecipacao
             {
                 // Arma a confirmação: só vira aprendizado se o acelerador estiver/voltar alto.
                 _pendEvento = ev;
-                _pendTSeg = tSeg;
                 _pendDeadline = tSeg + TpsConfirmS;
                 ResolverPendente(tSeg);                 // flat-shift já confirma nesta amostra (TPS alto agora)
             }
             else
             {
-                _reacao.LearnFromEvent(ev, nowMs: (long)(tSeg * 1000.0)); // sem TPS → comportamento antigo
+                // LastUpdated do perfil = epoch-ms (paridade com o Date.now() do JS). NÃO passar o
+                // relógio de SESSÃO (tSeg): ele reinicia do zero a cada sessão e não dá pra comparar
+                // "qual perfil é mais novo" entre sessões. A medição da reação já vem do ritmo/pico
+                // do evento — o carimbo de tempo é só metadado.
+                _reacao.LearnFromEvent(ev); // sem TPS → comportamento antigo (epoch no LastUpdated)
             }
 
             // Rearma: só conta a próxima troca depois de o giro subir de novo até a zona.
@@ -162,7 +164,10 @@ public sealed class LuzMarchaAntecipacao
         var tpsAlto = TpsDisponivel(tSeg) && _ultimoTpsPct >= TpsRetomadaMinPct;
         if (tpsAlto)
         {
-            _reacao.LearnFromEvent(_pendEvento, nowMs: (long)(_pendTSeg * 1000.0));
+            // LastUpdated = epoch-ms (paridade com o JS). A medição da reação é ancorada no
+            // instante da QUEDA pelos dados do evento (pico/ritmo), não pelo carimbo de tempo —
+            // então usar epoch aqui não desloca a reação medida (ver comentário do método).
+            _reacao.LearnFromEvent(_pendEvento);
             _pendEvento = null;
         }
         else if (tSeg >= _pendDeadline)
