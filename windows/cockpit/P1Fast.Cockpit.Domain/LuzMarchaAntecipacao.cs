@@ -135,17 +135,27 @@ public sealed class LuzMarchaAntecipacao
         }
     }
 
-    /// <summary>Monta o evento de reação a partir do pico/ritmo/marcha atuais.</summary>
+    /// <summary>Monta o evento de reação a partir do pico/ritmo/marcha atuais.
+    /// A referência da reação é o ponto onde a luz ACENDEU (alvo − compensação vigente,
+    /// com o mesmo piso da tela), NÃO o alvo fixo: medindo do alvo, o EMA convergia pra
+    /// METADE da reação real (observado = rt_real − rt_aprendido → ponto fixo rt_real/2)
+    /// e a luz antecipava só metade do necessário. Decisão Flávio 2026-07-10: corrigido
+    /// aqui E no JS canônico (web/cockpit/shift-light-orquestrador.js) — paridade mantida.</summary>
     private ReactionEvent MontarEvento(double alvoRpm, string? trechoId)
     {
         var marcha = _marchas.MarchaAtual;              // marcha ANTES da troca (detector ainda não virou)
         var conf   = marcha is null ? 1.0 : _marchas.Confianca; // sem marcha → perfil genérico
+        // Onde a luz estava acendendo NO PICO: mesma conta da tela (RpmVisual), com o ritmo
+        // capturado no pico — é o MESMO ritmo que vai em RpmRiseRate, então o observado vira
+        // exatamente (pico − ondeAcendeu)/ritmo = a reação REAL do piloto, e o EMA converge nela.
+        var comp = _reacao.ComputeCompensation(null, _carroId, marcha, trechoId, Math.Max(0, _ritmoNoPico), "assisted");
+        var ondeAcendeu = Math.Max(alvoRpm - AntecipacaoMaxRpm, alvoRpm - comp.CompensationRpm);
         return new ReactionEvent(
             RpmAtShift: _picoCorrente,
-            TargetVisualRpm: alvoRpm,
+            TargetVisualRpm: ondeAcendeu,
             RpmRiseRate: _ritmoNoPico > 0 ? _ritmoNoPico : null,
             GearConfidence: conf,
-            DeltaRpm: _picoCorrente - alvoRpm,          // <0 (trocou antes do ponto) → LearnFromEvent rejeita
+            DeltaRpm: _picoCorrente - ondeAcendeu,      // <0 (trocou ANTES de a luz acender) → LearnFromEvent rejeita
             CarroId: _carroId,
             GearAfter: marcha,
             TrechoId: trechoId);

@@ -97,6 +97,41 @@ public class LuzMarchaAntecipacaoTests
     }
 
     [Fact]
+    public void LMA_10_circuito_fechado_converge_pra_reacao_REAL_do_piloto()
+    {
+        // Regressão da meia-convergência (decisão Flávio 2026-07-10, corrigido C# + JS):
+        // medindo a reação a partir do ALVO FIXO (e não de onde a luz ACENDEU), o EMA
+        // convergia pra METADE da reação real (ponto fixo rt_real/2 ≈ 150 ms) e a luz
+        // antecipava só metade do necessário. Simula um piloto de reação constante
+        // (300 ms) em circuito fechado: a luz acende onde o módulo mandar, o piloto
+        // troca 300 ms depois. O aprendizado tem que convergir pra ~300 ms.
+        const double RtRealMs = 300, RitmoRpmS = 1000, PassoS = 0.01;   // passo fino: o degrau de detecção (≤10 rpm) não infla a medição
+        var a = new LuzMarchaAntecipacao();
+        var t = 0.0;
+        for (var ciclo = 0; ciclo < 30; ciclo++)
+        {
+            var rpm = 4800.0;
+            double? cruzouEm = null;
+            while (true)
+            {
+                a.Amostra(rpm, 0, t, Alvo, "c1");
+                var luzAcesa = rpm >= a.RpmVisual(Alvo, t, "c1");
+                if (luzAcesa && cruzouEm is null) cruzouEm = t;   // a luz acendeu AQUI
+                // O piloto reage RtReal depois de ver a luz: o giro segue subindo até lá.
+                if (cruzouEm is { } tc && t - tc >= RtRealMs / 1000.0) break;
+                rpm += RitmoRpmS * PassoS;
+                t += PassoS;
+            }
+            t += PassoS;
+            a.Amostra(rpm - 900, 0, t, Alvo, "c1");   // queda forte = a troca aconteceu
+            t += 1.0;                                  // respiro entre ciclos (limpa a janela de ritmo)
+        }
+        var perfil = Assert.Single(a.Perfis.Values);
+        Assert.True(perfil.SampleCount >= 10, $"esperava ≥10 amostras, veio {perfil.SampleCount}");
+        Assert.InRange(perfil.ReactionTimeMs, 280, 320); // no código antigo convergia pra ~150
+    }
+
+    [Fact]
     public void LMA_09_maestro_liga_a_antecipacao_no_IngestMotor()
     {
         var cs = new CockpitState();

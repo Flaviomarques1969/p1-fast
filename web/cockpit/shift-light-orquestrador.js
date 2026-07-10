@@ -216,7 +216,22 @@ export function criarShiftLightOrquestrador({
             ? Math.max(0, (_rpmHistory[_rpmHistory.length - 1].rpm - _rpmHistory[0].rpm) /
                 Math.max(0.05, (_rpmHistory[_rpmHistory.length - 1].ts - _rpmHistory[0].ts) / 1000))
             : 0;
-          const alvoVisualAtUltimo = _alvoTrocaParaMarcha(_ultimaMarchaVista).rpmOtimo;
+          // A referência da reação é onde a luz ACENDEU (alvo − compensação vigente, a mesma
+          // conta do getRpmVisualLuz), NÃO o alvo ótimo fixo: medindo do alvo, o EMA convergia
+          // pra METADE da reação real (observado = rt_real − rt_aprendido → ponto fixo rt/2) e
+          // a luz antecipava só metade do necessário. Decisão Flávio 2026-07-10: corrigido aqui
+          // E no porte C# (windows/.../LuzMarchaAntecipacao.cs) — paridade mantida.
+          const alvoOtimoAtUltimo = _alvoTrocaParaMarcha(_ultimaMarchaVista).rpmOtimo;
+          const compAtUltimo = computeCompensation({
+            piloto_id:   _pilotoId,
+            carro_id:    _carroId,
+            gear:        _ultimaMarchaVista,
+            trecho_id:   trechoAtual,
+            rpmRiseRate: rateAtSwitch,
+            profiles:    _profiles,
+            mode:        'assisted',
+          });
+          const alvoVisualAtUltimo = alvoOtimoAtUltimo - compAtUltimo.compensation_rpm;
           if (Number.isFinite(_rpmAntesUltimo) && Number.isFinite(alvoVisualAtUltimo)) {
             const novosProfiles = learnFromEvent({
               piloto_id:     _pilotoId,
