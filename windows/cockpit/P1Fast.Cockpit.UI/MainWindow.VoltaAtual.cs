@@ -66,14 +66,14 @@ public sealed partial class MainWindow
         RepintarBarra();
     }
 
-    // Define a volta atual (clamped ao plano) e repinta o halo se mudou.
+    // Define a volta atual e repinta o halo se mudou. Item 3.5: ALÉM do plano NÃO clampa na última
+    // cápsula (isso deixava a volta final com glow dourado eterno) — deixa passar pra ApplyVoltaAtualHalo,
+    // que mapeia idx fora de [0, últimoBlocoReal] pro ramo -1 (nenhuma cápsula "atual"). Só o piso 0 fica.
     private void SetVoltaAtual(int idx)
     {
-        var lastReal = UltimoBlocoReal();
-        var clamped = Math.Clamp(idx, 0, Math.Max(0, lastReal));
-        if (clamped == _voltaAtualIdx && _haloBlocoPintado == clamped) return;
-        _voltaAtualIdx = clamped;
-        ApplyVoltaAtualHalo(clamped);
+        var alvo = Math.Max(0, idx);
+        _voltaAtualIdx = alvo;
+        ApplyVoltaAtualHalo(alvo);   // dedupe/repintura ficam com ApplyVoltaAtualHalo (via _haloBlocoPintado)
     }
 
     // Reinício de sessão/loop: zera a volta atual e limpa o halo.
@@ -85,6 +85,13 @@ public sealed partial class MainWindow
         ResetTelaTermica();   // destrava o aquecimento e some com a tela dedicada no reinício
     }
 
+    // Semeia _lapsRegistradosReplay (item 3.5): as voltas cujo cruzamento inicial é ANTERIOR à janela
+    // do replay não são registradas. _replayCruzBase = nº de cruzamentos até (inclusive) a base da
+    // janela; o 1º índice de volta a registrar é o cruzamento da base (base-1). Sem esta semente, uma
+    // janela que começa no meio da sessão registraria a volta de FORA dela em _sessaoLapsMs.
+    private void SemearLapsRegistrados()
+        => _lapsRegistradosReplay = Math.Max(0, _replayCruzBase - 1);
+
     // REPLAY: volta atual = cruzamentos até o tempo da sessão, menos os anteriores à janela.
     private void AtualizarVoltaAtualReplay(double alvoMs)
     {
@@ -93,7 +100,7 @@ public sealed partial class MainWindow
         foreach (var c in _replayCruzamentos)
             if (c <= alvoMs) passados++;
         // Recordes: cada volta completa = entre dois cruzamentos consecutivos. Registra as novas
-        // (pula as anteriores à janela de replay via _lapsRegistradosReplay, semeado no start).
+        // (pula as anteriores à janela de replay via _lapsRegistradosReplay, semeado por SemearLapsRegistrados).
         for (var i = _lapsRegistradosReplay; i <= passados - 2; i++)
             RegistrarVoltaCompleta(_replayCruzamentos[i + 1] - _replayCruzamentos[i]);
         if (passados - 1 > _lapsRegistradosReplay) _lapsRegistradosReplay = passados - 1;
@@ -109,8 +116,9 @@ public sealed partial class MainWindow
             if (Math.Sign(TrechoDetector.SideOfLine(p, ChegadaA, ChegadaB)) != Math.Sign(TrechoDetector.SideOfLine(prev, ChegadaA, ChegadaB))
                 && TrechoDetector.CaminhoCruzaLinha(prev, p, ChegadaA, ChegadaB))
             {
-                // Cruzou a linha: fecha a volta. Lap time = agora − último cruzamento (relógio
-                // monotônico). O 1º cruzamento só INICIA a contagem (não há volta anterior a fechar).
+                // Cruzou a linha: fecha a volta. Item 3.2: uma volta conta só entre DOIS cruzamentos
+                // REAIS da linha. O 1º cruzamento apenas ARMA o cronômetro (não registra) — assim o
+                // trecho box→linha (sair do box e cruzar a chegada) NÃO vira uma "volta" de ~30 s.
                 var tick = Environment.TickCount64;
                 if (_ultimoCruzTickLive > 0) RegistrarVoltaCompleta(tick - _ultimoCruzTickLive);
                 _ultimoCruzTickLive = tick;
@@ -119,8 +127,10 @@ public sealed partial class MainWindow
         }
         else
         {
-            SetVoltaAtual(0);                              // 1º fix válido = volta 1 (aquecimento)
-            _ultimoCruzTickLive = Environment.TickCount64; // arma o cronômetro da 1ª volta
+            // 1º fix válido = volta 1 (aquecimento) na barra. NÃO arma o cronômetro aqui: a 1ª volta
+            // só começa a contar no 1º cruzamento REAL da linha (item 3.2) — do contrário o trajeto
+            // box→linha (que não é uma volta) entraria como recorde/média.
+            SetVoltaAtual(0);
         }
         _ultimoFixChegada = p;
     }

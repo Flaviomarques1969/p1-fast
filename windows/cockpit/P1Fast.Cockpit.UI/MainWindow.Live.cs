@@ -104,6 +104,7 @@ public sealed partial class MainWindow
         // não cria recorder/RaceBox/laços numa janela morta (que ficariam órfãos e sem monitor).
         if (_liveParado) return;
 
+        _modoReplay = false;   // item 3.1: ao vivo persiste os recordes REAIS do carro (FileRecordesStore)
         IniciarFeedReal(segs, alertaLimites, aprendizadoLimites);  // timers off + cria _orquestrador com os limites do carro
         CarregarAprendizado();    // Fase 2: restaura a máxima normal do carro (memória entre sessões)
         CarregarLuzMarcha();      // Onda 7: restaura a reação por marcha (antecipação da luz) do carro
