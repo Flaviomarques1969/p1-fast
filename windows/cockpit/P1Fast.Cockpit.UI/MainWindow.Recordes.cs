@@ -17,7 +17,11 @@ namespace P1Fast.Cockpit.UI;
 
 public sealed partial class MainWindow
 {
-    private const string PistaRec = "Brasilia";
+    // Pista dos recordes: Brasília por padrão (hardcoded). Numa PISTA NOVA aprendida (PISTA-C),
+    // _pistaIdRec vira o PistaId do coordenador — os recordes de Brasília ficam INTACTOS porque a
+    // pista aprendida usa um armazém à parte (arquivo <carro>@<pista>-recordes.json).
+    private string? _pistaIdRec;
+    private string PistaRec => _pistaIdRec ?? "Brasilia";
     private bool _modoReplay;   // item 3.1: true no --replay (armazém em memória, nada persiste)
     private IRecordesStore? _recordesStore;
     private ArmazemRecordes? _recordes;
@@ -25,6 +29,10 @@ public sealed partial class MainWindow
     private string _sessaoIdRec = "";
 
     private string CarroIdRec => string.IsNullOrWhiteSpace(_options.CarroId) ? "bubi" : _options.CarroId!;
+
+    // Chave do armazém de recordes: só o carro em Brasília (comportamento de sempre); carro@pista
+    // numa pista nova aprendida — assim Brasília nunca é sobrescrita por uma pista desconhecida.
+    private string ChaveArmazem() => _pistaIdRec is null ? CarroIdRec : $"{CarroIdRec}@{_pistaIdRec}";
 
     // Chamado em IniciarFeedReal (replay e live): carrega o armazém 1x, zera a sessão, assina o evento.
     // Item 3.1: no REPLAY o armazém é EM MEMÓRIA — não carrega os recordes reais do carro nem grava por
@@ -36,8 +44,8 @@ public sealed partial class MainWindow
         if (_recordesStore is null)
         {
             _recordesStore = _modoReplay ? new MemoriaRecordesStore() : (IRecordesStore)new FileRecordesStore();
-            try { _recordes = _recordesStore.Carregar(CarroIdRec); }
-            catch { _recordes = new ArmazemRecordes { CarroId = CarroIdRec }; }
+            try { _recordes = _recordesStore.Carregar(ChaveArmazem()); }
+            catch { _recordes = new ArmazemRecordes { CarroId = ChaveArmazem() }; }
         }
         SemearRecordesNoCerebro();   // item 3.6: dá ao cérebro o recorde ABSOLUTO por trecho (Recorde x Melhor Stint)
         _sessaoLapsMs.Clear();
@@ -85,6 +93,21 @@ public sealed partial class MainWindow
         if (_recordesStore is null || _recordes is null) return;
         try { _recordesStore.Salvar(_recordes); }
         catch { /* recorde nunca derruba o cockpit; próxima superação tenta de novo */ }
+    }
+
+    // PISTA NOVA (PISTA-C): a linha da pista aprendida confirmou → passa a keiar os recordes por essa
+    // pista. Recarrega o armazém correspondente (arquivo à parte) — os recordes de Brasília ficam
+    // INTACTOS. Só age uma vez (quando o id muda) e nunca no replay/sem store. A sessão (média/melhor)
+    // recomeça, e re-semeia o cérebro com os recordes de trecho daquela pista (se já existirem).
+    private void TrocarPistaRecordes(string? pistaId)
+    {
+        if (string.IsNullOrWhiteSpace(pistaId) || pistaId == _pistaIdRec) return;
+        _pistaIdRec = pistaId;
+        if (_recordesStore is null) return;
+        try { _recordes = _recordesStore.Carregar(ChaveArmazem()); }
+        catch { _recordes = new ArmazemRecordes { CarroId = ChaveArmazem() }; }
+        _sessaoLapsMs.Clear();          // nova pista → média/melhor da sessão recomeça
+        SemearRecordesNoCerebro();      // dá ao cérebro os recordes de trecho já salvos dessa pista
     }
 
     // ── leituras pra tela térmica (dado REAL local) ───────────────────
