@@ -236,26 +236,9 @@ public class LiveDataBridgeTests
         Assert.Null(cs.Get().Message);
     }
 
-    [Fact]
-    public void LDB_22_IngestImuGps_armazena_payload_pra_detector()
-    {
-        var cs = new CockpitState();
-        var b  = new LiveDataBridge(cs);
-        var payload = new ImuGpsPayload(X: 12, Y: 34, AccLong: 0.5, AccLat: -0.2, SpeedKmh: 90);
-        b.IngestImuGps(new TransportEnvelope(100, "iphone-imu", payload));
-        var last = b.GetLastImuGps();
-        Assert.NotNull(last);
-        Assert.Equal(12.0, ((ImuGpsPayload)last!).X);
-    }
-
-    [Fact]
-    public void LDB_23_IngestImuGps_com_source_diferente_eh_ignorado()
-    {
-        var cs = new CockpitState();
-        var b  = new LiveDataBridge(cs);
-        b.IngestImuGps(new TransportEnvelope(1, "heartbeat", null));
-        Assert.Null(b.GetLastImuGps());
-    }
+    // LDB_22 e LDB_23 (IngestImuGps) removidos na faxina onda 2: a fonte de IMU/GPS
+    // do iPhone (TransportSelector/ADR-023 iPhone-cabo) saiu; o GPS vivo entra pelo
+    // RaceBox/GpsFiltroAoVivo, não por esta ponte.
 
     [Fact]
     public void LDB_24_stats_expoe_contadores()
@@ -265,10 +248,8 @@ public class LiveDataBridgeTests
         b.IngestT4000(Fresh());
         b.IngestT4000(Fresh(ecuErrorBits: 1));
         b.IngestT4000(Fresh(ecuErrorBits: 0));
-        b.IngestImuGps(new TransportEnvelope(1, "iphone-imu", new ImuGpsPayload(0, 0)));
         var s = b.GetStats();
         Assert.Equal(3, s.T4000Count);
-        Assert.Equal(1, s.ImuGpsCount);
         Assert.Equal(1, s.AlertsRaised);
         Assert.Equal(1, s.AlertsCleared);
     }
