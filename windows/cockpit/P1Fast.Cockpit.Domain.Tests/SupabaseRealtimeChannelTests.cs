@@ -215,11 +215,19 @@ public class SupabaseRealtimeChannelTests
                 if (ev == "heartbeat") s.ServidorEnvia(ReplyOk("phoenix", RefDe(msg)));
             }
         };
-        await using var canal = Criar(fake, heartbeatMs: 50);
+        await using var canal = Criar(fake, heartbeatMs: 250);
         await canal.ConnectAsync(CancellationToken.None);
         Assert.True(await AteAsync(() => canal.Online));
 
-        await Task.Delay(300); // ~6 heartbeats, todos respondidos
+        // Espera por CONTAGEM de heartbeats, não por relógio: o canal só envia o N+1 se o N foi
+        // respondido a tempo — 3 enviados com o Online de pé provam o ciclo saudável. (A versão
+        // com intervalo de 50 ms + Task.Delay fixo flakeava sob carga do runner: a thread do laço
+        // de recebimento perdia a fatia e o tick seguinte via o heartbeat "pendente".)
+        bool TresHeartbeats()
+        {
+            lock (fake.Enviadas) return fake.Enviadas.Count(m => Evento(m) == "heartbeat") >= 3;
+        }
+        Assert.True(await AteAsync(TresHeartbeats, timeoutMs: 5000), "esperava 3 heartbeats respondidos");
         Assert.True(canal.Online, "conexão saudável não pode ser derrubada");
     }
 
