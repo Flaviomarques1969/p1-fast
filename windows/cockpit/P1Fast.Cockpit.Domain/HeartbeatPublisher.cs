@@ -48,8 +48,13 @@ public sealed class HeartbeatPublisher : IAsyncDisposable
 
     public void Stop()
     {
-        _cts?.Cancel();
+        // Cancela E descarta o CTS (antes só cancelava e largava a referência → vazamento a
+        // cada Start/Stop). Captura local pra não descartar um CTS que um Start concorrente já
+        // trocou. O loop antigo acorda pelo Cancel e sai no próximo laço (não fica um 2º vivo).
+        var cts = _cts;
         _cts = null;
+        try { cts?.Cancel(); } catch { }
+        try { cts?.Dispose(); } catch { }
     }
 
     private async Task LoopAsync(string videoStreamId, string teamId, CancellationToken ct)

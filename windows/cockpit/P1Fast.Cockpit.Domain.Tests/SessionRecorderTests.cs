@@ -74,6 +74,7 @@ public class SessionRecorderTests
         public SessionResumoParcial ResumirSessao(string id) => new(0, 0, 0, 0, 0);
         public IReadOnlyList<SessionMeta> ListarSessoes() => Array.Empty<SessionMeta>();
         public IReadOnlyList<SessionRecord> LerSessao(string id) => Array.Empty<SessionRecord>();
+        public IReadOnlyList<string> ListarDadosSemMeta() => Array.Empty<string>();
     }
 
     // ── testes ────────────────────────────────────────────────────────────────

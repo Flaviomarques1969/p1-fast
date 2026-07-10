@@ -89,6 +89,10 @@ public interface ISessionStore
     SessionResumoParcial ResumirSessao(string id);
     IReadOnlyList<SessionMeta> ListarSessoes();
     IReadOnlyList<SessionRecord> LerSessao(string id);   // replay / conferência pós-sessão
+    /// <summary>Ids de sessões com dados (.jsonl) mas SEM metadado legível — órfãs de uma
+    /// queda no meio da escrita do meta. A recuperação usa isto pra não deixar dado íntegro
+    /// invisível (o meta truncado sumiria da fila de upload pra sempre).</summary>
+    IReadOnlyList<string> ListarDadosSemMeta();
 }
 
 /// <summary>Config da captura AUTOMÁTICA por movimento (pista x box). Passe ao
@@ -394,6 +398,28 @@ public sealed class SessionRecorder
             try { _store.Finalizar(s.Id, resumo); } catch { /* best-effort */ }
             orfas.Add(resumo);
         }
+
+        // Órfãs de META: .jsonl íntegro no disco mas SEM metadado legível (queda de energia
+        // truncou o meta.json). Sem isto o dado ficaria INVISÍVEL pra a fila de upload pra
+        // sempre. Reconstrói o resumo a partir do próprio .jsonl e grava um meta 'interrompida'
+        // (atômico) — o dado volta a ser visível e sobe no próximo ciclo, não some em silêncio.
+        foreach (var id in _store.ListarDadosSemMeta())
+        {
+            var r = _store.ResumirSessao(id);
+            var resumo = new SessionResumo
+            {
+                Id = id,
+                Status = "interrompida",
+                MotivoFim = "meta-perdido",
+                InicioWall = r.InicioWall,
+                FimWall = r.FimWall != 0 ? r.FimWall : r.InicioWall,
+                DuracaoS = Math.Round(r.DurMs / 100.0) / 10,
+                NGps = r.NGps,
+                NMotor = r.NMotor,
+            };
+            try { _store.Finalizar(id, resumo); } catch { /* best-effort */ }
+            orfas.Add(resumo);
+        }
         return orfas.OrderByDescending(o => o.FimWall).ToList();
         }
     }
@@ -426,7 +452,7 @@ public sealed class FileSessionStore : ISessionStore, IDisposable
     private string MetaPath(string id) => Path.Combine(_dir, id + ".meta.json");
 
     public void NovaSessao(SessionMeta meta)
-        => File.WriteAllText(MetaPath(meta.Id), JsonSerializer.Serialize(meta, JsonOpts));
+        => EscritaAtomica.WriteAllText(MetaPath(meta.Id), JsonSerializer.Serialize(meta, JsonOpts));
 
     public void Gravar(SessionRecord registro)
     {
@@ -467,7 +493,7 @@ public sealed class FileSessionStore : ISessionStore, IDisposable
         // grava o metadado já com o status final (resumo embutido)
         var obj = new { resumo.Id, resumo.Sim, resumo.Status, resumo.MotivoFim, resumo.InicioWall,
                         resumo.FimWall, resumo.DuracaoS, resumo.NGps, resumo.NMotor, resumo.Dropped, resumo.MaiorLacunaMs };
-        File.WriteAllText(MetaPath(id), JsonSerializer.Serialize(obj, JsonOpts));
+        EscritaAtomica.WriteAllText(MetaPath(id), JsonSerializer.Serialize(obj, JsonOpts));
     }
 
     public SessionResumoParcial ResumirSessao(string id)
@@ -516,6 +542,32 @@ public sealed class FileSessionStore : ISessionStore, IDisposable
             catch { /* metadado corrompido — ignora */ }
         }
         return lista;
+    }
+
+    // .jsonl no disco cujo .meta.json está AUSENTE ou ILEGÍVEL (sem Id parseável) — órfão de
+    // uma queda que truncou o meta. É o que a recuperação usa pra não deixar dado invisível.
+    public IReadOnlyList<string> ListarDadosSemMeta()
+    {
+        var orfaos = new List<string>();
+        if (!Directory.Exists(_dir)) return orfaos;
+        foreach (var jsonl in Directory.EnumerateFiles(_dir, "*.jsonl"))
+        {
+            var id = Path.GetFileNameWithoutExtension(jsonl);
+            var meta = MetaPath(id);
+            bool metaLegivel = false;
+            if (File.Exists(meta))
+            {
+                try
+                {
+                    using var doc = JsonDocument.Parse(File.ReadAllText(meta));
+                    metaLegivel = doc.RootElement.TryGetProperty("Id", out var idEl)
+                                  && !string.IsNullOrEmpty(idEl.GetString());
+                }
+                catch { metaLegivel = false; } // meta truncado/corrompido = ilegível
+            }
+            if (!metaLegivel) orfaos.Add(id);
+        }
+        return orfaos;
     }
 
     public IReadOnlyList<SessionRecord> LerSessao(string id)
@@ -577,4 +629,8 @@ public sealed class InMemorySessionStore : ISessionStore
     public IReadOnlyList<SessionMeta> ListarSessoes() => _sessoes.Values.ToList();
     public IReadOnlyList<SessionRecord> LerSessao(string id)
         => _amostras.TryGetValue(id, out var l) ? l.ToList() : new List<SessionRecord>();
+    // Dados sem meta = tem amostras mas nunca teve NovaSessao (ou foi removida). Em memória
+    // não há truncamento; existe pra completar o contrato e permitir testes de recuperação.
+    public IReadOnlyList<string> ListarDadosSemMeta()
+        => _amostras.Keys.Where(k => !_sessoes.ContainsKey(k)).ToList();
 }

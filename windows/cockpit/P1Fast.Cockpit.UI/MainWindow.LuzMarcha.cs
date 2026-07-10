@@ -64,7 +64,9 @@ public sealed partial class MainWindow
             var caminho = LuzMarchaPath();
             Directory.CreateDirectory(Path.GetDirectoryName(caminho)!);
             var snap = _orquestrador.ExportarLuzMarcha();
-            File.WriteAllText(caminho, JsonSerializer.Serialize(snap));
+            // Atômico (tmp+fsync+rename): queda de energia no fechamento não trunca o snapshot
+            // — o carro não "esquece" a reação por marcha aprendida por um meio-arquivo corrompido.
+            EscritaAtomica.WriteAllText(caminho, JsonSerializer.Serialize(snap));
         }
         catch { /* best-effort */ }
     }

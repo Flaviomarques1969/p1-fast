@@ -10,14 +10,17 @@ setlocal
 chcp 65001 >nul
 title IR AO VIVO (PRODUCAO) - P1 Fast Cockpit
 
-set "EXE=%~dp0P1Fast.Cockpit.UI\bin\x64\Debug\net8.0-windows10.0.19041.0\P1Fast.Cockpit.UI.exe"
+REM Producao roda o build RELEASE (otimizado). Nunca subir um binario velho de Debug em
+REM silencio: se o Release nao existir, PARA com mensagem clara (nao cai pro Debug).
+set "EXE=%~dp0P1Fast.Cockpit.UI\bin\x64\Release\net8.0-windows10.0.19041.0\P1Fast.Cockpit.UI.exe"
 
 if not exist "%EXE%" (
   echo.
-  echo [ERRO] Nao encontrei o cockpit em:
+  echo [ERRO] Nao encontrei o cockpit RELEASE em:
   echo   %EXE%
   echo.
-  echo Provavel: o .exe ainda nao foi buildado neste notebook.
+  echo Provavel: o .exe ainda nao foi buildado em RELEASE neste notebook.
+  echo   Build:  dotnet build P1Fast.Cockpit.UI\P1Fast.Cockpit.UI.csproj -c Release -p:Platform=x64
   echo.
   pause
   exit /b 1

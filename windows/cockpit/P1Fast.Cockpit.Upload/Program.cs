@@ -101,6 +101,28 @@ async Task<bool> PostRowAsync(object row)
     return resp.IsSuccessStatusCode;
 }
 
+// Quais PARTES já chegaram pra esta sessão, PAGINANDO (PostgREST devolve no máx. 1000
+// linhas por página; sem paginar, uma sessão com >1000 partes travava a verificação e
+// nunca fechava). Lê em páginas de 1000 por limit/offset até vir uma página incompleta.
+// LANÇA em falha de rede — quem chama decide (retomar/tratar como vazio), sem crash sujo.
+async Task<HashSet<int>> PartesPresentesAsync(string sid)
+{
+    var todas = new HashSet<int>();
+    const int pagina = 1000;
+    for (int offset = 0; ; offset += pagina)
+    {
+        var resp = await http.GetAsync(
+            $"/rest/v1/sessao_dumps?sessao_id=eq.{Uri.EscapeDataString(sid)}&select=parte&limit={pagina}&offset={offset}");
+        if (!resp.IsSuccessStatusCode)
+            throw new HttpRequestException($"consulta de partes falhou: {(int)resp.StatusCode}");
+        int n = 0;
+        foreach (var r in JsonDocument.Parse(await resp.Content.ReadAsStringAsync()).RootElement.EnumerateArray())
+        { todas.Add(r.GetProperty("parte").GetInt32()); n++; }
+        if (n < pagina) break;   // última página (veio menos que o limite)
+    }
+    return todas;
+}
+
 // RELÓGIO COMUM (pedido do iMac 2026-06-30, pro vídeo Osmo depois): carimba o started_at
 // da CAPTURA no MESMO relógio dos timestamps por amostra (TWall, epoch ms). Vem do
 // InicioWall do meta lateral (<sessão>.meta.json); cai pro 1º TWall se o meta faltar. É o
@@ -151,13 +173,7 @@ object MontarParte(int parte, string envioAlvo)
 IEnumerable<int> presentes = Array.Empty<int>();
 if (!args.Contains("--forcar"))
 {
-    try
-    {
-        var chk = await http.GetAsync($"/rest/v1/sessao_dumps?sessao_id=eq.{Uri.EscapeDataString(sessaoId)}&select=parte");
-        if (chk.IsSuccessStatusCode)
-            presentes = JsonDocument.Parse(await chk.Content.ReadAsStringAsync())
-                .RootElement.EnumerateArray().Select(r => r.GetProperty("parte").GetInt32()).ToList();
-    }
+    try { presentes = await PartesPresentesAsync(sessaoId); }
     catch { /* sem rede: trata como destino vazio → sobe tudo */ }
 }
 var plano = PlanejadorUpload.Planejar(total, presentes);
@@ -194,11 +210,11 @@ Console.WriteLine();
 // Verifica pela VERDADE do destino: conta as partes DISTINTAS desta SESSÃO (sem filtrar
 // por envio — a unicidade é UNIQUE(sessao_id, parte), mig 0050; reenvio idempotente mantém
 // a parte sob o envio que a gravou primeiro). Sucesso = as 'total' partes presentes.
-var verResp = await http.GetAsync($"/rest/v1/sessao_dumps?sessao_id=eq.{Uri.EscapeDataString(sessaoId)}&select=parte");
-var verBody = await verResp.Content.ReadAsStringAsync();
+// Em try/catch: internet caindo NA verificação não pode virar crash sujo — trata como
+// INCOMPLETA (a fila resiliente retoma na próxima rodada/boot, idempotente).
 int chegaram = -1;
-if (verResp.IsSuccessStatusCode)
-    chegaram = JsonDocument.Parse(verBody).RootElement.EnumerateArray().Select(r => r.GetProperty("parte").GetInt32()).Distinct().Count();
+try { chegaram = (await PartesPresentesAsync(sessaoId)).Count; }
+catch { /* rede caiu na verificação: incompleta, retoma depois (sem crash) */ }
 bool completou = chegaram == total;
 if (completou) MarcarSubida(envio);
 Console.WriteLine($"Resultado: {enviados}/{faltantes.Count} enviadas nesta rodada; {chegaram}/{total} confirmadas na nuvem (envio={envio}). {(completou ? "COMPLETA." : "INCOMPLETA — retoma na próxima.")}");

@@ -66,7 +66,9 @@ public sealed partial class MainWindow
             var caminho = AprendizadoPath();
             Directory.CreateDirectory(Path.GetDirectoryName(caminho)!);
             var snap = _orquestrador.ExportarAprendizado();
-            File.WriteAllText(caminho, JsonSerializer.Serialize(snap));
+            // Atômico (tmp+fsync+rename): queda de energia no fechamento não trunca o snapshot
+            // — o carro não "esquece" a máxima normal aprendida por um meio-arquivo corrompido.
+            EscritaAtomica.WriteAllText(caminho, JsonSerializer.Serialize(snap));
         }
         catch { /* best-effort */ }
     }
