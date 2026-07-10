@@ -15,9 +15,12 @@ public sealed class CockpitOrchestrator
     private readonly CockpitState _cockpit;
     private readonly LiveLimits _limites;
     private readonly AlertasCriticos _alertas;
-    private readonly TrechoDetector? _detector;
-    private readonly LuzFreio? _luzFreio;
-    private readonly Dictionary<string, TrechoSegmento> _segPorId;
+    // Detector/luz de freio/mapa de segmentos: não-readonly porque uma PISTA NOVA aprendida injeta
+    // seus segmentos em runtime (AplicarSegmentosAprendidos), recriando o detector interno.
+    private TrechoDetector? _detector;
+    private LuzFreio? _luzFreio;
+    private Dictionary<string, TrechoSegmento> _segPorId;
+    private bool _segmentosAprendidosAplicados;   // já injetou trechos de pista nova? (idempotente)
 
     // Buffer da passagem atual (pra fechar a curva e comparar com a referência).
     // Referência por curva = a MELHOR passagem histórica (menor tempo), atualizada
@@ -102,6 +105,28 @@ public sealed class CockpitOrchestrator
             _detector = new TrechoDetector(segments, OnTrechoEvento);
             _luzFreio = new LuzFreio(segments);
         }
+    }
+
+    /// <summary>
+    /// Injeta os segmentos APRENDIDOS de uma pista nova (mapeamento automático) OU carregados de
+    /// uma pista já conhecida (D2), recriando o TrechoDetector/LuzFreio internos — a mesma ORIGEM
+    /// que o construtor usa, só que em runtime. A partir daí delta/bolinha/luz de freio/recordes de
+    /// trecho ligam sozinhos quando o GPS entra (é o que já acontece quando há segmentos).
+    ///
+    /// SEGURANÇA (Brasília hardcoded VENCE): quem chama é a fiação da UI, que só aciona isto FORA da
+    /// caixa de Brasília (o PistaCoordenador é INERTE dentro dela — nunca emite SegmentosProntos lá).
+    /// E é IDEMPOTENTE: injeta uma vez só (nunca re-substitui). Chamar na thread do maestro (a da UI).
+    /// Devolve true se injetou; false se já havia injetado ou a lista veio vazia.
+    /// </summary>
+    public bool AplicarSegmentosAprendidos(IReadOnlyList<TrechoSegmento> segmentos)
+    {
+        if (segmentos is null || segmentos.Count == 0) return false;
+        if (_segmentosAprendidosAplicados) return false;   // já aprendeu — não re-substitui
+        _segmentosAprendidosAplicados = true;
+        _segPorId = segmentos.ToDictionary(s => s.Id, s => s);
+        _detector = new TrechoDetector(segmentos, OnTrechoEvento);
+        _luzFreio = new LuzFreio(segmentos);
+        return true;
     }
 
     /// <summary>Quantas curvas já têm passagem de referência (1ª volta registrada).</summary>
