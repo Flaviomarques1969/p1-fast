@@ -72,9 +72,8 @@ public sealed partial class MainWindow
     private void SetVoltaAtual(int idx)
     {
         var alvo = Math.Max(0, idx);
-        if (alvo == _voltaAtualIdx) return;
         _voltaAtualIdx = alvo;
-        ApplyVoltaAtualHalo(alvo);
+        ApplyVoltaAtualHalo(alvo);   // dedupe/repintura ficam com ApplyVoltaAtualHalo (via _haloBlocoPintado)
     }
 
     // Reinício de sessão/loop: zera a volta atual e limpa o halo.
