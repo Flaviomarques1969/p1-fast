@@ -475,7 +475,8 @@ public sealed partial class MainWindow : Window
     }
 
     /// <summary>Amostra de motor (rotação + dados pros alertas). Thread-safe.
-    /// <paramref name="tSeg"/> = relógio monotônico (s) pra histerese 2b; passe o TMono do sample.</summary>
+    /// <paramref name="tSeg"/> = relógio monotônico em SEGUNDOS pra histerese 2b; o TMono do sample vem em
+    /// ms (Stopwatch) — converta (TMono / 1000.0) antes de passar aqui.</summary>
     public void AlimentarMotor(double rpm, AmostraAlerta alerta, double? tSeg = null)
         => DispatcherQueue.TryEnqueue(() => _orquestrador?.IngestMotor(rpm, alerta, tSeg));
 
