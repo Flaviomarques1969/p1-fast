@@ -25,6 +25,14 @@ public sealed class GpsFiltroAoVivo
     public const double HaccMaxM = 50;
     /// <summary>Espaçamento mínimo entre pontos (m): abaixo disto é jitter de carro parado, descartado.</summary>
     public const double MovimentoMinM = 3;
+    /// <summary>Abaixo disto (ms) o dt entre fixes é implausível pra um GPS de 25 Hz (rajada BLE
+    /// carimbada junto): usa o dt NOMINAL em vez de dividir por ~0. Guarda de sanidade (5.3b).</summary>
+    public const double DtImplausivelMs = 20;
+    /// <summary>dt nominal de um GPS de 25 Hz (ms) — usado quando o dt real vem implausível.</summary>
+    public const double DtNominalMs = 40;
+    /// <summary>Teto de km/h plausível pro carro na pista. Um par de fixes que gere velocidade
+    /// acima disto (glitch de posição/tempo) é DESCARTADO — não pode virar referência de curva.</summary>
+    public const double KmhTetoPlausivel = 260;
 
     // Caixa de Brasília (mesmos limites do detector de voltas em SessaoReplay).
     public const double LatMin = -16.1, LatMax = -15.4, LonMin = -48.3, LonMax = -47.6;
@@ -52,8 +60,15 @@ public sealed class GpsFiltroAoVivo
         double kmh = 0;
         if (_prev is { } prev2)
         {
-            var dtS = Math.Max(0.001, (tWall - _prevT) / 1000.0);
+            // 5.3b: dt implausível (rajada BLE colada no mesmo ms) → usa o nominal de 40 ms em
+            // vez de dividir por ~0 (que dispara km/h absurdo no cérebro: falso freada/ápice).
+            double dtMs = tWall - _prevT;
+            double dtS = (dtMs < DtImplausivelMs ? DtNominalMs : dtMs) / 1000.0;
+            dtS = Math.Max(0.001, dtS);
             kmh = Ghost.DistMeters(prev2, p) / dtS * 3.6;
+            // Mesmo com o dt corrigido, um salto de posição impossível não pode virar referência
+            // de curva: acima do teto, DESCARTA o par (não avança _prev — compara com o último bom).
+            if (kmh > KmhTetoPlausivel) return null;
         }
         _prev = p;
         _prevT = tWall;

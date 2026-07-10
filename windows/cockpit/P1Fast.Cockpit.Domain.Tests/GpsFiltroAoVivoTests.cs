@@ -62,6 +62,41 @@ public class GpsFiltroAoVivoTests
         Assert.True(c!.Kmh > 50, $"esperava kmh de movimento, veio {c.Kmh:0.0}");
     }
 
+    // 5.3b: uma rajada BLE carimbada no mesmo ms (dt~0) NÃO pode gerar km/h absurdo no
+    // cérebro (falso freada/ápice, referência de curva envenenada). O par implausível é
+    // descartado; o próximo fix compara com o último BOM.
+    [Fact]
+    public void FLT_06_Rajada_colada_no_mesmo_ms_nao_gera_kmh_absurdo()
+    {
+        var f = new GpsFiltroAoVivo();
+
+        // 1º ponto: passa (kmh=0, sem anterior).
+        var a = f.AceitarValido(new PontoGps(Lat, Lon), tWall: 1000);
+        Assert.NotNull(a);
+
+        // ~11 m adiante MAS carimbado 1 ms depois (rajada): sem a guarda daria ~40.000 km/h.
+        // Com a guarda (dt<20ms → nominal 40ms), 11 m / 0,04 s ≈ 990 km/h > teto → DESCARTA.
+        var b = f.AceitarValido(new PontoGps(Lat, Lon + 0.0001), tWall: 1001);
+        Assert.Null(b);
+
+        // O ponto seguinte, bem espaçado, compara com o último BOM (o 1º) e passa são.
+        var c = f.AceitarValido(new PontoGps(Lat, Lon + 0.0001), tWall: 1400); // 400 ms depois
+        Assert.NotNull(c);
+        Assert.True(c!.Kmh <= GpsFiltroAoVivo.KmhTetoPlausivel, $"km/h deveria ser plausível, veio {c.Kmh:0}");
+    }
+
+    [Fact]
+    public void FLT_07_Movimento_bem_espacado_passa_com_kmh_sao()
+    {
+        var f = new GpsFiltroAoVivo();
+        Assert.NotNull(f.AceitarValido(new PontoGps(Lat, Lon), tWall: 0));
+
+        // ~11 m em 200 ms = ~193 km/h: plausível, NÃO descartado.
+        var b = f.AceitarValido(new PontoGps(Lat, Lon + 0.0001), tWall: 200);
+        Assert.NotNull(b);
+        Assert.True(b!.Kmh > 50 && b.Kmh <= GpsFiltroAoVivo.KmhTetoPlausivel);
+    }
+
     [Fact]
     public void FLT_03_Aceitar_junta_qualidade_e_decimacao_num_passo()
     {
