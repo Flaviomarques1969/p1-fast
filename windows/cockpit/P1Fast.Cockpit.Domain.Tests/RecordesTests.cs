@@ -69,7 +69,8 @@ public class RecordesTests
     {
         var a = new ArmazemRecordes();
         a.AplicarPassagem(new DadosPassagem("c3", 12.0, 120, 40, 78, 130, 74), Meta());
-        var mudou = a.AplicarPassagem(new DadosPassagem("c3", 12.9, 110, 45, 70, 120, 70), Meta());
+        // 2ª passagem pior em TODOS os dados (inclusive freou mais CEDO: 38 < 40) → nada muda.
+        var mudou = a.AplicarPassagem(new DadosPassagem("c3", 12.9, 110, 38, 70, 120, 70), Meta());
         Assert.False(mudou);
     }
 
@@ -106,5 +107,59 @@ public class RecordesTests
             Assert.Equal("naoexiste", a.CarroId);
         }
         finally { try { Directory.Delete(dir, true); } catch { } }
+    }
+
+    // ── Item 3.2: piso de plausibilidade da volta ──────────────
+
+    [Fact]
+    public void REC_09_Volta_implausivel_nao_vira_recorde()
+    {
+        // O trecho box→linha (ex.: 30 s) NÃO é uma volta — não pode virar melhor volta histórica.
+        var a = new ArmazemRecordes();
+        Assert.False(a.AplicarVolta(30_000, Meta()));                 // < 40 s → descartada
+        Assert.Null(a.Obter(ArmazemRecordes.ChaveVolta));            // nada foi gravado
+        Assert.True(a.AplicarVolta(92_000, Meta()));                 // volta real → grava
+        Assert.Equal(92_000, a.Obter(ArmazemRecordes.ChaveVolta)!.Valor);
+        // E uma volta implausível DEPOIS nunca substitui a boa (mesmo sendo "menor").
+        Assert.False(a.AplicarVolta(30_000, Meta()));
+        Assert.Equal(92_000, a.Obter(ArmazemRecordes.ChaveVolta)!.Valor);
+    }
+
+    [Fact]
+    public void REC_10_Piso_da_volta_eh_configuravel()
+    {
+        var a = new ArmazemRecordes();
+        Assert.True(a.AplicarVolta(10_000, Meta(), pisoPlausivelMs: 5_000));  // piso menor: aceita
+        Assert.Equal(10_000, a.Obter(ArmazemRecordes.ChaveVolta)!.Valor);
+    }
+
+    // ── Item 3.6: recorde de ponto de freada ───────────────────
+
+    [Fact]
+    public void REC_11_Frenagem_mais_tarde_vira_recorde()
+    {
+        // Ponto de freada = metros da linha de entrada até onde freou; freou MAIS TARDE (mais metros)
+        // = melhor (Maior), na mesma família das velocidades. Antes FrenagemM viajava e era ignorado.
+        var a = new ArmazemRecordes();
+        a.AplicarPassagem(new DadosPassagem("c3", 12.0, 120, 40, 78, 130, 74), Meta());
+        Assert.Equal(40, a.Obter(ArmazemRecordes.ChaveTrecho("c3", ArmazemRecordes.MetFrenagem))!.Valor);
+        Assert.False(a.AplicarPassagem(new DadosPassagem("c3", 12.0, 120, 35, 78, 130, 74), Meta())); // freou mais cedo: não bate
+        var mudou = a.AplicarPassagem(new DadosPassagem("c3", 12.0, 120, 47, 78, 130, 74), Meta());   // freou mais tarde: bate
+        Assert.True(mudou);
+        Assert.Equal(47, a.Obter(ArmazemRecordes.ChaveTrecho("c3", ArmazemRecordes.MetFrenagem))!.Valor);
+    }
+
+    // ── Item 3.1: armazém em MEMÓRIA no replay (não carrega nem grava) ──
+
+    [Fact]
+    public void REC_12_Memoria_store_nao_persiste_nem_carrega()
+    {
+        var store = new MemoriaRecordesStore();
+        var a = store.Carregar("bubi");
+        a.AplicarVolta(92_000, Meta());
+        store.Salvar(a);                       // no-op — não toca disco
+        var b = store.Carregar("bubi");        // recarrega: sempre VAZIO (replay não persiste)
+        Assert.Empty(b.Itens);
+        Assert.Equal("bubi", b.CarroId);
     }
 }
