@@ -36,6 +36,7 @@ public sealed partial class MainWindow
     private static readonly Color TermBranco  = Color.FromArgb(0xFF, 0xF4, 0xF7, 0xFB);
 
     private bool _termicaVisivel;
+    private bool _criticoAtivo;            // 2.1: modo crítico no ar → térmica não pode cobri-lo
     private bool _termicaBrushesProntos;
     private bool _aquecConcluido;          // latch: aquecimento fechou neste stint (não reabre)
     private long _aquecReadyTick;          // quando chegou no ideal (0 = ainda não)
@@ -49,7 +50,12 @@ public sealed partial class MainWindow
     // Chamado a cada quadro (replay e live) DEPOIS de atualizar sensores/volta atual.
     private void AtualizarTelaTermica()
     {
-        var agua = _ultimaAlerta?.WaterTempC;
+        // 2.2 — GUARDA DE RECÊNCIA (§9: nunca número velho). Se o motor emudeceu (T4000/USB
+        // caiu), a última água ficaria congelada na tela ("45° AQUECENDO" pra sempre). Trata
+        // como SEM DADO → a térmica sai honesta, igual aos sensores do topo que apagam em ~3 s
+        // (mesma janela do AtualizarSensores). O andaime --tela-termica não passa por aqui.
+        var motorVivo = Environment.TickCount64 - _ultimoMotorTick < 3000;
+        var agua = motorVivo ? _ultimaAlerta?.WaterTempC : null;
         var est = TelaTermica.Avaliar(agua, _voltaAtualIdx, UltimoBlocoReal());
         var modo = est.Modo;
 
@@ -135,6 +141,10 @@ public sealed partial class MainWindow
 
     private void MostrarTelaTermica(ModoTelaTermica modo, EstadoTelaTermica est)
     {
+        // 2.1 — CRÍTICO SEMPRE VENCE: com o modo crítico no ar (super/grave "toma a tela"),
+        // a térmica NÃO pode reaparecer por cima do alerta. Chokepoint único: nenhum caminho
+        // (per-sample, ~1 Hz, andaime) abre a térmica enquanto o crítico está ligado.
+        if (_criticoAtivo) return;
         EnsureTermicaBrushes();
         if (!_termicaVisivel)
         {
@@ -178,6 +188,11 @@ public sealed partial class MainWindow
     // vs-alvo — vêm do cérebro/nuvem (iMac); NÃO inventar número na tela do piloto.
     private void PopularPainel(ModoTelaTermica modo)
     {
+        // 2.6 — quando o plano REAL do dia ainda não veio da nuvem, o STINT/PARADA sai do
+        // PlanoStintPlaceholder (11 voltas / box na v6 = número inventado). Marca esses tiles
+        // com o mecanismo que já existe (tag "cérebro" + borda dourada) pra NÃO apresentar
+        // placeholder como dado real na tela do piloto. Mesma decisão da barra fica como está.
+        var placeholderPlano = _planoStintReal is null;
         var plano = _planoStintReal ?? PlanoStintPlaceholder;
         var total = 0; var boxIdx = -1;
         for (var i = 0; i < plano.Length; i++)
@@ -194,9 +209,9 @@ public sealed partial class MainWindow
             var (ab, asm) = FormatarTempo(MelhorVoltaMs());
             SetValor(TermicaHval, ab, asm, TermBranco, 118, 62);
 
-            SetTile(1, "STINT", TotalInlines(total, "voltas"), TermBranco, placeholder: false, mostra: true);
+            SetTile(1, "STINT", TotalInlines(total, "voltas"), TermBranco, placeholder: placeholderPlano, mostra: true);
             if (boxIdx >= 0)
-                SetTile(2, "PARADA", TotalInlines("BOX", "v" + (boxIdx + 1)), TermMagenta, placeholder: false, mostra: true);
+                SetTile(2, "PARADA", TotalInlines("BOX", "v" + (boxIdx + 1)), TermMagenta, placeholder: placeholderPlano, mostra: true);
             else
                 SetTile(2, "", null, TermBranco, placeholder: false, mostra: false);
             SetTile(3, "", null, TermBranco, placeholder: false, mostra: false);
