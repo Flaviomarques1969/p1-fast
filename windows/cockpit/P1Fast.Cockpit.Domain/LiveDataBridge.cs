@@ -19,9 +19,14 @@ namespace P1Fast.Cockpit.Domain;
 
 /// <summary>Limites de calibração (DEFAULT_LIMITS no JS). Cada carro pode ter override.</summary>
 public sealed record LiveLimits(
+    // Parâmetros da luz de marcha — CAMINHO VIVO (RpmToShift, chamado pelo CockpitOrchestrator).
     int RedlineRpm            = 7500,
     double FireThresholdRatio = 0.95,
     double LitStartRatio      = 0.50,
+    // LEGADO — limiares de alerta crítico por VALOR, usados SÓ por CheckCriticalAlerts.
+    // NÃO usar no cockpit do piloto: divergem do catálogo v2 (água aqui 110/80 vs 70 no v2;
+    // óleo por valor dispara falso quando o sensor está ausente lendo 0). A cadeia canônica é
+    // AlertasCriticos (AlertaLimites). Ficam só pro p1fast-t4000-live-demo.
     double OilPressMinBar     = 0.5,
     int OilPressMinAtRpm      = 2000, // só alerta abaixo do mínimo se RPM > este
     double OilTempMaxC        = 130,
@@ -134,6 +139,10 @@ public sealed class LiveDataBridge
     }
 
     /// <summary>
+    /// LEGADO — NÃO usar no cockpit do piloto; os limiares divergem do catálogo v2 aprovado
+    /// (água 80/110 aqui vs 70 no v2; óleo por VALOR dispara alerta falso com sensor ausente
+    /// lendo 0). A cadeia canônica é AlertasCriticos (a mesma do .exe). Este método sobrevive só
+    /// pro p1fast-t4000-live-demo (painel de diagnóstico), via IngestT4000.
     /// Avalia condições críticas do T4000. Retorna alerta de maior prioridade ou null.
     /// Ordem: erro ECU &gt; água &gt; óleo (temp) &gt; pressão óleo (com RPM) &gt; EGT.
     /// </summary>

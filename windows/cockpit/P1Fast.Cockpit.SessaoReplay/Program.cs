@@ -1,19 +1,26 @@
 // Replay de uma sessão de pista GRAVADA pela lógica REAL do cockpit nativo.
 //
-// Lê o arquivo de sessão (amostras t4000 + gps), monta cada amostra de motor no
-// formato do cockpit (T4000Sample) e passa pela MESMA cadeia que roda no .exe:
-//   LiveDataBridge(LiveLimits.Bubi).IngestT4000 -> CockpitState (shift + alertas).
+// Lê o arquivo de sessão (amostras t4000 + gps) e passa pela MESMA cadeia canônica
+// que roda no .exe:
+//   - luz de marcha: LiveDataBridge.RpmToShift (o helper que o CockpitOrchestrator chama);
+//   - alertas críticos: AlertasCriticos (a mesma peça do cockpit);
+//   - curvas/bolinha/coach: CockpitOrchestrator.
 // Depois relata o que a tela teria mostrado ao longo da sessão real.
 //
-// Sensor AUSENTE (óleo veio vazio na sessão) vira "sem dado" (NaN), NUNCA 0 —
+// Sensor AUSENTE (óleo veio vazio na sessão) vira "sem dado" (null), NUNCA 0 —
 // senão o cockpit dispararia alerta falso de pressão de óleo. É um achado real.
 
 using System.Globalization;
 using System.Text.Json;
 using P1Fast.Cockpit.Domain;
 
-var caminho = args.FirstOrDefault(a => !a.StartsWith("--"))
-    ?? "/Users/imac/Projetos/P1 Fast/.claude-exec/dados-pista/sessao-2026-06-21-1140-brasilia-COMPLETA.json";
+var caminho = args.FirstOrDefault(a => !a.StartsWith("--"));
+if (caminho is null)
+{
+    Console.Error.WriteLine("Uso: p1fast-sessao-replay <caminho-da-sessao.json> [--barras=<caminho>] [--exportar-tela=<saida.js>] [--volta=N] [--duas-voltas] [--auditoria]");
+    Console.Error.WriteLine("Informe o caminho do arquivo de sessão gravada (JSON de amostras t4000+gps).");
+    return 1;
+}
 
 if (!File.Exists(caminho))
 {
@@ -37,7 +44,6 @@ if (root.TryGetProperty("sessao", out var meta))
 
 // ── Monta o cockpit real com a calibração do Bubi ───────────────
 var cockpit = new CockpitState();
-var bridge  = new LiveDataBridge(cockpit, LiveLimits.Bubi);
 
 // Motor de alertas (Incremento 2) — fiel ao alertas-criticos.js, com sensor
 // ausente tratado como "sem dado". A mensagem principal vai pra tela.
@@ -103,27 +109,9 @@ foreach (var a in root.GetProperty("amostras").EnumerateArray())
 
     int rpm = (int)Math.Round(GetNum(dados, "rpm") ?? 0);
 
-    // AUSENTE => NaN (sem dado). Mapear pra 0 dispararia alerta falso de óleo.
-    var amostra = new T4000Sample(
-        Rpm:           rpm,
-        SpeedKmh:      GetNum(dados, "speedKmh") ?? 0,
-        OilPressBar:   GetNum(dados, "oilPressBar") ?? double.NaN,
-        OilTempC:      GetNum(dados, "oilTempC")    ?? double.NaN,
-        WaterTempC:    GetNum(dados, "waterTempC")  ?? double.NaN,
-        FuelPressBar:  GetNum(dados, "fuelPressBar") ?? double.NaN,
-        BatteryV:      GetNum(dados, "batteryV") ?? double.NaN,
-        TpsPct:        GetNum(dados, "tpsPct") ?? 0,
-        MapBar:        GetNum(dados, "mapBar") ?? double.NaN,
-        AirTempC:      GetNum(dados, "airTempC") ?? double.NaN,
-        EgtC:          0,
-        EgtOutOfRange: false,
-        Lambda:        GetNum(dados, "lambda") ?? double.NaN,
-        FuelTempC:     double.NaN,
-        Marcha:        0,
-        EcuErrorBits:  0 // alarmes da sessão vieram todos falsos (conferido no dado)
-    );
-
-    bridge.IngestT4000(new T4000ProviderSample(amostra, TMono: motorLidos, ChecksumOk: true));
+    // Luz de marcha pela MESMA peça do .exe: RpmToShift (o CockpitOrchestrator chama esta).
+    var shiftDec = LiveDataBridge.RpmToShift(rpm, LiveLimits.Bubi);
+    cockpit.ApplyShift(shiftDec.Mode, shiftDec.Level);
     motorLidos++;
 
     // Motor de alertas com os campos REAIS do T3000 (ausente = null = sem dado).
@@ -258,8 +246,9 @@ if (nn >= 6)
 // ── SEGMENTAÇÃO: "em qual curva o carro está" na volta real ─────
 Console.WriteLine();
 Console.WriteLine("== EM QUAL CURVA O CARRO ESTÁ (8 curvas de Brasília) ==");
-var barrasPath = "/Users/imac/Projetos/P1 Fast/_design-reference/BARRAS-BRASILIA-FLAVIO-APROVADO-2026-05-27.json";
-if (File.Exists(barrasPath))
+var barrasArg = args.FirstOrDefault(a => a.StartsWith("--barras="));
+var barrasPath = barrasArg?["--barras=".Length..];
+if (barrasPath is not null && File.Exists(barrasPath))
 {
     using var bdoc = JsonDocument.Parse(File.ReadAllText(barrasPath));
     PontoGps Pt(JsonElement e) => new(e.GetProperty("lat").GetDouble(), e.GetProperty("lng").GetDouble());
@@ -503,6 +492,6 @@ if (File.Exists(barrasPath))
 }
 else
 {
-    Console.WriteLine("   Arquivo das curvas de Brasília não encontrado.");
+    Console.WriteLine("   Seção de curvas pulada: passe --barras=<caminho do BARRAS-BRASILIA*.json> pra ativá-la.");
 }
 return 0;
