@@ -264,6 +264,13 @@ public sealed partial class MainWindow : Window
         ApplyAcao(initial.Acao);
         ApplyApex(initial.Apex);
         ApplyMessage(initial.Message);
+
+        // 2.7 — flags conflitantes NÃO passam em silêncio: a precedência real é
+        // Demo > Replay > Live > TelaTermica e --producao só vale com --live. Se o operador
+        // pediu combinação incompatível (ex.: --live --replay → vira replay mudo), avisa
+        // PERSISTENTE no status (região própria, não some com o diagnóstico).
+        _statusAviso = P1Fast.Cockpit.Domain.AvisosCockpit.AvisoFlags(
+            _options.Demo, _options.Replay, _options.Live, _options.TelaTermicaDemo, _options.Producao) ?? "";
         UpdateStatusText();
 
         // Demonstração de cenas fixas só com --demo. Sem a flag, a tela espera o
@@ -1356,6 +1363,14 @@ public sealed partial class MainWindow : Window
         ApiceRow.Visibility   = normal;
         if (on) BrakeResultPanel.Visibility = Visibility.Collapsed;
 
+        // 2.1 — CRÍTICO SEMPRE VENCE a tela térmica (que é declarada DEPOIS no XAML e, opaca,
+        // cobriria o alerta). Ao ENTRAR no crítico: some com a térmica AGORA e trava a reabertura
+        // (MostrarTelaTermica consulta _criticoAtivo). Ao SAIR: destrava e reavalia — a térmica
+        // volta se ainda for a 1ª/última volta na faixa de temperatura.
+        _criticoAtivo = on;
+        if (on) EsconderTelaTermica();
+        else AtualizarTelaTermica();
+
         if (on) StartCriticoBlink(); else StopCriticoBlink();
     }
 
@@ -1467,13 +1482,29 @@ public sealed partial class MainWindow : Window
         RepintarBarra();
     }
 
+    // 2.3/2.5/2.7 — a linha de status é composta por REGIÕES: o rótulo do canal, o alarme de
+    // gravação e o aviso de flags são PERSISTENTES; o diagnóstico (trecho/shift/Δ) roda a
+    // 10-25 Hz. Antes o diagnóstico sobrescrevia StatusText.Text e apagava o canal/alarme
+    // (viravam flicker de ~4%). Agora cada escritor atualiza SUA região e chama RenderStatus()
+    // — a composição pura (AvisosCockpit.ComporStatus) junta tudo sem clobber.
+    private string _statusAlarme = "";   // gravação com perda (disco cheio/morto) — 2.3
+    private string _statusAviso = "";    // aviso de flags conflitantes — 2.7
+    private string _statusCanal = "";    // rótulo do canal de nuvem / SEM NUVEM — 2.3/2.5
+    private string _statusVivo = "";     // efêmero: motor/GPS subindo, esperando T4000…
+    private string _statusDiag = "";     // diagnóstico: display/trecho/shift/Δ
+
+    private void RenderStatus()
+        => StatusText.Text = P1Fast.Cockpit.Domain.AvisosCockpit.ComporStatus(
+            _statusAlarme, _statusAviso, _statusCanal, _statusVivo, _statusDiag);
+
     private void UpdateStatusText()
     {
         var s = _cockpitState.Get();
         var displayInfo = _options.DisplayIndex is { } idx
             ? $"display {idx} fullscreen"
             : "janelado (primário)";
-        StatusText.Text = $"{displayInfo}  •  trecho={s.TrechoStatus}  •  shift={s.Shift.Mode} L{s.Shift.Level}  •  Δ={s.Delta.Value}";
+        _statusDiag = $"{displayInfo}  •  trecho={s.TrechoStatus}  •  shift={s.Shift.Mode} L{s.Shift.Level}  •  Δ={s.Delta.Value}";
+        RenderStatus();
     }
 
     // Enquadramento que PREENCHE o painel inteiro (sem tarja preta), em QUALQUER
@@ -1501,7 +1532,13 @@ public sealed partial class MainWindow : Window
 
         // O device passa a ter a ALTURA da tela (em unidades pré-escala): h/s × s = h.
         DeviceBorder.Width = ContentW;
-        DeviceBorder.Height = h / s;
+        var deviceH = h / s;
+        DeviceBorder.Height = deviceH;
+
+        // 2.4 — o Clip da chuva acompanha a altura real do device. Fixo em 440 (canônico),
+        // no painel 3:2 (~637) ele cortava os respingos (ancorados no Bottom) e o fundo da
+        // tela: a chuva nunca cobria o painel inteiro. Agora cobre 0..deviceH.
+        RainClip.Rect = new Windows.Foundation.Rect(0, 0, ContentW, deviceH);
 
         // Ancorado no canto (0,0): preenche w × h exatamente, sem sobra.
         DeviceTranslate.X = 0;
