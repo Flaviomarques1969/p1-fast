@@ -40,17 +40,25 @@ public sealed class PilotReaction
     public const double Alpha = 0.15;
     public const int MinSamples = 10;
     public const double RtMinMs = 50, RtMaxMs = 400, DefaultRtMs = 250, WindowBeforeS = 0.2;
+    // v2 (2026-07-10): a régua da reação mudou — medida de onde a luz ACENDEU, não do alvo
+    // fixo (correção da meia-convergência, decisão Flávio). Perfis v1 foram aprendidos com a
+    // régua antiga (≈ metade da reação real) e CONTAMINARIAM o EMA novo por dezenas de trocas —
+    // a importação descarta snapshot de versão anterior (reaprende limpo).
+    public const int SnapshotVersao = 2;
 
     private readonly Dictionary<string, PerfilReacao> _profiles = new();
     public IReadOnlyDictionary<string, PerfilReacao> Profiles => _profiles;
 
     /// <summary>Exporta os perfis aprendidos (a "história gravada" pra persistir entre sessões).</summary>
-    public PilotReactionSnapshot ExportarEstado() => new(1, _profiles.Values.ToList());
+    public PilotReactionSnapshot ExportarEstado() => new(SnapshotVersao, _profiles.Values.ToList());
 
-    /// <summary>Restaura perfis gravados (idempotente; ignora entradas inválidas). Chamar ao abrir a sessão.</summary>
+    /// <summary>Restaura perfis gravados (idempotente; ignora entradas inválidas). Chamar ao abrir a
+    /// sessão. Snapshot de versão ANTERIOR à régua vigente é descartado inteiro (ver SnapshotVersao):
+    /// melhor reaprender limpo do que antecipar com perfil envenenado.</summary>
     public void ImportarEstado(PilotReactionSnapshot? snap)
     {
         if (snap?.Perfis is null) return;
+        if (snap.Versao < SnapshotVersao) return;
         foreach (var p in snap.Perfis)
         {
             if (p is null || string.IsNullOrEmpty(p.Key)) continue;

@@ -58,14 +58,33 @@ public class LuzMarchaPersistenciaTests
     {
         var ag = new PilotReaction();
         ag.ImportarEstado(null); // best-effort: nada acontece
-        // perfil com valores inválidos é ignorado (não vira antecipação)
-        ag.ImportarEstado(new PilotReactionSnapshot(1, new[]
+        // perfil com valores inválidos é ignorado (não vira antecipação) — versão VIGENTE,
+        // pra exercitar a validação por entrada (v1 seria descartado inteiro antes dela).
+        ag.ImportarEstado(new PilotReactionSnapshot(PilotReaction.SnapshotVersao, new[]
         {
             new PerfilReacao("", 200, 10, 0),                       // key vazia
             new PerfilReacao("x:bubi:3:x", double.NaN, 10, 0),      // rt inválido
             new PerfilReacao("x:bubi:4:x", 200, -1, 0),             // amostras negativas
         }));
         Assert.Empty(ag.Profiles);
+    }
+
+    [Fact]
+    public void LMP_05_snapshot_v1_regua_antiga_e_descartado_inteiro()
+    {
+        // A régua da reação mudou na v2 (2026-07-10: medida de onde a luz ACENDEU, não do alvo
+        // fixo). Perfis v1 valem ≈ METADE da reação real — importar contaminaria o EMA novo por
+        // dezenas de trocas. Snapshot de versão anterior é descartado: reaprende limpo.
+        var ag = new PilotReaction();
+        ag.ImportarEstado(new PilotReactionSnapshot(1, new[]
+        {
+            new PerfilReacao("x:bubi:3:x", 150, 20, 0),   // perfil "maduro" da régua antiga
+        }));
+        Assert.Empty(ag.Profiles);
+        Assert.Equal("default", ag.ComputeCompensation(null, "bubi", 3, null, 250).Source);
+
+        // E o snapshot exportado hoje declara a versão vigente (round-trip continua válido).
+        Assert.Equal(PilotReaction.SnapshotVersao, ag.ExportarEstado().Versao);
     }
 
     [Fact]
