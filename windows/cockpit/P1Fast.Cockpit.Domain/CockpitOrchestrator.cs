@@ -21,6 +21,7 @@ public sealed class CockpitOrchestrator
     private LuzFreio? _luzFreio;
     private Dictionary<string, TrechoSegmento> _segPorId;
     private bool _segmentosAprendidosAplicados;   // já injetou trechos de pista nova? (idempotente)
+    private bool _gpsJaAlimentado;                // IngestGps já rodou? (catraca: detector ativo nunca é substituído)
 
     // Buffer da passagem atual (pra fechar a curva e comparar com a referência).
     // Referência por curva = a MELHOR passagem histórica (menor tempo), atualizada
@@ -113,14 +114,21 @@ public sealed class CockpitOrchestrator
     /// que o construtor usa, só que em runtime. A partir daí delta/bolinha/luz de freio/recordes de
     /// trecho ligam sozinhos quando o GPS entra (é o que já acontece quando há segmentos).
     ///
-    /// SEGURANÇA (Brasília hardcoded VENCE): quem chama é a fiação da UI, que só aciona isto FORA da
-    /// caixa de Brasília (o PistaCoordenador é INERTE dentro dela — nunca emite SegmentosProntos lá).
+    /// SEGURANÇA (Brasília hardcoded VENCE) — DUAS travas:
+    /// 1) disciplina de chamador: a fiação da UI só aciona isto FORA da caixa de Brasília (o
+    ///    PistaCoordenador é INERTE dentro dela — nunca emite SegmentosProntos lá);
+    /// 2) CATRACA MECÂNICA: se o maestro JÁ recebeu GPS (IngestGps rodou = o detector da pista
+    ///    configurada está ATIVO, estamos rodando NELA), a injeção é RECUSADA — nenhum chamador,
+    ///    hoje ou futuro, substitui os trechos validados no meio de uma sessão em Brasília. Fora
+    ///    de Brasília nenhum fix chega ao maestro antes da injeção (o filtro barra), então a
+    ///    trava não atrapalha o caso legítimo.
     /// E é IDEMPOTENTE: injeta uma vez só (nunca re-substitui). Chamar na thread do maestro (a da UI).
-    /// Devolve true se injetou; false se já havia injetado ou a lista veio vazia.
+    /// Devolve true se injetou; false se recusou (detector ativo, já injetado ou lista vazia).
     /// </summary>
     public bool AplicarSegmentosAprendidos(IReadOnlyList<TrechoSegmento> segmentos)
     {
         if (segmentos is null || segmentos.Count == 0) return false;
+        if (_gpsJaAlimentado) return false;                // detector ATIVO (pista configurada em uso) — nunca substitui
         if (_segmentosAprendidosAplicados) return false;   // já aprendeu — não re-substitui
         _segmentosAprendidosAplicados = true;
         _segPorId = segmentos.ToDictionary(s => s.Id, s => s);
@@ -255,6 +263,7 @@ public sealed class CockpitOrchestrator
     /// <summary>Ingere uma amostra de GPS: curva atual + bolinha + buffer da passagem.</summary>
     public void IngestGps(AmostraGps gps)
     {
+        _gpsJaAlimentado = true;   // catraca: com GPS fluindo, AplicarSegmentosAprendidos recusa (Brasília vence)
         _detector?.IngestGps(gps);
 
         if (_segAtual is not null)

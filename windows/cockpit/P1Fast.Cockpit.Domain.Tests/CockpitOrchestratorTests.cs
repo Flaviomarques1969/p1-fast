@@ -180,6 +180,32 @@ public class CockpitOrchestratorTests
 
     // Gap 1 (Flávio 2026-07-03): o Vmin da curva aparece AO VIVO e colore vs a melhor passagem.
     [Fact]
+    public void ORC_12_Catraca_segmentos_aprendidos_nunca_substituem_detector_ATIVO()
+    {
+        // Brasília hardcoded VENCE (regra dura da onda 3): além da disciplina de chamador
+        // (PistaCoordenador inerte na caixa de Brasília), a catraca MECÂNICA — se o maestro já
+        // recebeu GPS (detector da pista configurada ATIVO), a injeção de trechos aprendidos é
+        // RECUSADA. Fora de Brasília nenhum fix chega antes da injeção, então o caso legítimo passa.
+        var aprendidos = new[]
+        {
+            new TrechoSegmento("t01", "T1",
+                new LinhaGps(new PontoGps(-0.001, 0.05), new PontoGps(0.001, 0.05)),
+                new PontoGps(0, 0.0505),
+                new LinhaGps(new PontoGps(-0.001, 0.051), new PontoGps(0.001, 0.051))),
+        };
+
+        // Caso legítimo (pista nova): maestro nasceu com trechos configurados mas SEM GPS ainda → injeta.
+        var semGps = new CockpitOrchestrator(new CockpitState(), new[] { Curva() });
+        Assert.True(semGps.AplicarSegmentosAprendidos(aprendidos));
+
+        // Sessão rodando NA pista configurada: UM fix já entrou → catraca recusa a substituição.
+        var ativo = new CockpitOrchestrator(new CockpitState(), new[] { Curva() });
+        ativo.IngestGps(new AmostraGps(0, -0.0006, 100, 0));
+        Assert.False(ativo.AplicarSegmentosAprendidos(aprendidos));
+        Assert.NotNull(ativo.EstadoDoTrecho("c0"));   // os trechos configurados seguem os donos do detector
+    }
+
+    [Fact]
     public void ORC_05_Vmin_aparece_ao_vivo_e_colore_na_2a_volta()
     {
         var c = new CockpitState();
