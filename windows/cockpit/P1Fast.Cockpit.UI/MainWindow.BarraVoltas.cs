@@ -2,8 +2,9 @@
 //
 // A barra é o PLANO do stint por VOLTA. Decisões do Flávio (2026-07-05):
 //   • Nº de voltas é definido no STINT → a barra tem N CÁPSULAS = nº de voltas (não mais 12 fixas);
-//     as cápsulas encolhem/alargam pra caber numa largura fixa (BarTotalW). Aquecimento e cool-down
-//     nunca somem. (Antes, stint > 12 voltas perdia a cauda; ver PlanoStint.ExpandirBarra.)
+//     as cápsulas encolhem/alargam pra caber numa largura fixa (BarTotalW). (Antes, stint > 12
+//     voltas perdia a cauda; ver PlanoStint.ExpandirBarra.) MARTELO 2026-07-11: SEM cápsulas
+//     térmicas — a barra é só planejadas + box; aquecimento/resfriamento são da TELA DEDICADA.
 //   • O piloto pode registrar QUANTAS paradas no box quiser → cada Box vira uma cápsula magenta.
 //   • A barra é SÓ voltas e paradas — a chuva térmica é overlay GLOBAL da tela principal (padrão do
 //     iMac, cockpit.css:619), NÃO vive na barra (espaço reduzido — Flávio 2026-07-06).

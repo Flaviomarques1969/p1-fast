@@ -140,12 +140,10 @@ public sealed partial class MainWindow : Window
         BestStint,    // melhor do stint atual — verde com shimmer
         BestAlltime,  // melhor de todos os tempos — dourado bloom
         Current,      // trecho em curso — amarelo (foco)
-        // TIPOS de volta do PLANO do piloto (Flávio 2026-07-03): a barra de voltas é
-        // 1ª = aquecimento, última = cool-down, as do meio = planejadas (incl. box).
-        Aquecimento,  // 1ª volta — aquecendo pneus/freios — laranja
+        // TIPOS de volta do PLANO do piloto. MARTELO (Flávio 2026-07-11, via canal): a
+        // barra é SÓ voltas planejadas + paradas (box) — o térmico é da TELA DEDICADA.
         Planejada,    // volta de ritmo planejada pelo piloto — cinza-azulado (a rodar)
         Box,          // parada no box planejada — magenta (destaca)
-        CoolDown,     // última volta — desaquecendo — azul
     }
 
     private static readonly Dictionary<StintBlockState, Color> StintColors = new()
@@ -157,26 +155,24 @@ public sealed partial class MainWindow : Window
         [StintBlockState.BestStint]   = Bom,
         [StintBlockState.BestAlltime] = Ouro,
         [StintBlockState.Current]     = Foco,
-        [StintBlockState.Aquecimento] = Color.FromArgb(0xFF, 0xE8, 0x84, 0x3C),  // laranja (aquecendo)
         [StintBlockState.Planejada]   = Color.FromArgb(0xFF, 0x55, 0x60, 0x70),  // slate (planejada)
         [StintBlockState.Box]         = Color.FromArgb(0xFF, 0xE0, 0x56, 0xA0),  // magenta (parada no box)
-        [StintBlockState.CoolDown]    = Color.FromArgb(0xFF, 0x5A, 0xA0, 0xE0),  // azul (cool down)
     };
 
     // Plano do stint de EXEMPLO (placeholder) enquanto o plano REAL do piloto não está
     // ligado ao cockpit (telas só exibem — virá do envelope da nuvem `plano_stint`).
-    // 1ª = aquecimento · meio = planejadas (incl. 1 parada no box) · última = cool down.
-    // Barra DINÂMICA (Flávio 2026-07-05): o placeholder é um stint de EXEMPLO de 11 voltas reais
-    // (sem vaga no fim) — 1ª aquecimento, 1 parada no box, última cool-down. O nº real vem do stint.
+    // Barra DINÂMICA (Flávio 2026-07-05): o placeholder é um stint de EXEMPLO de 11 voltas
+    // reais (sem vaga no fim). MARTELO 2026-07-11: sem cápsulas térmicas — só planejadas
+    // + 1 parada no box de exemplo; o térmico é da tela dedicada.
     private static readonly StintBlockState[] PlanoStintPlaceholder =
     {
-        StintBlockState.Aquecimento,                                   // 1  — aquecimento
+        StintBlockState.Planejada,                                     // 1
         StintBlockState.Planejada, StintBlockState.Planejada,          // 2,3
         StintBlockState.Planejada, StintBlockState.Planejada,          // 4,5
         StintBlockState.Box,                                           // 6  — parada no box
         StintBlockState.Planejada, StintBlockState.Planejada,          // 7,8
         StintBlockState.Planejada, StintBlockState.Planejada,          // 9,10
-        StintBlockState.CoolDown,                                      // 11 — cool down
+        StintBlockState.Planejada,                                     // 11
     };
     private bool _barraVoltasAplicada;
 
@@ -190,10 +186,8 @@ public sealed partial class MainWindow : Window
     // conhece StintBlockState (layering), por isso o mapa vive aqui. Telas só EXIBEM.
     private static StintBlockState BlockDoTipoVolta(TipoVoltaStint t) => t switch
     {
-        TipoVoltaStint.Aquecimento => StintBlockState.Aquecimento,
         TipoVoltaStint.Planejada   => StintBlockState.Planejada,
         TipoVoltaStint.Box         => StintBlockState.Box,
-        TipoVoltaStint.CoolDown    => StintBlockState.CoolDown,
         _                          => StintBlockState.Pending, // Vaga (slot além do stint)
     };
 
@@ -479,6 +473,7 @@ public sealed partial class MainWindow : Window
         _segsAtivos = curvas ?? Array.Empty<TrechoSegmento>();  // ponte do stint (replay E live)
         _barraVoltasAplicada = false;   // redesenha a barra de voltas (placeholder) nesta sessão/loop
         InicializarRecordes();          // armazém de recordes LOCAL (Flávio 2026-07-06): carrega + assina o evento
+        InicializarCoachZoom();         // vidro do mapa central (spec do iMac 2026-07-11) — replay E live
     }
 
     /// <summary>Amostra de motor (rotação + dados pros alertas). Thread-safe.
@@ -1358,6 +1353,9 @@ public sealed partial class MainWindow : Window
         if (on) CriticoMsg.Text = texto;
         CriticoOverlay.Visibility = on ? Visibility.Visible : Visibility.Collapsed;
         CriticoBorda.Visibility   = on ? Visibility.Visible : Visibility.Collapsed;
+        // CRÍTICO tira o vidro do mapa central (spec: .device[data-modo="critico"] .coach-zoom{display:none})
+        if (CoachZoomRoot is not null)
+            CoachZoomRoot.Visibility = on ? Visibility.Collapsed : Visibility.Visible;
 
         var normal = on ? Visibility.Collapsed : Visibility.Visible;
         DeltaPanel.Visibility = normal;

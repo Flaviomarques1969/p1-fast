@@ -70,6 +70,9 @@ public sealed partial class MainWindow
     private void SetVoltaAtual(int idx)
     {
         var alvo = Math.Max(0, idx);
+        // fronteira de volta (replay E live) = o coach:volta-fim do web: o mapa central
+        // zera o rastro e re-ancora o ghost no reinício (spec do iMac 2026-07-11)
+        if (alvo != _voltaAtualIdx) CoachZoomVoltaFim();
         _voltaAtualIdx = alvo;
         ApplyVoltaAtualHalo(alvo);   // dedupe/repintura ficam com ApplyVoltaAtualHalo (via _haloBlocoPintado)
     }
@@ -125,7 +128,7 @@ public sealed partial class MainWindow
         }
         else
         {
-            // 1º fix válido = volta 1 (aquecimento) na barra. NÃO arma o cronômetro aqui: a 1ª volta
+            // 1º fix válido = volta 1 na barra. NÃO arma o cronômetro aqui: a 1ª volta
             // só começa a contar no 1º cruzamento REAL da linha (item 3.2) — do contrário o trajeto
             // box→linha (que não é uma volta) entraria como recorde/média.
             SetVoltaAtual(0);

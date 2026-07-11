@@ -18,15 +18,15 @@ using System.Text.Json;
 
 namespace P1Fast.Cockpit.Domain;
 
-/// <summary>Tipo de cada bloco da barra de VOLTAS (Flávio 2026-07-03): a 1ª volta é
-/// aquecimento, a última é cool-down, as do meio são planejadas (inclusive box).</summary>
+/// <summary>Tipo de cada bloco da barra de VOLTAS. MARTELO do Flávio 2026-07-11 (via canal
+/// com o iMac): aquecimento e resfriamento NÃO existem mais como cápsulas — quem mostra o
+/// térmico é a TELA DEDICADA (TelaTermica). A barra é SÓ voltas planejadas + paradas (box).
+/// (A regra antiga de 2026-07-03 — 1ª=Aquecimento, última=CoolDown — foi revogada.)</summary>
 public enum TipoVoltaStint
 {
     Vaga,         // slot além do stint — não há volta planejada aqui
-    Aquecimento,  // 1ª volta — aquecendo pneus/freios
-    Planejada,    // volta de ritmo planejada pelo piloto
+    Planejada,    // volta de ritmo planejada pelo piloto (inclui a 1ª e a última)
     Box,          // parada no box planejada
-    CoolDown,     // última volta — desaquecendo
 }
 
 /// <summary>Parada planejada no box: em que volta e por quê.</summary>
@@ -165,15 +165,13 @@ public static class PlanoStintParser
             Origem: origem);
     }
 
-    /// <summary>Expande o plano nos TIPOS de volta de cada um dos `slots` blocos da barra (a
-    /// UI tem 12). Regra (Flávio 2026-07-03): volta 1 = Aquecimento; última volta (= Voltas,
-    /// quando o stint tem ≥ 2 voltas) = CoolDown; cada parada = Box; demais = Planejada;
-    /// slots além de Voltas = Vaga. Precedência quando um slot bate em mais de uma regra:
-    /// Box &gt; CoolDown &gt; Aquecimento &gt; Planejada (a parada no box é o sinal mais
-    /// explícito). Devolve null se o plano não dá pra montar (Voltas &lt;= 0) — a UI então
-    /// usa o placeholder. Nota: stint com mais voltas que `slots` mostra só as primeiras
-    /// `slots` voltas (a cauda, incl. o cool-down, não cabe); os planos reais têm ~10 voltas
-    /// e a barra tem 12, então isso não ocorre na prática.</summary>
+    /// <summary>Expande o plano nos TIPOS de volta de cada um dos `slots` blocos da barra.
+    /// MARTELO (Flávio 2026-07-11): a barra é SÓ voltas planejadas + paradas — cada parada =
+    /// Box; toda outra volta (incl. a 1ª e a última) = Planejada; slots além de Voltas = Vaga.
+    /// O térmico (aquecimento/resfriamento) é obra da TELA DEDICADA, não da barra. Devolve
+    /// null se o plano não dá pra montar (Voltas &lt;= 0) — a UI então usa o placeholder.
+    /// Nota: stint com mais voltas que `slots` mostra só as primeiras `slots` voltas; os
+    /// planos reais têm ~10 voltas e a barra expande até 40, então isso não ocorre na prática.</summary>
     public static TipoVoltaStint[]? ExpandirBarra(PlanoStint? plano, int slots)
     {
         if (plano is null || plano.Voltas <= 0 || slots <= 0) return null;
@@ -189,10 +187,6 @@ public static class PlanoStintParser
                 barra[i] = TipoVoltaStint.Vaga;
             else if (paradaEm.Contains(volta))
                 barra[i] = TipoVoltaStint.Box;
-            else if (volta == plano.Voltas && plano.Voltas >= 2)
-                barra[i] = TipoVoltaStint.CoolDown;
-            else if (volta == 1)
-                barra[i] = TipoVoltaStint.Aquecimento;
             else
                 barra[i] = TipoVoltaStint.Planejada;
         }

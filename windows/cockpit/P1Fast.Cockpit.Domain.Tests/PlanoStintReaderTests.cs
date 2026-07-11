@@ -125,9 +125,9 @@ public class PlanoStintReaderTests
         var barra = await reader.BuscarBarraAsync(PlanoStintReader.CarroIdBubi, slots: 12, agoraIso: HojeIso);
 
         Assert.NotNull(barra);
-        Assert.Equal(TipoVoltaStint.Aquecimento, barra![0]);
+        Assert.Equal(TipoVoltaStint.Planejada, barra![0]);  // sem cápsula térmica (martelo 2026-07-11)
         Assert.Equal(TipoVoltaStint.Box, barra[4]);
-        Assert.Equal(TipoVoltaStint.CoolDown, barra[9]);
+        Assert.Equal(TipoVoltaStint.Planejada, barra[9]);
     }
 
     [Fact]

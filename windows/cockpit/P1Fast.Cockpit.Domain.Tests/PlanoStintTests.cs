@@ -167,34 +167,36 @@ public class PlanoStintTests
         => new(voltas, System.Array.ConvertAll(paradas, v => new ParadaStint(v, null)),
                "treinar", "frenagem", "Joao", "Brasilia", null, "teste");
 
+    // MARTELO (Flávio 2026-07-11, via canal): a barra NÃO tem mais cápsulas térmicas —
+    // 1ª e última volta são Planejadas comuns; o térmico é da TELA DEDICADA (TelaTermica).
     [Fact]
-    public void Expande_1aAquecimento_UltimaCoolDown_ParadaBox_MeioPlanejada()
+    public void Expande_SoPlanejadasEBox_SemTiposTermicos()
     {
         var barra = PlanoStintParser.ExpandirBarra(Plano(10, 5), slots: 12);
 
         Assert.NotNull(barra);
         Assert.Equal(12, barra!.Length);
-        Assert.Equal(TipoVoltaStint.Aquecimento, barra[0]);   // volta 1
+        Assert.Equal(TipoVoltaStint.Planejada, barra[0]);     // volta 1 (era Aquecimento)
         Assert.Equal(TipoVoltaStint.Planejada, barra[1]);     // volta 2
         Assert.Equal(TipoVoltaStint.Planejada, barra[3]);     // volta 4
         Assert.Equal(TipoVoltaStint.Box, barra[4]);           // volta 5 = parada
         Assert.Equal(TipoVoltaStint.Planejada, barra[5]);     // volta 6
-        Assert.Equal(TipoVoltaStint.CoolDown, barra[9]);      // volta 10 = última
+        Assert.Equal(TipoVoltaStint.Planejada, barra[9]);     // volta 10 = última (era CoolDown)
         Assert.Equal(TipoVoltaStint.Vaga, barra[10]);         // volta 11 = além do stint
         Assert.Equal(TipoVoltaStint.Vaga, barra[11]);         // volta 12 = além do stint
     }
 
     [Fact]
-    public void Expande_VoltaUnica_EhAquecimento()
+    public void Expande_VoltaUnica_EhPlanejada()
     {
         var barra = PlanoStintParser.ExpandirBarra(Plano(1), slots: 12);
         Assert.NotNull(barra);
-        Assert.Equal(TipoVoltaStint.Aquecimento, barra![0]); // 1 volta só = aquecimento, não cool-down
+        Assert.Equal(TipoVoltaStint.Planejada, barra![0]);
         Assert.Equal(TipoVoltaStint.Vaga, barra[1]);
     }
 
     [Fact]
-    public void Expande_ParadaNaUltima_BoxTemPrecedenciaSobreCoolDown()
+    public void Expande_ParadaNaUltima_BoxVence()
     {
         var barra = PlanoStintParser.ExpandirBarra(Plano(5, 5), slots: 12);
         Assert.NotNull(barra);
@@ -207,9 +209,8 @@ public class PlanoStintTests
         var barra = PlanoStintParser.ExpandirBarra(Plano(15), slots: 12);
         Assert.NotNull(barra);
         Assert.Equal(12, barra!.Length);
-        Assert.Equal(TipoVoltaStint.Aquecimento, barra[0]);
-        Assert.Equal(TipoVoltaStint.Planejada, barra[11]); // volta 12; a cauda (incl. cool-down) não cabe
-        Assert.DoesNotContain(TipoVoltaStint.CoolDown, barra);
+        Assert.Equal(TipoVoltaStint.Planejada, barra[0]);
+        Assert.Equal(TipoVoltaStint.Planejada, barra[11]); // volta 12; a cauda não cabe
         Assert.DoesNotContain(TipoVoltaStint.Vaga, barra);
     }
 
@@ -233,9 +234,9 @@ public class PlanoStintTests
         var barra = PlanoStintParser.BarraDaRespostaNuvem(Corpo(CriadoHoje, PlanoExemplo), slots: 12, agoraIso: HojeIso);
 
         Assert.NotNull(barra);
-        Assert.Equal(TipoVoltaStint.Aquecimento, barra![0]);
+        Assert.Equal(TipoVoltaStint.Planejada, barra![0]);
         Assert.Equal(TipoVoltaStint.Box, barra[4]);
-        Assert.Equal(TipoVoltaStint.CoolDown, barra[9]);
+        Assert.Equal(TipoVoltaStint.Planejada, barra[9]);   // última = Planejada (martelo 2026-07-11)
     }
 
     [Fact]

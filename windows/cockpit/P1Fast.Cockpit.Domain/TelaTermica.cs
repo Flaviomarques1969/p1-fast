@@ -13,8 +13,8 @@
 // nunca entra por dado velho/inventado (mesma regra §9 da chuva).
 //
 // Zero UI, zero I/O — só decisão pura (a UI mapeia Progresso→cor e desenha o anel).
-// Comportamento de tempo (auto-retorno 10 s no aquecimento; permanência no resfriamento)
-// é da UI: aqui só se diz QUE tela e QUANTO falta pro ideal.
+// Comportamento de tempo (auto-retorno 5 s no aquecimento — martelo 2026-07-11; permanência
+// no resfriamento até desligar) é da UI: aqui só se diz QUE tela e QUANTO falta pro ideal.
 
 namespace P1Fast.Cockpit.Domain;
 

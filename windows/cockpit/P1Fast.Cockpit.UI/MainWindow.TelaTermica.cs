@@ -1,6 +1,7 @@
 // MainWindow.TelaTermica.cs — RENDER das telas dedicadas de AQUECIMENTO e RESFRIAMENTO
 // (Flávio 2026-07-06). A DECISÃO é do cérebro (Domain/TelaTermica.cs); aqui é só desenho +
-// comportamento de tempo (auto-retorno de 10 s no aquecimento; permanência no resfriamento).
+// comportamento de tempo (auto-retorno de 5 s no aquecimento — martelo 2026-07-11; permanência
+// no resfriamento até desligar).
 //
 // Conceito duro: cor de indicador = VERMELHO(ruim) → VERDE(bom). O anel é PROGRESSO rumo ao
 // ideal e é SEMPRE CRESCENTE (enche de 0 a 270° conforme a água se aproxima da janela 50–55).
@@ -64,13 +65,16 @@ public sealed partial class MainWindow
         // Latch: aquecimento já concluído não reaparece neste stint.
         if (modo == ModoTelaTermica.Aquecimento && _aquecConcluido) modo = ModoTelaTermica.Off;
 
-        // Auto-retorno do aquecimento: 10 s depois de chegar no ideal, fecha e trava.
+        // Auto-retorno do aquecimento (MARTELO Flávio 2026-07-11, via canal): atingiu o
+        // limite mínimo esperado → a tela fica +5 s e sai (era 10 s). O resfriamento NÃO
+        // tem essa regra: o carro vai pro box e a tela fica até desligar (a guarda de
+        // recência acima já a tira quando o motor cala).
         if (modo == ModoTelaTermica.Aquecimento)
         {
             if (est.Progresso >= 1.0)
             {
                 if (_aquecReadyTick == 0) _aquecReadyTick = Environment.TickCount64;
-                else if (Environment.TickCount64 - _aquecReadyTick >= 10_000)
+                else if (Environment.TickCount64 - _aquecReadyTick >= 5_000)
                 {
                     _aquecConcluido = true;
                     modo = ModoTelaTermica.Off;

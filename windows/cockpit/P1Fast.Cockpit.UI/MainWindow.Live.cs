@@ -612,6 +612,7 @@ public sealed partial class MainWindow
                 _orquestrador?.IngestGps(cerebro);
                 AtualizarStint();
                 RegistrarCruzamentoLive(cerebro.Lat, cerebro.Lng);   // etapa 4: halo da volta atual ao vivo
+                AtualizarCoachZoom(cerebro);   // vidro do mapa central: MESMO fluxo filtrado do cérebro
             }
             else if (qualidadeBoa && foraDeBrasilia)
             {

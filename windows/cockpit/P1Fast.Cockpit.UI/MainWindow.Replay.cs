@@ -143,6 +143,7 @@ public sealed partial class MainWindow
             else if (ev.Gps is { } g)
             {
                 _orquestrador.IngestGps(g);
+                AtualizarCoachZoom(g);   // vidro do mapa central: mesmos AmostraGps da sessão
                 _ultimoGpsTick = Environment.TickCount64;
                 alimentouGps = true;
             }
