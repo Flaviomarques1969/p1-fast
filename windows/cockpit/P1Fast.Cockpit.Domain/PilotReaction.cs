@@ -44,7 +44,11 @@ public sealed class PilotReaction
     // fixo (correção da meia-convergência, decisão Flávio). Perfis v1 foram aprendidos com a
     // régua antiga (≈ metade da reação real) e CONTAMINARIAM o EMA novo por dezenas de trocas —
     // a importação descarta snapshot de versão anterior (reaprende limpo).
-    public const int SnapshotVersao = 2;
+    // v3 (2026-07-11): a CHAVE da marcha mudou — âncora absoluta (bucket da razão giro÷km/h,
+    // DetectorMarchaOnline.AncoraDaRazao) em vez do rótulo posicional, que migrava de marcha
+    // física entre sessões (decisão Flávio). Perfis v2 keados por posição aplicariam a reação
+    // de uma marcha na outra — descartados na importação, reaprende limpo.
+    public const int SnapshotVersao = 3;
 
     private readonly Dictionary<string, PerfilReacao> _profiles = new();
     public IReadOnlyDictionary<string, PerfilReacao> Profiles => _profiles;

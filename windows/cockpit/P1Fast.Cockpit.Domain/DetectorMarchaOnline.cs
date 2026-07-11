@@ -16,6 +16,9 @@ public sealed class MarchaAssinatura
     public int Amostras;
     public double RpmMin;
     public double RpmMax;
+    /// <summary>Identidade ABSOLUTA da marcha (bucket log da razão na descoberta) — ver
+    /// <see cref="DetectorMarchaOnline.AncoraDaRazao"/>. Não muda com a ordem de descoberta.</summary>
+    public int Ancora;
 }
 
 public sealed class DetectorMarchaOnline
@@ -24,6 +27,10 @@ public sealed class DetectorMarchaOnline
     private const double VariacaoRpmMaxS = 50;   // rpm/s — acima disso é aceleração brusca (não estável)
     private const double VariacaoKmhMin  = 5;    // km/h — abaixo é parado/box
     private const double EstabilidadeJanelaS = 0.3;
+    // Passo do bucket da ÂNCORA (12% em escala log). Marchas vizinhas de um câmbio distam
+    // ≥15% na razão (ln 1,15 ÷ ln 1,12 ≈ 1,23 bucket) — duas marchas NUNCA dividem o mesmo
+    // bucket; e a deriva do EMA da razão (tolerância de classificação = 8%) cabe dentro dele.
+    private const double PassoAncora = 1.12;
 
     private readonly int _numMarchas;
     private readonly List<MarchaAssinatura> _marchas = new();
@@ -33,8 +40,20 @@ public sealed class DetectorMarchaOnline
 
     public DetectorMarchaOnline(int numMarchas = 5) { _numMarchas = numMarchas; }
 
-    /// <summary>Marcha atual estimada (1..N) ou null se ainda não dá pra afirmar.</summary>
+    /// <summary>Marcha atual estimada (1..N) ou null se ainda não dá pra afirmar.
+    /// ATENÇÃO: rótulo POSICIONAL, relativo ao que foi descoberto — pode migrar de marcha
+    /// física entre (e até dentro de) sessões. Serve pra exibição/telemetria; pra KEAR
+    /// aprendizado use <see cref="MarchaAncoraAtual"/> (decisão Flávio 2026-07-11).</summary>
     public int? MarchaAtual => _marchaAtual;
+
+    /// <summary>Identidade ABSOLUTA da marcha atual (bucket log da razão giro÷km/h), ou null.
+    /// Invariante à ordem de descoberta: a mesma marcha física dá a mesma âncora em qualquer
+    /// sessão — é a chave certa pra perfis persistidos (reação por marcha, Onda 7).</summary>
+    public int? MarchaAncoraAtual => _marchaAtual is { } m ? _marchas[m - 1].Ancora : null;
+
+    /// <summary>Bucket log da razão giro÷km/h (grade de 12%): a identidade física da marcha.</summary>
+    public static int AncoraDaRazao(double razao)
+        => (int)Math.Round(Math.Log(razao) / Math.Log(PassoAncora));
     /// <summary>Confiança 0..1 da detecção atual (amostras da marcha / 30).</summary>
     public double Confianca => _confianca;
     /// <summary>Quantas assinaturas de marcha já foram descobertas.</summary>
@@ -80,7 +99,8 @@ public sealed class DetectorMarchaOnline
         {
             if (_marchas.Count < _numMarchas)
             {
-                _marchas.Add(new MarchaAssinatura { RatioMedia = razao, Amostras = 1, RpmMin = rpm, RpmMax = rpm });
+                _marchas.Add(new MarchaAssinatura { RatioMedia = razao, Amostras = 1, RpmMin = rpm, RpmMax = rpm,
+                                                    Ancora = AncoraDaRazao(razao) });
                 _marchas.Sort((a, b) => b.RatioMedia.CompareTo(a.RatioMedia)); // 1ª razão maior → Nª menor
             }
             idx = Classificar(razao);

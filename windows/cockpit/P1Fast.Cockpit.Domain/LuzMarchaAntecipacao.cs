@@ -143,7 +143,11 @@ public sealed class LuzMarchaAntecipacao
     /// aqui E no JS canônico (web/cockpit/shift-light-orquestrador.js) — paridade mantida.</summary>
     private ReactionEvent MontarEvento(double alvoRpm, string? trechoId)
     {
-        var marcha = _marchas.MarchaAtual;              // marcha ANTES da troca (detector ainda não virou)
+        // Chave da marcha = ÂNCORA absoluta (bucket da razão giro÷km/h), não o rótulo posicional:
+        // o posicional migra de marcha física conforme a ordem de descoberta, e o perfil persistido
+        // (luz-marcha-<carro>.json) aplicaria a reação de uma marcha na OUTRA na sessão seguinte.
+        // Decisão Flávio 2026-07-11. DIVERGE do JS canônico de propósito (iMac avisado no canal).
+        var marcha = _marchas.MarchaAncoraAtual;        // marcha ANTES da troca (detector ainda não virou)
         var conf   = marcha is null ? 1.0 : _marchas.Confianca; // sem marcha → perfil genérico
         // Onde a luz estava acendendo NO PICO: mesma conta da tela (RpmVisual), com o ritmo
         // capturado no pico — é o MESMO ritmo que vai em RpmRiseRate, então o observado vira
@@ -192,7 +196,8 @@ public sealed class LuzMarchaAntecipacao
     public double RpmVisual(double alvoRpm, double tSeg, string? trechoId, string mode = "assisted")
     {
         var ritmo = RitmoSubida(tSeg);
-        var comp = _reacao.ComputeCompensation(null, _carroId, _marchas.MarchaAtual, trechoId, Math.Max(0, ritmo), mode);
+        // Mesma chave do aprendizado: âncora absoluta da marcha (ver MontarEvento).
+        var comp = _reacao.ComputeCompensation(null, _carroId, _marchas.MarchaAncoraAtual, trechoId, Math.Max(0, ritmo), mode);
         var visual = alvoRpm - comp.CompensationRpm;
         return Math.Max(alvoRpm - AntecipacaoMaxRpm, visual);
     }

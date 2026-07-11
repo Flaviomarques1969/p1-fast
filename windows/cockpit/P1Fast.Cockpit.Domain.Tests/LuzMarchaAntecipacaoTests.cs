@@ -92,8 +92,39 @@ public class LuzMarchaAntecipacaoTests
         // Agora uma troca real: giro sobe além do ponto e cai (a marcha continua a mesma até o detector virar).
         a.Amostra(5200, 100, 3.1, Alvo, "c1");
         a.Amostra(6100, 100, 3.2, Alvo, "c1");                // pico 6100
-        a.Amostra(4800, 100, 3.3, Alvo, "c1");                // queda → aprende keado pela marcha 1
-        Assert.Contains(a.Perfis.Keys, k => k.Contains(":1:")); // tupla inclui a marcha 1
+        a.Amostra(4800, 100, 3.3, Alvo, "c1");                // queda → aprende keado pela MARCHA
+        // Chave = ÂNCORA absoluta da razão 40 (não o rótulo posicional "1") — Flávio 2026-07-11.
+        var ancora = DetectorMarchaOnline.AncoraDaRazao(40.0);
+        Assert.Contains(a.Perfis.Keys, k => k.Contains($":{ancora}:"));
+    }
+
+    [Fact]
+    public void LMA_11_perfil_persistido_reconhece_a_marcha_FISICA_mesmo_com_ordem_de_descoberta_diferente()
+    {
+        // Regressão da migração de rótulo (decisão Flávio 2026-07-11, âncora absoluta):
+        // com a chave POSICIONAL, um perfil aprendido na marcha de razão 40 ("1ª descoberta"
+        // na sessão A) era aplicado a OUTRA marcha física na sessão B, onde a ordem de
+        // descoberta muda o rótulo. Com a âncora (bucket da razão), a chave é a mesma em
+        // qualquer ordem. Simula: sessão A maturou 380 ms na marcha de razão 40 (snapshot);
+        // sessão B descobre PRIMEIRO a razão 60 (a de 40 vira posicional "2") e mesmo assim
+        // a antecipação usa os 380 ms aprendidos — no código antigo cairia no default 250 ms.
+        var chave = PilotReaction.TupleKey(null, null, DetectorMarchaOnline.AncoraDaRazao(40.0), "c1");
+        var snap = new PilotReactionSnapshot(PilotReaction.SnapshotVersao, new[]
+        {
+            new PerfilReacao(chave, ReactionTimeMs: 380, SampleCount: 12, LastUpdated: 0),
+        });
+
+        var b = new LuzMarchaAntecipacao();
+        b.ImportarReacao(snap);
+        // Giro constante (estabilidade do detector), velocidade muda a razão — padrão do DMO_02.
+        for (var i = 0; i < 10; i++) b.Amostra(3000, 50, i * 0.1, Alvo, "c1");        // razão 60 descoberta 1º
+        for (var i = 0; i < 10; i++) b.Amostra(3000, 75, 2.0 + i * 0.1, Alvo, "c1");  // razão 40 = posicional 2
+        Assert.Equal(2, b.MarchaAtual);                       // contraprova: o rótulo posicional mudou...
+
+        b.Amostra(5900, 0, 5.0, Alvo, "c1");                  // kmh 0: detector ignora, marcha não vira
+        b.Amostra(6000, 0, 5.2, Alvo, "c1");                  // ritmo 500 rpm/s
+        // ...mas a âncora achou o perfil: comp = 380 ms × 500 rpm/s = 190 rpm (default 250 ms daria 125).
+        Assert.Equal(Alvo - 190, b.RpmVisual(Alvo, 5.2, "c1"), 1);
     }
 
     [Fact]
