@@ -14,6 +14,16 @@ setlocal
 chcp 65001 >nul
 title P1 FAST - AO VIVO
 
+REM Guarda de instancia unica (auditoria 2026-07-11): se a tela do piloto JA esta
+REM no ar, nao sobe NADA de novo (nem outra aba de video, nem outro exe). Vale pro
+REM clique duplo no icone e pra qualquer redisparo da vigia.
+tasklist /FI "IMAGENAME eq P1Fast.Cockpit.UI.exe" 2>nul | find /I "P1Fast.Cockpit.UI.exe" >nul
+if not errorlevel 1 (
+  echo P1 Fast ja esta no ar - nada a fazer.
+  timeout /t 3 >nul
+  exit /b 0
+)
+
 REM AO VIVO roda o build RELEASE (otimizado). Nunca subir um binario velho de Debug em
 REM silencio: se o Release nao existir, PARA com mensagem clara (nao cai pro Debug).
 set "EXE=%~dp0P1Fast.Cockpit.UI\bin\x64\Release\net8.0-windows10.0.19041.0\P1Fast.Cockpit.UI.exe"

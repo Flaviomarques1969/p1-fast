@@ -712,16 +712,52 @@ public sealed partial class MainWindow
     private static (double rpm, AmostraAlerta alerta) BridgeMotor(T3000Sample s)
         => (s.Rpm, CapturaDiaDePista.AlertaDeSample(s));
 
-    // Porta da T4000: usa --port se veio; senão a última porta COM enumerada.
+    // Porta da T4000: usa --port se veio; senão a COM que É a T4000 (devnode no registro,
+    // se ela um dia enumerar como serial); senão a última porta COM (heurística antiga).
+    // Auditoria 2026-07-11: a heurística antiga ordenava ORDINAL ("COM9" > "COM10") e
+    // podia escolher outro aparelho serial qualquer — agora a T4000 tem preferência e o
+    // desempate é pelo NÚMERO da porta.
     private static string? ResolveLivePort(string? requested)
     {
         if (!string.IsNullOrWhiteSpace(requested)) return requested;
         try
         {
             var ports = System.IO.Ports.SerialPort.GetPortNames();
-            if (ports.Length > 0) { Array.Sort(ports, StringComparer.Ordinal); return ports[^1]; }
+            if (ports.Length == 0) return null;
+            var daT4000 = ComPortDaT4000();
+            if (daT4000 is not null && Array.IndexOf(ports, daT4000) >= 0) return daT4000;
+            Array.Sort(ports, (a, b) => NumeroDaPorta(a).CompareTo(NumeroDaPorta(b)));
+            return ports[^1];
         }
         catch { /* sem acesso a portas → null */ }
         return null;
+    }
+
+    // Se a T4000 (VID_04D8&PID_014A) enumerar como porta serial, o Windows guarda o
+    // PortName no devnode dela: Enum\USB\VID_04D8&PID_014A\<serial>\Device Parameters.
+    // Best-effort: null quando não existe (o caminho normal dela é WinUSB).
+    private static string? ComPortDaT4000()
+    {
+        try
+        {
+            using var enumKey = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(
+                @"SYSTEM\CurrentControlSet\Enum\USB\VID_04D8&PID_014A");
+            if (enumKey is null) return null;
+            foreach (var serial in enumKey.GetSubKeyNames())
+            {
+                using var dp = enumKey.OpenSubKey(serial + @"\Device Parameters");
+                if (dp?.GetValue("PortName") is string port && !string.IsNullOrWhiteSpace(port))
+                    return port;
+            }
+        }
+        catch { /* sem registro/acesso: segue a heurística */ }
+        return null;
+    }
+
+    private static int NumeroDaPorta(string port)
+    {
+        int n = 0;
+        foreach (var c in port) if (c >= '0' && c <= '9') n = n * 10 + (c - '0');
+        return n;
     }
 }

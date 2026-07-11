@@ -3,6 +3,8 @@ REM ============================================================================
 REM  ABRIR VIDEO DA PISTA (local) - Central de Pista no PROPRIO notebook
 REM  Sobe o servidor de video local e abre http://localhost:8765/ no navegador.
 REM  Use no 1o uso pra PERMITIR A CAMERA uma vez (o navegador pergunta -> "Permitir").
+REM  (Ou rode PERMITIR-CAMERA-SEM-CLIQUE.cmd como admin UMA vez: ai nem esse
+REM   clique existe mais - a camera e autorizada por politica do navegador.)
 REM  Depois disso, o ICONE "P1 FAST - AO VIVO" liga tudo sozinho (video atras).
 REM  A pagina servida aqui ja e a CORRIGIDA (sem o loop de religar do 429).
 REM ============================================================================

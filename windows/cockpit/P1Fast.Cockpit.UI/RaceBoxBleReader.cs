@@ -58,7 +58,12 @@ public sealed class RaceBoxBleReader
     // Watchdog de DADOS: conectado mas sem fix por tanto tempo = pilha BLE travada sem
     // evento Disconnected. Derruba e religa (senão o GPS morre com o app achando que vive).
     private const int WatchdogSemFixMs = 5000;
+    // Mudo DESDE a assinatura (nunca veio fix nenhum): o watchdog acima exigia ao menos
+    // 1 fix pra agir — assinatura que nasce morta ficava "ligada" pra sempre (furo fechado
+    // 2026-07-11, reforço das conexões automáticas). Prazo maior: o 1º fix pode demorar.
+    private const int WatchdogSemPrimeiroFixMs = 10000;
     private long _ultimoFixTick;   // Environment.TickCount64 do último fix decodificado
+    private long _assinadoTick;    // Environment.TickCount64 de quando a assinatura BLE nasceu
     private Task? _watchdogTask;
 
     public RaceBoxBleReader(Action<RaceBoxFix> onFix, Action<string>? onStatus = null)
@@ -92,8 +97,14 @@ public sealed class RaceBoxBleReader
             {
                 await Task.Delay(2000, ct).ConfigureAwait(false);
                 bool assinado = _rx is not null;
+                long agora = Environment.TickCount64;
                 long ultimo = System.Threading.Interlocked.Read(ref _ultimoFixTick);
-                if (assinado && ultimo > 0 && Environment.TickCount64 - ultimo >= WatchdogSemFixMs)
+                long nasceu = System.Threading.Interlocked.Read(ref _assinadoTick);
+                // Dois jeitos de estar mudo: parou de mandar fix (>=5 s) OU nunca mandou
+                // fix nenhum desde a assinatura (>=10 s) — ambos religam.
+                bool mudoDepois = ultimo > 0 && agora - ultimo >= WatchdogSemFixMs;
+                bool mudoDesdeInicio = ultimo == 0 && nasceu > 0 && agora - nasceu >= WatchdogSemPrimeiroFixMs;
+                if (assinado && (mudoDepois || mudoDesdeInicio))
                 {
                     _onStatus?.Invoke("GPS: RaceBox mudo (sem fix) — religando…");
                     try { if (_rx is not null) _rx.ValueChanged -= OnNotify; } catch { }
@@ -101,6 +112,7 @@ public sealed class RaceBoxBleReader
                     DescartarDevice();
                     lock (_bufLock) _buf = Array.Empty<byte>();
                     System.Threading.Interlocked.Exchange(ref _ultimoFixTick, 0);
+                    System.Threading.Interlocked.Exchange(ref _assinadoTick, 0);
                     IniciarVarredura();
                 }
             }
@@ -163,6 +175,13 @@ public sealed class RaceBoxBleReader
             GattClientCharacteristicConfigurationDescriptorValue.Notify);
         if (cfg != GattCommunicationStatus.Success) { ch.ValueChanged -= OnNotify; IniciarVarredura(); return; }
 
+        // Relógios do watchdog zerados ANTES de publicar a assinatura (auditoria 2026-07-11):
+        // o ValueChanged já está inscrito lá em cima — um notify podia chegar ENTRE o _rx=ch
+        // e o zerar, e o carimbo do fix real era apagado. Ordem certa: zera → publica.
+        // O fix da conexão anterior também não pode contar como "recente" (nem derrubar a
+        // conexão nova por parecer velho demais).
+        System.Threading.Interlocked.Exchange(ref _ultimoFixTick, 0);
+        System.Threading.Interlocked.Exchange(ref _assinadoTick, Environment.TickCount64);
         _rx = ch;
         _onStatus?.Invoke($"GPS: RaceBox ligado ({dev.Name})");
     }

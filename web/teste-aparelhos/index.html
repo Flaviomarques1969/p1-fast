@@ -344,8 +344,15 @@ async function startVideo(){
     log('Sala: ' + room.roomName);
     if (call) { try { await call.destroy(); } catch{} call = null; }
     call = window.DailyIframe.createCallObject();
-    call.on('camera-error', e => log('Erro de câmera: ' + (e.errorMsg||e.error)));
+    // Câmera com erro NÃO fica no chão: agenda a auto-cura (repicarCamera) — antes só
+    // logava. Guarda de timer: uma rajada de camera-error agenda UMA cura, não N.
+    call.on('camera-error', e => {
+      log('Erro de câmera: ' + (e.errorMsg||e.error) + ' — vou re-tentar sozinho.');
+      if (camCuraTimer) return;
+      camCuraTimer = setTimeout(() => { camCuraTimer = null; repicarCamera('erro de câmera', true); }, 2500);
+    });
     call.on('joined-meeting', () => {
+      videoNaSala = true;
       pill($('vStatus'),'NO AR ✓','ok'); boardPill($('bVideo'),'VÍDEO · no ar ✓','ok');
       videoRetryMs = 3000; log('Transmissão no ar.');
     });
@@ -369,6 +376,7 @@ async function startVideo(){
 }
 
 function onVideoDown(){
+  videoNaSala = false;
   if (!videoQuero) return;
   pill($('vStatus'),'religando…','warn'); boardPill($('bVideo'),'VÍDEO · religando…','warn');
   log('Vídeo caiu. Religando em '+(videoRetryMs/1000)+'s…');
@@ -396,21 +404,92 @@ async function listCams(){
     const devs = (await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput');
     if(devs.length === 0) return;
     // FIXA a Osmo automaticamente (e a cada religação, pois listCams roda em todo startVideo).
+    // Só re-fixa se MUDOU (camAtualId) — a vigia periódica chama isto e re-fixar a mesma
+    // câmera em loop piscaria a imagem.
     const osmo = escolherOsmo(devs);
     if(osmo){
-      try { await call.setInputDevicesAsync({ videoDeviceId: osmo.deviceId }); $('local').srcObject=null; setTimeout(renderLocal,400); } catch(e){}
-      log('Câmera fixada na DJI/Osmo: ' + (osmo.label||'externa'));
-    } else {
-      log('ATENÇÃO: não achei a DJI/Osmo — usando a câmera padrão. Conecte a Osmo (webcam USB) e religue.');
+      camAvisouSemOsmo = false;
+      if (osmo.deviceId !== camAtualId) {
+        // Log de sucesso SÓ quando fixou de verdade (bug visto em bancada 11/07: dizia
+        // "fixada" com a fixação falhando). Falha avisa UMA vez por sequência de falhas.
+        try {
+          await call.setInputDevicesAsync({ videoDeviceId: osmo.deviceId });
+          camAtualId = osmo.deviceId; $('local').srcObject=null; setTimeout(renderLocal,400);
+          camAvisouFalhaFixar = false;
+          log('Câmera fixada na DJI/Osmo: ' + (osmo.label||'externa'));
+        } catch(e){
+          if (!camAvisouFalhaFixar) { camAvisouFalhaFixar = true; log('Não consegui fixar a câmera ('+(e.message||e.errorMsg||'câmera bloqueada?')+') — sigo re-tentando sozinho.'); }
+        }
+      }
+    } else if (!camAvisouSemOsmo) {
+      camAvisouSemOsmo = true;   // avisa UMA vez por ausência (a vigia repete a checagem sozinha)
+      log('ATENÇÃO: não achei a DJI/Osmo — usando a câmera padrão. Ao plugar a Osmo, troco pra ela SOZINHO.');
     }
     // seletor manual fica só de reserva (já vem na Osmo selecionada)
     if(devs.length >= 2){
       const sel = $('cams'); sel.innerHTML=''; sel.style.display='block';
       devs.forEach(d=>{ const o=document.createElement('option'); o.value=d.deviceId; o.textContent=d.label||'Câmera'; if(osmo&&d.deviceId===osmo.deviceId)o.selected=true; sel.appendChild(o); });
-      sel.onchange = async ()=>{ await call.setInputDevicesAsync({ videoDeviceId: sel.value }); $('local').srcObject=null; setTimeout(renderLocal,400); log('Câmera trocada: '+sel.selectedOptions[0].textContent); };
+      sel.onchange = async ()=>{ await call.setInputDevicesAsync({ videoDeviceId: sel.value }); camAtualId = sel.value; $('local').srcObject=null; setTimeout(renderLocal,400); log('Câmera trocada: '+sel.selectedOptions[0].textContent); };
     }
   } catch(e){ log('Não consegui listar câmeras: '+e.message); }
 }
+
+// ════════ VIGIA DA CÂMERA (2026-07-11): religa e troca SOZINHA, sem clique ════════
+// Reforço pedido pelo Flávio: (1) Osmo plugada DEPOIS da página abrir → troca pra ela
+// sozinho (devicechange); (2) Osmo caiu/erro no MEIO da transmissão → re-tenta até voltar.
+// A sala/Daily já se cura pelo onVideoDown; isto aqui cura a CÂMERA dentro da sala.
+let videoNaSala = false;     // true entre joined-meeting e onVideoDown (gate da vigia)
+let camAtualId = null;       // deviceId em uso (evita re-fixar a mesma câmera em loop)
+let camAvisouSemOsmo = false;// avisa "sem Osmo" uma vez só, não a cada checagem
+let camAvisouFalhaFixar = false; // avisa falha de fixação uma vez por sequência de falhas
+let camRepicando = false;    // trava de reentrada da cura
+let camCuraTimer = null;     // guarda: rajada de camera-error agenda UMA cura só
+let camLogMotivo = '', camLogRepetes = 0;  // throttle do log da cura (sem Osmo = re-tenta pra sempre)
+
+// forcar=true (câmera DOENTE: erro/trilha morta) religa o vídeo e re-fixa mesmo que o
+// deviceId não mude. forcar=false (devicechange) só TROCA se a câmera-alvo mudou —
+// plugar um fone Bluetooth não pode piscar uma imagem saudável (auditoria 2026-07-11).
+async function repicarCamera(motivo, forcar){
+  if (!call || !videoQuero || !videoNaSala || camRepicando) return;
+  camRepicando = true;
+  try {
+    if (motivo === camLogMotivo) camLogRepetes++; else { camLogMotivo = motivo; camLogRepetes = 1; }
+    if (camLogRepetes === 1 || camLogRepetes % 10 === 0)
+      log('Câmera: religando/re-escolhendo sozinho ('+motivo+(camLogRepetes>1?', tentativa '+camLogRepetes:'')+')…');
+    if (forcar) {
+      camAtualId = null;
+      try { await call.setLocalVideo(true); } catch(e){}
+    }
+    await listCams();
+  } finally { camRepicando = false; }
+}
+
+// Windows re-enumera a USB: quando a lista de câmeras muda (Osmo plugada/tirada),
+// re-escolhe sozinho. Debounce: uma plugada dispara vários eventos seguidos.
+let camDevChangeT = null;
+try {
+  navigator.mediaDevices.addEventListener('devicechange', () => {
+    clearTimeout(camDevChangeT);
+    camDevChangeT = setTimeout(() => repicarCamera('câmeras mudaram na USB', false), 1200);
+  });
+} catch(e){ /* navegador sem devicechange: a vigia periódica abaixo cobre */ }
+
+// Vigia periódica: na sala mas com vídeo local doente (câmera caiu/bloqueada/sem
+// trilha) → cura. Espaçada (mín. 8 s entre curas) pra não piscar imagem saudável.
+let camUltimaCura = 0;
+setInterval(() => {
+  if (!call || !videoQuero || !videoNaSala) return;
+  let st = null;
+  try {
+    const p = call.participants().local;
+    st = p && p.tracks && p.tracks.video ? p.tracks.video.state : null;
+  } catch(e){ return; }
+  if (st === 'playable' || st === 'sendable' || st === 'loading') return;  // saudável
+  const agora = performance.now();
+  if (agora - camUltimaCura < 8000) return;
+  camUltimaCura = agora;
+  repicarCamera('vídeo local ' + (st || 'sem trilha'), true);
+}, 3000);
 
 // ════════════════ GPS (RaceBox) com religação automática ════════════════
 const NUS_SVC = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
@@ -542,8 +621,79 @@ setInterval(()=>{
   if(call) try{ call.sendAppMessage({ t:'gps', fix:gps.fix, numSV:gps.numSV, spd:gps.spd, lat:gps.lat, lon:gps.lon, hz:gps.hz, hacc:gps.hacc, ver:gps.ver }, '*'); }catch(e){}
 }, 200);
 
+// ════════ LÍDER ÚNICO ENTRE ABAS (auditoria 2026-07-11) ════════
+// A vigia do notebook pode reabrir esta página (religações) — e duas abas transmitindo
+// seriam DOIS participantes na sala Daily. Eleição por BroadcastChannel: só a aba LÍDER
+// chama startVideo(); reservas vigiam o batimento do líder e assumem se ele sumir.
+// Desempate por antiguidade (liderDesde): num raro empate, a aba mais antiga vence e a
+// outra abdica sozinha (destrói a call).
+const bcAbas = ('BroadcastChannel' in window) ? new BroadcastChannel('p1fast-central-pista') : null;
+const abaId = Math.random().toString(36).slice(2);
+let souLider = false, liderDesde = 0, liderBateuEm = 0, reservaVigiando = false;
+
+if (bcAbas) {
+  bcAbas.onmessage = ev => {
+    const m = ev.data || {};
+    if (m.t === 'quem-e-o-lider' && souLider) bcAbas.postMessage({ t:'lider-no-ar', desde: liderDesde, id: abaId });
+    if (m.t === 'lider-no-ar') {
+      if (souLider && (m.desde < liderDesde || (m.desde === liderDesde && m.id < abaId))) { abdicar(); return; }
+      if (!souLider) liderBateuEm = performance.now();
+    }
+  };
+  setInterval(() => { if (souLider) bcAbas.postMessage({ t:'lider-no-ar', desde: liderDesde, id: abaId }); }, 2000);
+}
+
+function assumirLider(motivo){
+  if (souLider) return;
+  souLider = true; liderDesde = Date.now();
+  if (bcAbas) bcAbas.postMessage({ t:'lider-no-ar', desde: liderDesde, id: abaId });
+  log('Esta aba assume a transmissão ('+motivo+').');
+  startVideo();
+}
+
+function abdicar(){
+  if (!souLider) return;
+  souLider = false; videoQuero = false; videoNaSala = false;
+  if (call) { try { call.destroy(); } catch(e){} call = null; }
+  log('Outra aba mais antiga já está no ar — esta vira RESERVA.');
+  vigiarReserva();
+}
+
+function vigiarReserva(){
+  pill($('vStatus'),'reserva (outra aba no ar)','warn'); boardPill($('bVideo'),'VÍDEO · reserva (outra aba)','warn');
+  if (reservaVigiando) return;
+  reservaVigiando = true;
+  liderBateuEm = performance.now();
+  setInterval(() => {
+    if (souLider) return;
+    if (performance.now() - liderBateuEm > 8000) {
+      // jitter anti-empate: duas reservas não assumem juntas
+      setTimeout(() => {
+        if (!souLider && performance.now() - liderBateuEm > 8000) assumirLider('a aba líder sumiu');
+      }, 300 + Math.random()*1500);
+    }
+  }, 3000);
+}
+
+function eleger(){
+  if (!bcAbas) { assumirLider('navegador sem eleição entre abas'); return; }
+  bcAbas.postMessage({ t:'quem-e-o-lider' });
+  // jitter também na eleição inicial: duas abas abertas juntas não assumem as duas
+  setTimeout(() => {
+    if (liderBateuEm > 0) { log('Outra aba já transmite — esta fica de RESERVA (assume sozinha se a outra sumir).'); vigiarReserva(); }
+    else assumirLider('nenhuma outra aba no ar');
+  }, 1500 + Math.random()*700);
+}
+
+// ════════ BATIMENTO PRA VIGIA DO NOTEBOOK (auditoria 2026-07-11) ════════
+// Qualquer aba viva (líder OU reserva) avisa o servidor local a cada 5 s; a
+// VIGIA-T4000 pergunta a idade e reabre a página se ninguém bater (aba fechada/
+// navegador caiu). Na página publicada na nuvem o endpoint não existe — silêncio.
+try { fetch('/api/vivo', { method:'POST' }).catch(()=>{}); } catch(e){}
+setInterval(() => { try { fetch('/api/vivo', { method:'POST' }).catch(()=>{}); } catch(e){} }, 5000);
+
 // ════════════════ boot ════════════════
-$('btnStart').onclick = startVideo;
+$('btnStart').onclick = () => { if (souLider) startVideo(); else assumirLider('botão manual'); };
 // Item 3 (RaceBox dono único): este botão NÃO abre mais o Bluetooth daqui — senão brigaria
 // com o cockpit (.exe) pelo mesmo aparelho. O RaceBox é lido SÓ pelo .exe; o GPS chega aqui
 // pela nuvem (onCloudGps) e é repassado pro vídeo.
@@ -551,10 +701,11 @@ $('btnRb').onclick = () => { boardPill($('bGps'),'GPS · vem do cockpit pela nuv
 $('btnSim').onclick = toggleSim;
 connectCloud();
 // A Central de Pista LIGA SOZINHA (sem clique). connectCloud() já cuida do GPS/nuvem;
-// agora startVideo() liga a câmera no load. O navegador pede permissão de câmera UMA vez
-// (depois lembra) e startVideo se re-tenta sozinho (onVideoDown) até entrar no ar.
+// eleger() decide quem liga a câmera (só a aba líder chama startVideo). O navegador pede
+// permissão de câmera UMA vez (depois lembra; ou zere o clique com o
+// PERMITIR-CAMERA-SEM-CLIQUE.cmd) e startVideo se re-tenta sozinho (onVideoDown).
 // O botão "Iniciar transmissão" fica só de reserva, caso o navegador bloqueie o auto-início.
-startVideo();
+eleger();
 log('Central de pista: ligando sozinha (vídeo + GPS pela nuvem). Se o navegador pedir, permita a câmera uma vez — depois liga automático.');
 </script>
 </body>
