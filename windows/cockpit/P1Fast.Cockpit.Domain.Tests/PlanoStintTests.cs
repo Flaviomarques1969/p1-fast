@@ -169,21 +169,61 @@ public class PlanoStintTests
 
     // MARTELO (Flávio 2026-07-11, via canal): a barra NÃO tem mais cápsulas térmicas —
     // 1ª e última volta são Planejadas comuns; o térmico é da TELA DEDICADA (TelaTermica).
+    // BUG DO BOX (Flávio 2026-07-11 à noite): a parada INTERROMPE a volta, não a consome —
+    // BOX + SAÍDA (out-lap, cápsula própria) são inseridas e a volta vem DEPOIS.
     [Fact]
-    public void Expande_SoPlanejadasEBox_SemTiposTermicos()
+    public void Expande_ParadaInsereBoxESaida_SemConsumirVolta()
     {
         var barra = PlanoStintParser.ExpandirBarra(Plano(10, 5), slots: 12);
 
         Assert.NotNull(barra);
         Assert.Equal(12, barra!.Length);
-        Assert.Equal(TipoVoltaStint.Planejada, barra[0]);     // volta 1 (era Aquecimento)
-        Assert.Equal(TipoVoltaStint.Planejada, barra[1]);     // volta 2
+        Assert.Equal(TipoVoltaStint.Planejada, barra[0]);     // volta 1
         Assert.Equal(TipoVoltaStint.Planejada, barra[3]);     // volta 4
-        Assert.Equal(TipoVoltaStint.Box, barra[4]);           // volta 5 = parada
-        Assert.Equal(TipoVoltaStint.Planejada, barra[5]);     // volta 6
-        Assert.Equal(TipoVoltaStint.Planejada, barra[9]);     // volta 10 = última (era CoolDown)
-        Assert.Equal(TipoVoltaStint.Vaga, barra[10]);         // volta 11 = além do stint
-        Assert.Equal(TipoVoltaStint.Vaga, barra[11]);         // volta 12 = além do stint
+        Assert.Equal(TipoVoltaStint.Box, barra[4]);           // parada (interrompe a 5ª)
+        Assert.Equal(TipoVoltaStint.Saida, barra[5]);         // out-lap
+        Assert.Equal(TipoVoltaStint.Planejada, barra[6]);     // volta 5 — RETOMADA após o box
+        Assert.Equal(TipoVoltaStint.Planejada, barra[11]);    // volta 10 = última
+        // invariante do bug: nº de Planejadas = nº de voltas do plano (nada engolido)
+        Assert.Equal(10, System.Linq.Enumerable.Count(barra, t => t == TipoVoltaStint.Planejada));
+    }
+
+    // O cenário EXATO do Flávio (canal 2026-07-11): 11 voltas, parada na 6ª → a barra
+    // retoma na 6ª depois do box (1..5, BOX, SAÍDA, 6..11) — não pula pra 7ª.
+    [Fact]
+    public void Expande_CenarioDoFlavio_BoxNa6a_RetomaNa6a()
+    {
+        var barra = PlanoStintParser.ExpandirBarra(Plano(11, 6), slots: 40)!;
+
+        for (var i = 0; i <= 4; i++) Assert.Equal(TipoVoltaStint.Planejada, barra[i]); // 1..5
+        Assert.Equal(TipoVoltaStint.Box, barra[5]);
+        Assert.Equal(TipoVoltaStint.Saida, barra[6]);
+        for (var i = 7; i <= 12; i++) Assert.Equal(TipoVoltaStint.Planejada, barra[i]); // 6..11
+        Assert.Equal(TipoVoltaStint.Vaga, barra[13]);
+        Assert.Equal(11, System.Linq.Enumerable.Count(barra, t => t == TipoVoltaStint.Planejada));
+    }
+
+    [Fact]
+    public void Expande_DuasParadas_CadaUmaInsereSuaTransicao()
+    {
+        var barra = PlanoStintParser.ExpandirBarra(Plano(8, 3, 6), slots: 40)!;
+
+        // P1,P2, BOX,SAÍDA, P3,P4,P5, BOX,SAÍDA, P6,P7,P8
+        Assert.Equal(TipoVoltaStint.Box, barra[2]);
+        Assert.Equal(TipoVoltaStint.Saida, barra[3]);
+        Assert.Equal(TipoVoltaStint.Box, barra[7]);
+        Assert.Equal(TipoVoltaStint.Saida, barra[8]);
+        Assert.Equal(8, System.Linq.Enumerable.Count(barra, t => t == TipoVoltaStint.Planejada));
+        Assert.Equal(TipoVoltaStint.Vaga, barra[12]);
+    }
+
+    [Fact]
+    public void Expande_ParadaForaDoPlano_Ignorada()
+    {
+        var barra = PlanoStintParser.ExpandirBarra(Plano(5, 9), slots: 12)!;
+        Assert.DoesNotContain(TipoVoltaStint.Box, barra);
+        Assert.DoesNotContain(TipoVoltaStint.Saida, barra);
+        Assert.Equal(5, System.Linq.Enumerable.Count(barra, t => t == TipoVoltaStint.Planejada));
     }
 
     [Fact]
@@ -196,11 +236,14 @@ public class PlanoStintTests
     }
 
     [Fact]
-    public void Expande_ParadaNaUltima_BoxVence()
+    public void Expande_ParadaNaUltima_TransicaoAntesDaUltima()
     {
         var barra = PlanoStintParser.ExpandirBarra(Plano(5, 5), slots: 12);
         Assert.NotNull(barra);
-        Assert.Equal(TipoVoltaStint.Box, barra![4]); // volta 5 é parada E última → Box vence
+        Assert.Equal(TipoVoltaStint.Box, barra![4]);          // interrompe a 5ª
+        Assert.Equal(TipoVoltaStint.Saida, barra[5]);
+        Assert.Equal(TipoVoltaStint.Planejada, barra[6]);     // a 5ª é rodada depois do box
+        Assert.Equal(TipoVoltaStint.Vaga, barra[7]);
     }
 
     [Fact]
@@ -235,8 +278,9 @@ public class PlanoStintTests
 
         Assert.NotNull(barra);
         Assert.Equal(TipoVoltaStint.Planejada, barra![0]);
-        Assert.Equal(TipoVoltaStint.Box, barra[4]);
-        Assert.Equal(TipoVoltaStint.Planejada, barra[9]);   // última = Planejada (martelo 2026-07-11)
+        Assert.Equal(TipoVoltaStint.Box, barra[4]);         // parada na 5ª → transição inserida
+        Assert.Equal(TipoVoltaStint.Saida, barra[5]);
+        Assert.Equal(TipoVoltaStint.Planejada, barra[6]);   // a 5ª retomada após o box
     }
 
     [Fact]

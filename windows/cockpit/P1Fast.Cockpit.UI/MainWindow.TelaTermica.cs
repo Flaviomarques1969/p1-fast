@@ -59,7 +59,10 @@ public sealed partial class MainWindow
         // (mesma janela do AtualizarSensores). O andaime --tela-termica não passa por aqui.
         var motorVivo = Environment.TickCount64 - _ultimoMotorTick < 3000;
         var agua = motorVivo ? _ultimaAlerta?.WaterTempC : null;
-        var est = TelaTermica.Avaliar(agua, _voltaAtualIdx, UltimoBlocoReal());
+        // "última volta" na régua de voltas RODADAS (o contador anda por cruzamentos): as
+        // cápsulas de BOX não são voltas — comparar com índice de cápsula erraria o gatilho
+        // do resfriamento quando o plano tem parada (bug do box, 2026-07-11).
+        var est = TelaTermica.Avaliar(agua, _voltaAtualIdx, TotalVoltasRodaveis() - 1);
         var modo = est.Modo;
 
         // Latch: aquecimento já concluído não reaparece neste stint.
@@ -120,7 +123,7 @@ public sealed partial class MainWindow
                 modo = ModoTelaTermica.Resfriamento;
                 var e2 = e - fase;
                 temp = e2 < subir ? 78 - (78 - 54) * (e2 / subir) : 54;
-                _voltaAtualIdx = UltimoBlocoReal();
+                _voltaAtualIdx = TotalVoltasRodaveis() - 1;
             }
             var prog = TelaTermica.Progresso(temp, CortesChuvaTermica.Bubi,
                 TelaTermica.FrioTotalBubiC, TelaTermica.QuenteTotalBubiC);

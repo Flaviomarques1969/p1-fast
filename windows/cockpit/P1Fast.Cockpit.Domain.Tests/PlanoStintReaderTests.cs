@@ -126,8 +126,9 @@ public class PlanoStintReaderTests
 
         Assert.NotNull(barra);
         Assert.Equal(TipoVoltaStint.Planejada, barra![0]);  // sem cápsula térmica (martelo 2026-07-11)
-        Assert.Equal(TipoVoltaStint.Box, barra[4]);
-        Assert.Equal(TipoVoltaStint.Planejada, barra[9]);
+        Assert.Equal(TipoVoltaStint.Box, barra[4]);         // parada na 5ª → BOX+SAÍDA inseridas
+        Assert.Equal(TipoVoltaStint.Saida, barra[5]);
+        Assert.Equal(TipoVoltaStint.Planejada, barra[6]);   // a 5ª retomada após o box
     }
 
     [Fact]

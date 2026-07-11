@@ -50,14 +50,46 @@ public sealed partial class MainWindow
         return last;
     }
 
+    // ── Bug do box (Flávio 2026-07-11 à noite): BOX é parada, não volta RODADA. O contador
+    // de voltas (_voltaAtualIdx, por cruzamentos da linha) anda em VOLTAS RODADAS — planejadas
+    // E a saída do box (a out-lap cruza a linha ao fechar). A cápsula de BOX nunca é "atual". ──
+
+    /// <summary>Cápsula da idx-ésima volta RODADA (0-based), pulando as cápsulas de BOX.
+    /// -1 = além do plano.</summary>
+    private int CapsulaDaVolta(int voltaIdx)
+    {
+        if (voltaIdx < 0) return -1;
+        var plano = _planoStintReal ?? PlanoStintPlaceholder;
+        var rodada = -1;
+        for (var i = 0; i < _stintBlocks.Length && i < plano.Length; i++)
+        {
+            if (plano[i] is StintBlockState.Pending or StintBlockState.Box) continue;
+            if (++rodada == voltaIdx) return i;
+        }
+        return -1;
+    }
+
+    /// <summary>Quantas voltas RODÁVEIS o plano tem (planejadas + saídas de box; sem BOX/vaga).
+    /// É o teto do contador de voltas — a régua da tela térmica ("última volta") usa isto.</summary>
+    private int TotalVoltasRodaveis()
+    {
+        var plano = _planoStintReal ?? PlanoStintPlaceholder;
+        var total = 0;
+        for (var i = 0; i < _stintBlocks.Length && i < plano.Length; i++)
+            if (plano[i] is not (StintBlockState.Pending or StintBlockState.Box)) total++;
+        return total;
+    }
+
     // Define a volta atual (clampeada ao plano) e repinta a barra se mudou. Direção C: a atual fica
     // dourada com glow (RepintarBarra em MainWindow.BarraVoltas.cs) — não é mais só um contorno.
-    // alvo fora de [0, últimoBlocoReal] → nenhuma volta em curso (antes de começar / além do plano).
+    // idx é a volta RODADA; a cápsula correspondente pula os BOX (CapsulaDaVolta). Fora do
+    // plano → nenhuma cápsula "atual" (antes de começar / além do plano).
     private void ApplyVoltaAtualHalo(int idx)
     {
         if (_stintBlocks.Length == 0) return;
         var lastReal = UltimoBlocoReal();
-        var alvo = (idx >= 0 && idx <= lastReal) ? idx : -1;
+        var capsula = CapsulaDaVolta(idx);
+        var alvo = (capsula >= 0 && capsula <= lastReal) ? capsula : -1;
         if (alvo == _haloBlocoPintado) return;   // nada mudou → não repinta
         _haloBlocoPintado = alvo;
         _voltaAtualRender = alvo;
