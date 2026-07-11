@@ -97,6 +97,30 @@ public class SessionRecorderAutoTests
         Assert.Equal(2, store.ListarSessoes().Count); // 4.3 duas sessões distintas
     }
 
+    // 6) Fix FRACO (decisão Flávio 2026-07-11: gravar marcado): o caminho vivo passa
+    //    velKmh=null pro fix<3 — ele É gravado na sessão aberta (rastro dos buracos de GPS),
+    //    mas a velocidade de fix fraco NÃO abre nem segura a captura automática (o jitter
+    //    de 2D "andando a 80" abriria gravação com o carro parado no box).
+    [Fact]
+    public void FixFraco_EGravadoNaSessaoAberta_MasNaoAbreNemSeguraACaptura()
+    {
+        var (g, r, _) = Novo();
+        // Só fracos "a 80 km/h" (jitter): NÃO pode abrir a gravação.
+        for (int i = 0; i < 5; i++) { g.Gps(new { lat = -15.77, lon = -47.89, kmh = 80.0, fix = 1 }, velKmh: null); r.Av(200); }
+        Assert.False(g.Estado().Gravando);            // 6.1 fraco não abre
+
+        Gps(g, 50);                                   // fix bom andando → abre
+        Assert.True(g.Estado().Gravando);
+        var antes = g.Estado().NGps;
+        g.Gps(new { lat = -15.77, lon = -47.89, kmh = 0.0, fix = 1 }, velKmh: null);
+        Assert.Equal(antes + 1, g.Estado().NGps);     // 6.2 fraco na sessão aberta VAI pro disco
+
+        // Depois do bom, SÓ fracos por > ParadoMs: não seguram a sessão → fecha por parado.
+        for (int i = 0; i < 70; i++) { r.Av(200); g.Gps(new { lat = -15.77, lon = -47.89, kmh = 80.0, fix = 1 }, velKmh: null); }
+        Assert.False(g.Estado().Gravando);            // 6.3 fraco não segura
+        Assert.Equal("parado", g.MotivoUltimoFim);
+    }
+
     // 5) SEM o modo automático, o comportamento é o de SEMPRE (abre no 1º dado, mesmo parado).
     [Fact]
     public void SemAuto_ComportamentoDeSempre()

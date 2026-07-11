@@ -542,10 +542,13 @@ public sealed partial class MainWindow
     }
 
     // Cada fix do GPS (vem na thread do BLE): grava em disco e move a tela (curva/
-    // ápice/delta/freada). Só fix 3D entra — fix fraco não envenena o detector.
+    // ápice/delta/freada). Contrato (decisão Flávio 2026-07-11): o DISCO e a NUVEM recebem
+    // TODOS os fixes — o fraco (fix<3) vai MARCADO (campo fix, que sempre existiu no formato)
+    // e vale como rastro dos buracos de GPS pro diagnóstico de campo. Tela/LED/cérebro/auto-
+    // captura continuam SÓ com fix 3D (honestidade §9; o filtro do cérebro já reprova fraco).
     private void OnLiveGps(RaceBoxFix f)
     {
-        if (f.Fix < 3) return;
+        bool fixBom = f.Fix >= 3;
         // 5.3a: usa o carimbo JÁ espaçado por frame (pelo iTOW no RaceBoxBleReader). Assim,
         // vários fixes de um mesmo notify BLE não colam no mesmo ms (dt~0 → km/h absurdo no
         // cérebro). Fallback pra chegada só se o espaçador não informou (TWallMs == 0).
@@ -556,7 +559,9 @@ public sealed partial class MainWindow
                 // o eixo + verificar os offsets. Ainda não alimenta a lógica da tela.
                 new { lat = f.Lat, lon = f.Lng, kmh = f.Kmh, fix = f.Fix, numSV = f.NumSV, hacc = f.HaccM,
                       gx = f.GX, gy = f.GY, gz = f.GZ },
-                velKmh: f.Kmh);
+                // Velocidade de fix fraco é lixo: não pode ABRIR nem SEGURAR a captura
+                // automática por movimento (jitter de 2D pareceria "carro andando").
+                velKmh: fixBom ? f.Kmh : (double?)null);
 
         // Nuvem: ENFILEIRA todo fix (o laço da nuvem drena pelo GpsLivePublisher, fila-que-
         // não-perde, e reenvia na religação — o disco acima já guarda TODOS os fixes de
@@ -576,6 +581,10 @@ public sealed partial class MainWindow
                 ["gz"]    = f.GZ,
                 ["tWall"] = tWall,
             });
+
+        // Fix FRACO para AQUI: disco e nuvem já o guardaram (marcado); tela, LED e cérebro
+        // não o veem — o LED de GPS degrada honesto se só chegar fraco (gpsMudo em 5 s).
+        if (!fixBom) return;
 
         // Move a tela na thread da UI, EM ORDEM: GPS no maestro → ponte do stint (barra
         // de trechos) → sensores (MOVIMENTO acende). _ultimoGpsTick marca a chegada em
