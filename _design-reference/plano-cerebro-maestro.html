@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plano sério — o cérebro vira maestro</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --card:#11161e; --line:#283040; --ink:#e6edf3; --mut:#9aa7b4;
+    --ok:#39d98a; --okbg:#0f241b; --med:#f5b454; --medbg:#241c0e; --alto:#ff6b6b; --altobg:#241316;
+    --azul:#6cb6ff; --azulbg:#0e2034; --azulbd:#244a6e;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--bg);color:var(--ink);font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+  body{padding:26px 30px 60px}
+  h1{font-size:28px;font-weight:800}
+  .sub{color:var(--mut);font-size:15.5px;margin-top:6px;max-width:980px;line-height:1.5}
+  .faixa{display:flex;gap:14px;flex-wrap:wrap;margin:18px 0 6px}
+  .nota{flex:1;min-width:280px;border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:var(--panel)}
+  .nota h3{font-size:14px;margin-bottom:7px;display:flex;align-items:center;gap:8px}
+  .nota.naoé h3{color:var(--alto)} .nota.é h3{color:var(--ok)}
+  .nota p{color:var(--mut);font-size:13.5px;line-height:1.5}
+  .nota b{color:var(--ink)}
+
+  .secao{font-size:12px;text-transform:uppercase;letter-spacing:1.5px;color:var(--mut);margin:26px 0 12px}
+
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  thead th{text-align:left;color:var(--mut);font-size:11.5px;text-transform:uppercase;letter-spacing:.6px;padding:0 12px 8px;border-bottom:1px solid var(--line)}
+  tbody td{padding:13px 12px;border-bottom:1px solid var(--line);vertical-align:top;line-height:1.45}
+  tbody tr:hover{background:#10151d}
+  .nq{font-weight:800;color:var(--mut);font-variant-numeric:tabular-nums;width:26px}
+  .cn{font-weight:700;color:#fff;font-size:14.5px}
+  .hoje{color:#c7d0da}
+  .casa{color:var(--azul)}
+  .pill{display:inline-block;font-size:11px;font-weight:700;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .p-baixo{background:var(--okbg);color:var(--ok)} .p-medio{background:var(--medbg);color:var(--med)} .p-alto{background:var(--altobg);color:var(--alto)}
+  .prova{color:var(--mut);font-size:12.5px}
+
+  .ordem{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:6px}
+  @media(max-width:1000px){.ordem{grid-template-columns:1fr 1fr}}
+  .et{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+  .et .et-n{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--mut)}
+  .et .et-t{font-weight:700;margin:6px 0 6px;font-size:14px}
+  .et .et-d{color:var(--mut);font-size:12.5px;line-height:1.45}
+  .et.seg{border-color:var(--ok)} .et.dec{border-color:var(--med)} .et.fim{border-color:var(--azulbd)}
+
+  .destaque{background:linear-gradient(180deg,#10243a,#0d1117);border:1px solid var(--azulbd);border-radius:14px;padding:18px 20px;margin-top:24px}
+  .destaque h3{font-size:16px;margin-bottom:6px}
+  .destaque p{color:var(--mut);font-size:14px;line-height:1.55;max-width:1000px}
+  .destaque b{color:#dCEBff}
+  .regra{margin-top:16px;border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:var(--panel);color:var(--mut);font-size:13.5px;line-height:1.6}
+  .regra b{color:var(--ink)}
+  footer{margin-top:26px;border-top:1px solid var(--line);padding-top:14px;color:var(--mut);font-size:12.5px}
+</style>
+</head>
+<body>
+
+  <h1>Plano sério — o cérebro vira maestro</h1>
+  <div class="sub">O cérebro é a peça que deveria <b style="color:#e6edf3">reger</b> as contas. Hoje ele <b style="color:#e6edf3">refaz por dentro</b> contas que já existem prontas em outro lugar — e está ligado só a um protótipo, não ao app de verdade. O plano é fazer ele <b style="color:#e6edf3">parar de refazer e passar a usar as casas que já existem</b>.</div>
+
+  <div class="faixa">
+    <div class="nota naoé">
+      <h3><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg> O que este plano NÃO é</h3>
+      <p>Não cria nota de volta, placar, nem nenhuma função nova. Não inventa nada. Não muda o que aparece pro piloto agora.</p>
+    </div>
+    <div class="nota é">
+      <h3><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg> O que este plano É</h3>
+      <p>Pegar as contas que o cérebro hoje refaz à toa e fazer ele usar a casa única que já existe. Organização do que já está construído.</p>
+    </div>
+  </div>
+
+  <div class="secao">As contas que o cérebro refaz hoje (tiradas do código)</div>
+  <table>
+    <thead>
+      <tr><th></th><th>Conta</th><th>O que o cérebro faz hoje</th><th>O que deveria usar</th><th>Esforço</th><th>Como eu provo</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="nq">1</td>
+        <td class="cn">Distância no GPS</td>
+        <td class="hoje">Tem a fórmula dele por dentro (em duas peças).</td>
+        <td class="casa">A casa única que já criamos na 1ª frente (geo).</td>
+        <td><span class="pill p-baixo">baixo</span></td>
+        <td class="prova">teste automático do cérebro + número idêntico.</td>
+      </tr>
+      <tr>
+        <td class="nq">2</td>
+        <td class="cn">Chegada (cruzar a linha de volta)</td>
+        <td class="hoje">Tem uma <b>cópia espelho</b> da do cockpit — o próprio código avisa "se mudar num, mudar no outro".</td>
+        <td class="casa">Uma geometria só, compartilhada com o cockpit.</td>
+        <td><span class="pill p-baixo">baixo</span></td>
+        <td class="prova">teste de chegada (já existe), nos dois lados.</td>
+      </tr>
+      <tr>
+        <td class="nq">3</td>
+        <td class="cn">Velocidade pelo GPS</td>
+        <td class="hoje">Calcula a velocidade do jeito dele; a mesma conta aparece em outros lugares.</td>
+        <td class="casa">Eleger/juntar numa casa única de velocidade.</td>
+        <td><span class="pill p-medio">médio</span></td>
+        <td class="prova">teste de velocidade + comparar com o atual.</td>
+      </tr>
+      <tr>
+        <td class="nq">4</td>
+        <td class="cn">Lições (coach)</td>
+        <td class="hoje"><b>Já usa uma casa real</b> em parte, mas ainda tem cálculos próprios; existe uma casa mais completa parada.</td>
+        <td class="casa">Decidir: manter a casa atual ou migrar pra a mais completa.</td>
+        <td><span class="pill p-medio">médio</span></td>
+        <td class="prova">teste do coach do cérebro.</td>
+      </tr>
+      <tr>
+        <td class="nq">5</td>
+        <td class="cn">Atraso por trecho</td>
+        <td class="hoje">Usa um atraso simples (da volta inteira).</td>
+        <td class="casa">A casa do atraso detalhado por trecho (já existe) — exige montar os pedaços da curva antes.</td>
+        <td><span class="pill p-alto">alto</span></td>
+        <td class="prova">teste do atraso por trecho (já existe).</td>
+      </tr>
+      <tr>
+        <td class="nq">6</td>
+        <td class="cn">Alerta de temperatura</td>
+        <td class="hoje">Tem o método dele; existe outro método em outro lugar (cockpit).</td>
+        <td class="casa">Primeiro <b>eleger qual é a casa</b> (são métodos diferentes), depois usar uma só.</td>
+        <td><span class="pill p-medio">médio</span></td>
+        <td class="prova">teste do preditivo + comparar os dois.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="secao">A ordem que eu recomendo</div>
+  <div class="ordem">
+    <div class="et seg">
+      <div class="et-n">Etapa 1 · agora</div>
+      <div class="et-t">As duas seguras</div>
+      <div class="et-d">Distância (1) e Chegada (2). Risco baixo, mata duplicação real, provo por teste. Nada vivo depende do cérebro, então não quebra o cockpit.</div>
+    </div>
+    <div class="et seg">
+      <div class="et-n">Etapa 2</div>
+      <div class="et-t">Velocidade numa casa só</div>
+      <div class="et-d">Juntar a conta de velocidade (3) num lugar só. Esforço médio, provo comparando com o resultado de hoje.</div>
+    </div>
+    <div class="et dec">
+      <div class="et-n">Etapa 3 · decisão sua</div>
+      <div class="et-t">Lições e atraso por trecho</div>
+      <div class="et-d">Coach (4) e atraso por trecho (5) dão mais trabalho. Aqui eu te trago a decisão de fazer agora ou depois, com o custo na mão.</div>
+    </div>
+    <div class="et dec">
+      <div class="et-n">Etapa 4</div>
+      <div class="et-t">Eleger a casa do alerta</div>
+      <div class="et-d">Alerta de temperatura (6): decidir qual dos dois métodos vira a casa, e usar um só.</div>
+    </div>
+    <div class="et fim">
+      <div class="et-n">Etapa final · separada</div>
+      <div class="et-t">Ligar numa tela de verdade</div>
+      <div class="et-d">Só depois de organizado por dentro: ligar o cérebro numa tela real. Aqui muda o que se vê — então só com o seu OK visual antes.</div>
+    </div>
+  </div>
+
+  <div class="destaque">
+    <h3>A fronteira que não vou cruzar sem você</h3>
+    <p>Tudo das etapas 1 a 4 é <b>por dentro do cérebro</b> — organização, sem mudar nenhuma tela, sem risco pro cockpit de produção (que nem usa o cérebro hoje). <b>Ligar o cérebro numa tela de verdade</b> (etapa final) é o único passo que muda o que você vê — e esse eu só faço com o seu "ok" olhando a tela, nunca por conta própria.</p>
+  </div>
+
+  <div class="regra">
+    <b>Como cada passo é feito:</b> em ambiente isolado de trabalho (a versão oficial fica intocada) · provado por teste automático antes de te mostrar · incorporado na versão oficial só com o seu "ok" · <b>zero função nova</b> — só organizar o que já existe · nada apagado sem caminho de volta.
+  </div>
+
+  <footer>P1 Fast · 23/06/2026 · plano de referência — nada foi alterado no sistema. Baseado no código real do cérebro (web/command-box/cerebro) e das casas existentes.</footer>
+
+</body>
+</html>

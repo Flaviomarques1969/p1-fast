@@ -686,6 +686,78 @@ enum Migrations {
             """)
             try db.execute(sql: "CREATE UNIQUE INDEX IF NOT EXISTS idx_checklist_tique_uq ON checklist_tique(evento_id, item_id);")
         }
+
+        // ═══ v36_equipe_membros ════════════════════════════════
+        // Equipe do box: pessoa + papel único + PIN (4 dígitos, guardado como
+        // HASH, nunca em texto). Entrada simples por PIN (decisão Flávio 23/06).
+        // ativo=0 remove da equipe sem apagar histórico. Tabela local; sync
+        // pra nuvem fica pra depois.
+        m.registerMigration("v36_equipe_membros") { db in
+            try db.execute(sql: """
+                CREATE TABLE equipe_membros (
+                    id          TEXT PRIMARY KEY,
+                    time_id     TEXT NOT NULL REFERENCES times(id) ON DELETE CASCADE,
+                    nome        TEXT NOT NULL CHECK (LENGTH(TRIM(nome)) > 0),
+                    papel       TEXT NOT NULL CHECK (papel IN (
+                                  'piloto','passageiro','engenheiro',
+                                  'mecanico','coach','convidado','chefe_equipe'
+                                )),
+                    pin_hash    TEXT,
+                    pin_set_em  INTEGER,
+                    ativo       INTEGER NOT NULL DEFAULT 1,
+                    created_at  INTEGER NOT NULL,
+                    updated_at  INTEGER NOT NULL,
+                    synced_at   INTEGER
+                );
+            """)
+            try db.execute(sql: "CREATE INDEX idx_equipe_membros_time ON equipe_membros(time_id);")
+        }
+
+        // ═══ v37_stint_check ═══════════════════════════════════
+        // Marcações do checklist DENTRO de um stint: cada item marcado como
+        // feito, com quem fez/conferiu e quando. Uma marca por (stint, item).
+        // Alimenta o finalizar e a pendência (obrigatório não feito). Local.
+        m.registerMigration("v37_stint_check") { db in
+            try db.execute(sql: """
+                CREATE TABLE stint_check (
+                    id          TEXT PRIMARY KEY,
+                    time_id     TEXT NOT NULL REFERENCES times(id) ON DELETE CASCADE,
+                    stint_id    TEXT NOT NULL,
+                    item_id     TEXT NOT NULL,
+                    feito       INTEGER NOT NULL DEFAULT 0,
+                    feito_por   TEXT,
+                    feito_papel TEXT,
+                    feito_em    INTEGER,
+                    updated_at  INTEGER NOT NULL,
+                    synced_at   INTEGER
+                );
+            """)
+            try db.execute(sql: "CREATE UNIQUE INDEX idx_stint_check_uq ON stint_check(stint_id, item_id);")
+        }
+
+        // ═══ v38_dia_check ═════════════════════════════════════
+        // Marcações do checklist do DIA do evento: cada item marcado como
+        // feito, com quem fez/conferiu e quando. Âncora = evento + dia
+        // (uma marca por evento+dia+item). Alimenta o finalizar e a pendência
+        // (obrigatório não feito). Local. Irmão de stint_check (v37).
+        m.registerMigration("v38_dia_check") { db in
+            try db.execute(sql: """
+                CREATE TABLE dia_check (
+                    id          TEXT PRIMARY KEY,
+                    time_id     TEXT NOT NULL REFERENCES times(id) ON DELETE CASCADE,
+                    evento_id   TEXT NOT NULL,
+                    dia         TEXT NOT NULL,
+                    item_id     TEXT NOT NULL,
+                    feito       INTEGER NOT NULL DEFAULT 0,
+                    feito_por   TEXT,
+                    feito_papel TEXT,
+                    feito_em    INTEGER,
+                    updated_at  INTEGER NOT NULL,
+                    synced_at   INTEGER
+                );
+            """)
+            try db.execute(sql: "CREATE UNIQUE INDEX idx_dia_check_uq ON dia_check(evento_id, dia, item_id);")
+        }
     }
 
     // swiftlint:disable:next function_body_length

@@ -59,7 +59,9 @@ struct CockpitPilotoView: View {
 
     /// Folga simétrica (pontos) pra as pontas do painel não ficarem sob a quina
     /// arredondada/ilha do iPhone. Ajuste fino aqui se o Flávio pedir mais/menos.
-    private var cockpitFolga: CGFloat { 46 }
+    /// 46→18 (Flávio 11/07): explorar a tela toda; o canto arredondado do próprio
+    /// painel absorve a quina do aparelho.
+    private var cockpitFolga: CGFloat { 18 }
 
     private func voltarBotao(_ action: @escaping () -> Void) -> some View {
         Button(action: action) {

@@ -78,6 +78,8 @@ private enum AppRoute {
     case telemetria
     case testeAoVivo
     case assistir
+    case assistirDemo
+    case reverVoltaDemo
 
     static var fromLaunchArgs: AppRoute {
         let args = ProcessInfo.processInfo.arguments
@@ -103,6 +105,8 @@ private enum AppRoute {
         if args.contains("--p1-setup-avancado") { return .setupAvancado }
         if args.contains("--p1-telemetria") { return .telemetria }
         if args.contains("--p1-teste-aovivo") { return .testeAoVivo }
+        if args.contains("--p1-rever-volta-demo") { return .reverVoltaDemo }
+        if args.contains("--p1-assistir-demo") { return .assistirDemo }
         if args.contains("--p1-assistir") { return .assistir }
         if args.contains("--p1-eventos") { return .eventos }
         return .home
@@ -126,9 +130,6 @@ struct ContentView: View {
         // vertical o esconde. O app por baixo nunca desmonta → estado preservado.
         // Sobreposição (ZStack) + giro na mão = confiável no aparelho real, sem
         // depender da rotação nativa do iOS (que falhava).
-        // DEV: --p1-force-ls-right/-left força o giro (testar o overlay no
-        // simulador sem sensor); --p1-overlay-only troca o app por um fundo
-        // cinza pra ver SÓ o overlay e qualquer desalinho.
         let ang = forcedLandscape ?? orientation.landscapeAngle
         ZStack {
             if ProcessInfo.processInfo.arguments.contains("--p1-overlay-only") {
@@ -142,10 +143,8 @@ struct ContentView: View {
             CockpitPilotoView(angle: ang ?? 90)
                 .opacity(ang != nil ? 1 : 0)
                 .allowsHitTesting(ang != nil)
-                // Tela cheia REAL: como o cockpit é overlay dentro do ZStack (que
-                // respeita a área segura), sem isto a "ilha" do topo empurrava o
-                // painel pra baixo (faixa preta em cima + corte embaixo). Ignorar
-                // a área segura AQUI faz o overlay ocupar a tela inteira, centrado.
+                // Tela cheia REAL: ignorar a área segura AQUI faz o overlay
+                // ocupar a tela inteira, centrado (senão a ilha empurra o painel).
                 .ignoresSafeArea()
                 .zIndex(100)
         }
@@ -162,9 +161,12 @@ struct ContentView: View {
 
     @ViewBuilder private var appContent: some View {
         if ProcessInfo.processInfo.arguments.contains("--p1-cockpit") {
-            // Atalho SÓ-DEV pra ver/screenshot o Cockpit do Piloto no simulador
-            // sem login (a tela não depende de repositórios).
-            CockpitPilotoView(onClose: {})
+            // Atalho SÓ-DEV (sem login): placeholder em retrato. GIRE o simulador
+            // pra horizontal que o cockpit nativo aparece por cima (vSize compacto).
+            ZStack {
+                Color.black.ignoresSafeArea()
+                Text("Gire o celular →").foregroundStyle(.white).font(.title3)
+            }
         } else if ProcessInfo.processInfo.arguments.contains("--p1-hub-mock") {
             // Atalho SÓ-DEV pra validar o hub do carro no simulador sem login.
             HubMockLauncher()
@@ -248,6 +250,13 @@ private struct ReadyRoot: View {
     @StateObject private var pecaRepo: PecaRepository
     @StateObject private var estoqueRepo: EstoqueRepository
     @StateObject private var arquivoRepo: ArquivoRepository
+    /// Equipe do box (papel + PIN) — alimenta a aba Equipe e o grupo Checklist
+    /// da Garagem premium.
+    @StateObject private var equipeStore: EquipeStore
+    /// Pessoa logada no app (login por PIN da entrada). O app lembra quem é.
+    @StateObject private var currentPerson = CurrentPersonStore()
+    /// Equipe já lida do banco (pra decidir se mostra o login da pessoa sem piscar a tela).
+    @State private var equipeCarregada = false
     /// Histórico de navegação estável (ver NavRouter em HomeView.swift):
     /// criado UMA vez aqui pra não se perder quando os repositórios acima
     /// publicam e re-renderizam esta view.
@@ -271,6 +280,7 @@ private struct ReadyRoot: View {
         _pecaRepo = StateObject(wrappedValue: PecaRepository(queue: queue))
         _estoqueRepo = StateObject(wrappedValue: EstoqueRepository(queue: queue))
         _arquivoRepo = StateObject(wrappedValue: ArquivoRepository(queue: queue))
+        _equipeStore = StateObject(wrappedValue: EquipeStore(queue: queue))
         let reach = Reachability()
         _reachability = StateObject(wrappedValue: reach)
         _syncCoordinator = StateObject(
@@ -282,7 +292,7 @@ private struct ReadyRoot: View {
     }
 
     var body: some View {
-        routedView
+        conteudoComLogin
             .environmentObject(carroRepo)
             .environmentObject(eventoRepo)
             .environmentObject(pilotoRepo)
@@ -302,8 +312,13 @@ private struct ReadyRoot: View {
             .environmentObject(pecaRepo)
             .environmentObject(estoqueRepo)
             .environmentObject(arquivoRepo)
+            .environmentObject(equipeStore)
+            .environmentObject(currentPerson)
             .environmentObject(router)
+            .environment(\.databaseQueue, queue)
             .task {
+                equipeStore.carregar()
+                equipeCarregada = true
                 await carroRepo.bootstrap()
                 // EventoRepo seeda o TrackRow brasília — TrackRepo
                 // (Prompt #19) complementa com layout + segments + marcos
@@ -315,11 +330,22 @@ private struct ReadyRoot: View {
                 await passageiroRepo.bootstrap()
                 await combustivelRepo.bootstrap()
                 await stintRepo.bootstrap()
+                // Detecta o stint que já está rolando (se houver) pra a primeira
+                // tela mostrar "Stint ao vivo" já na abertura (Etapa 1, Flávio 25/06).
+                await stintRepo.carregarStintAtivo()
                 await pneuRepo.bootstrap()
                 await freioRepo.bootstrap()
                 await trackRepo.bootstrap()
                 await licaoRepo.bootstrap()
                 await pendenciaRepo.bootstrap()
+                // Prontidão do herói da Home: carrega (SOMENTE LEITURA) as
+                // pendências do evento de hoje / próximo, pra o anel do herói já
+                // nascer com dado real. Não monta checklist (não escreve) — se o
+                // evento nunca teve pendências criadas, fica nil (anel some).
+                if let heroId = (eventoRepo.eventoAtivoHoje() ?? eventoRepo.proximoEvento())?.id {
+                    try? await pendenciaRepo.reloadInstancesForEvento(heroId)
+                    try? await pendenciaRepo.reloadExtras(heroId)
+                }
                 await pecaRepo.bootstrap()
                 await estoqueRepo.bootstrap()
                 await arquivoRepo.bootstrap()
@@ -350,6 +376,28 @@ private struct ReadyRoot: View {
             }
     }
 
+    /// Decide se mostra o login por pessoa: só na Home real, quando a equipe
+    /// tem gente com PIN e ninguém entrou ainda. Sem equipe com PIN, não trava
+    /// (o app abre normal). Atalhos de teste (--p1-*) nunca pedem login.
+    private var precisaLoginPessoa: Bool {
+        AppRoute.fromLaunchArgs == .home
+            && !currentPerson.logada
+            && equipeStore.membros.contains { $0.pinHash != nil }
+    }
+
+    @ViewBuilder
+    private var conteudoComLogin: some View {
+        if !equipeCarregada {
+            Splash(stateLabel: "Iniciando…", isError: false)
+        } else if precisaLoginPessoa {
+            PersonLoginView(equipe: equipeStore) { membro in
+                currentPerson.entrar(membro)
+            }
+        } else {
+            routedView
+        }
+    }
+
     /// Closure passada pra `HomeView` montar a `TelemetriaView` do
     /// atalho dev. Fica em `ContentView`/`ReadyRoot` porque só ele
     /// tem acesso ao `queue` GRDB e ao `TrackRepository` (Home não
@@ -378,17 +426,52 @@ private struct ReadyRoot: View {
         let carros = carroRepo.carros
         let eventos = eventoRepo.eventos
         if carros.isEmpty && eventos.isEmpty { return .empty }
+        // Prontidão do herói: pendências do evento de hoje > próximo evento.
+        // Somente leitura — usa o que já está carregado no pendenciaRepo (o
+        // preload read-only do bootstrap traz as pendências do herói). Sem
+        // instâncias montadas → nil (anel some, dado honesto).
+        let heroId = (eventoRepo.eventoAtivoHoje() ?? eventoRepo.proximoEvento())?.id
+        let (pct, abertas) = prontidaoDoEvento(heroId)
         let data = HomeData(
             carrosTotal: carros.count,
             eventosTotal: eventos.count,
             stintsTotal: carroRepo.stintsPorCarro.values.reduce(0, +),
             voltasTotal: carroRepo.voltasTotal,
             melhorVoltaMs: carroRepo.melhorVoltaMs,
+            prontidaoPct: pct,
+            pendenciasAbertas: abertas,
             eventoAtivoHoje: eventoRepo.eventoAtivoHoje().map(eventoCard),
             proximoEvento: eventoRepo.proximoEvento().map(eventoCard),
-            carrosRecentes: carros.prefix(3).map(carroCard)
+            carrosRecentes: carros.prefix(3).map(carroCard),
+            stintAoVivo: stintRepo.stintAtivo.map(stintAoVivoInfo)
         )
         return .filled(data)
+    }
+
+    /// Prontidão (pendências resolvidas / total) do evento do herói, SOMENTE
+    /// LEITURA sobre o que já está no pendenciaRepo. Sem id ou sem instâncias
+    /// montadas → (nil, 0): o herói mostra estado honesto (anel some). As
+    /// instâncias são criadas quando o usuário abre a aba Pendências — a Home
+    /// nunca escreve/monta checklist.
+    private func prontidaoDoEvento(_ eventoId: String?) -> (pct: Int?, abertas: Int) {
+        guard let id = eventoId else { return (nil, 0) }
+        let grupos = pendenciaRepo.grupos(forEventoId: id)
+        let total = grupos.reduce(0) { $0 + $1.total }
+        let check = grupos.reduce(0) { $0 + $1.checados }
+        guard total > 0 else { return (nil, 0) }
+        let pct = Int((Double(check) / Double(total) * 100).rounded())
+        return (pct, max(0, total - check))
+    }
+
+    /// Stint ativo (status='ativa') → resumo pro card "Stint ao vivo" do topo
+    /// da primeira tela (Etapa 1, Flávio 25/06).
+    private func stintAoVivoInfo(_ s: Stint) -> StintAoVivoInfo {
+        let tipo = s.objetivoDecomposto.tipo
+        return StintAoVivoInfo(
+            titulo: tipo.isEmpty ? "Stint livre" : tipo,
+            piloto: s.pilotoNome,
+            voltas: s.voltasCount
+        )
     }
 
     private func eventoCard(_ ev: EventoView) -> EventoMock {
@@ -438,6 +521,10 @@ private struct ReadyRoot: View {
                 telemetriaDevView: telemetriaBuilder,
                 onStintTap: stintTapDecision
             )
+            // Recarrega o stint ao vivo toda vez que a Home aparece — cobre o
+            // caso do bootstrap ter rodado antes do time do usuário estar pronto
+            // (Etapa 1, Flávio 25/06). Some/aparece sem precisar reabrir o app.
+            .task { await stintRepo.carregarStintAtivo() }
         case .homeEmpty:
             HomeView(
                 state: .empty,
@@ -495,6 +582,10 @@ private struct ReadyRoot: View {
             TesteAoVivoView()
         case .assistir:
             AssistirView()
+        case .assistirDemo:
+            AssistirView(demo: true)
+        case .reverVoltaDemo:
+            ReverVoltaDemoView()
         }
     }
 }

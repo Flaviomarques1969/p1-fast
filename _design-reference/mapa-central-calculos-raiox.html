@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Central de Cálculos — raio-x: cada conta, sua casa</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --card:#11161e; --line:#283040; --ink:#e6edf3; --mut:#9aa7b4;
+    --copiado:#ff6b6b; --copiado-bg:#241316; --copiado-bd:#5a2a2e;
+    --ordem:#39d98a; --ordem-bg:#0f241b; --ordem-bd:#1d4a35;
+    --parada:#f5b454; --parada-bg:#241c0e; --parada-bd:#5a4420;
+    --cerebro:#6cb6ff; --cerebro-bg:#0e2034; --cerebro-bd:#244a6e;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--bg);color:var(--ink);font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+  body{padding:26px 30px 60px}
+  header.topo{border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:20px}
+  h1{font-size:29px;font-weight:800}
+  .sub{color:var(--mut);font-size:15.5px;margin-top:6px;max-width:920px;line-height:1.5}
+
+  .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin:18px 0 6px}
+  @media(max-width:960px){.kpis{grid-template-columns:1fr 1fr}}
+  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:13px 15px}
+  .kpi .n{font-size:26px;font-weight:800;font-variant-numeric:tabular-nums}
+  .kpi .l{font-size:12px;color:var(--mut);margin-top:3px;line-height:1.35}
+  .kpi.k-cop .n{color:var(--copiado)} .kpi.k-par .n{color:var(--parada)} .kpi.k-cer .n{color:var(--cerebro)}
+
+  .destaque{background:linear-gradient(180deg,#10243a,#0d1117);border:1px solid var(--cerebro-bd);border-radius:14px;padding:18px 20px;margin:18px 0 4px;display:flex;gap:16px;align-items:flex-start}
+  .destaque .ic{flex:none;width:42px;height:42px;border-radius:10px;background:var(--cerebro-bg);color:var(--cerebro);display:grid;place-items:center}
+  .destaque h3{font-size:17px;margin-bottom:5px}
+  .destaque p{color:var(--mut);font-size:14px;line-height:1.5;max-width:980px}
+  .destaque b{color:#dCEBff}
+
+  .ferramentas{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:22px 0 16px}
+  .busca{flex:1;min-width:220px;display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 12px}
+  .busca input{flex:1;background:transparent;border:0;outline:0;color:var(--ink);font-size:14px}
+  .busca svg{color:var(--mut);flex:none}
+  .chip{cursor:pointer;user-select:none;font-size:13px;font-weight:600;border:1px solid var(--line);background:var(--card);color:var(--mut);border-radius:999px;padding:8px 14px;display:inline-flex;align-items:center;gap:7px;transition:.12s}
+  .chip .dot{width:9px;height:9px;border-radius:50%}
+  .chip[data-on="1"]{color:var(--ink)}
+  .chip.c-tudo[data-on="1"]{border-color:#5b6675;background:#1c2430}
+  .chip.c-copiado[data-on="1"]{border-color:var(--copiado-bd);background:var(--copiado-bg);color:#ffc7c7}
+  .chip.c-ordem[data-on="1"]{border-color:var(--ordem-bd);background:var(--ordem-bg);color:#bff3da}
+  .chip.c-parada[data-on="1"]{border-color:var(--parada-bd);background:var(--parada-bg);color:#ffe1ad}
+  .chip.c-cerebro[data-on="1"]{border-color:var(--cerebro-bd);background:var(--cerebro-bg);color:#cfe6ff}
+  .dot.copiado{background:var(--copiado)} .dot.ordem{background:var(--ordem)} .dot.parada{background:var(--parada)} .dot.cerebro{background:var(--cerebro)}
+
+  .grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px}
+  .conta{background:var(--card);border:1px solid var(--line);border-left-width:4px;border-radius:12px;padding:15px 16px;display:flex;flex-direction:column}
+  .conta.s-copiado{border-left-color:var(--copiado)} .conta.s-ordem{border-left-color:var(--ordem)}
+  .conta.s-parada{border-left-color:var(--parada)} .conta.s-cerebro{border-left-color:var(--cerebro)}
+  .conta .cab{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:7px}
+  .conta .nome{font-size:16px;font-weight:700;line-height:1.25}
+  .selo{flex:none;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:3px 8px;border-radius:6px;white-space:nowrap}
+  .selo.copiado{background:var(--copiado-bg);color:var(--copiado)} .selo.ordem{background:var(--ordem-bg);color:var(--ordem)}
+  .selo.parada{background:var(--parada-bg);color:var(--parada)} .selo.cerebro{background:var(--cerebro-bg);color:var(--cerebro)}
+  .conta .desc{font-size:13.5px;color:#c7d0da;line-height:1.45;margin-bottom:10px}
+  .conta .linha{display:flex;gap:8px;font-size:12px;margin-top:auto}
+  .conta .casa{color:var(--mut)}
+  .conta .casa b{color:var(--ink);font-weight:600}
+  .versoes{font-variant-numeric:tabular-nums;font-weight:800}
+  .versoes.alto{color:var(--copiado)}
+  .tec{margin-top:9px;font-size:11px;color:#6c7785;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;line-height:1.5;border-top:1px dashed var(--line);padding-top:8px;word-break:break-word}
+  .vazio{color:var(--mut);text-align:center;padding:40px;font-size:14px;display:none}
+
+  footer{margin-top:30px;border-top:1px solid var(--line);padding-top:16px;color:var(--mut);font-size:12.5px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
+</style>
+</head>
+<body>
+
+<header class="topo">
+  <h1>Central de Cálculos — raio-x de cada conta</h1>
+  <div class="sub">Cada conta do sistema, em que casa ela mora, quantas versões existem e quem usa. Verde = em ordem. Vermelho = a mesma conta copiada em vários lugares. Amarelo = tem casa boa, mas ninguém usa. Azul = o cérebro (caminho paralelo). Busque ou filtre abaixo.</div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="n">26</div><div class="l">contas mapeadas no código real</div></div>
+    <div class="kpi k-cop"><div class="n">7</div><div class="l">contas copiadas em mais de um lugar</div></div>
+    <div class="kpi k-cop"><div class="n">16</div><div class="l">cópias só da continha de distância no GPS</div></div>
+    <div class="kpi k-par"><div class="n">3</div><div class="l">casas prontas e boas que ninguém usa</div></div>
+    <div class="kpi k-cer"><div class="n">1</div><div class="l">cérebro paralelo, desligado das telas</div></div>
+  </div>
+</header>
+
+<div class="destaque">
+  <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3a4 4 0 0 0 0 18M12 3a4 4 0 0 1 0 18M3 12h18"/></svg></div>
+  <div>
+    <h3>O furo principal: o cérebro está desligado</h3>
+    <p>O "cérebro" (a peça que deveria <b>reger</b> todas as contas) hoje <b>refaz as suas próprias</b> — atraso, velocidade, ritmo, coach, chegada, preditivo — e <b>não está ligado a nenhuma tela de app de verdade</b>: só protótipos e testes o usam. Enquanto isso, ele <b>ignora casas reais que já existem prontas</b> (atraso, nota, lições, linha de referência). É o maior ganho: ligar o cérebro pra mandar nas casas únicas, em vez de ter as dele.</p>
+  </div>
+</div>
+
+<div class="ferramentas">
+  <label class="busca">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+    <input id="q" type="text" placeholder="Buscar conta (ex.: marcha, freio, nota, distância)...">
+  </label>
+  <span class="chip c-tudo"    data-f="tudo"    data-on="1">Tudo</span>
+  <span class="chip c-copiado" data-f="copiado" data-on="1"><span class="dot copiado"></span>Copiado</span>
+  <span class="chip c-parada"  data-f="parada"  data-on="1"><span class="dot parada"></span>Casa parada</span>
+  <span class="chip c-cerebro" data-f="cerebro" data-on="1"><span class="dot cerebro"></span>O cérebro</span>
+  <span class="chip c-ordem"   data-f="ordem"   data-on="1"><span class="dot ordem"></span>Em ordem</span>
+</div>
+
+<div class="grade" id="grade"></div>
+<div class="vazio" id="vazio">Nada encontrado com esse filtro/busca.</div>
+
+<footer>
+  <div>P1 Fast · 23/06/2026 · desenho de referência — não altera código, banco nem produção.</div>
+  <div>Tudo verificado no código real (sem inventar). Detalhe técnico cinza embaixo de cada conta.</div>
+</footer>
+
+<script>
+const CONTAS = [
+  // ---------------- COPIADO ----------------
+  {nome:"Distância entre 2 pontos do GPS", status:"copiado", selo:"copiado em 16", versoes:16, alto:true,
+   desc:"A mesma continha (quão longe está um ponto do outro) com 2 fórmulas diferentes e 3 medidas de raio da Terra diferentes. É a base de quase tudo — devia ser uma só.",
+   casa:"Espalhada", tec:"web/cockpit/{freio-trecho,classificador-trecho,delta-calculator,trecho-detector,apice-calculator,box-detector,chegada-detector,oportunidade-trecho,coreografia-volta,trail-cockpit-motor,live-data-bridge}.js · command-box/cerebro/{cerebro-velocidade,chegada-gps}.js · command-box/passagem-real.js · src/domain/trajectory-monitor.js · src/telemetry/{projector,cross-validation}.js · espelho iOS"},
+  {nome:"Velocidade pelo GPS", status:"copiado", selo:"várias cópias", versoes:4,
+   desc:"Calcular a velocidade entre dois pontos. Cada peça faz a sua, do seu jeito.",
+   casa:"4 lugares", tec:"command-box/cerebro/cerebro-velocidade.js · command-box/passagem-real.js · command-box/vmin-curvas-reais.js · command-box/frenagem-real.js"},
+  {nome:"Qual marcha", status:"copiado", selo:"2 versões", versoes:2,
+   desc:"Descobrir em que marcha o carro está. Há duas contas: uma antiga no domínio e a de produção, que roda no navegador.",
+   casa:"2 casas", tec:"src/domain/gear-estimation.js (antiga) × web/cockpit/gear-detector-online.js (produção)"},
+  {nome:"Ponto de troca da luz de marcha", status:"copiado", selo:"2 caminhos", versoes:2,
+   desc:"A rotação onde a luz manda trocar de marcha. Decidida em dois lugares — precisa unificar. Usada por 3 telas (painel, T3000, command box).",
+   casa:"2 casas", tec:"src/domain/shift-target.js × web/cockpit/shift-light-orquestrador.js (+ shift-light-modos.js)"},
+  {nome:"Reação do piloto", status:"copiado", selo:"2 versões", versoes:2,
+   desc:"O atraso humano que antecipa o aviso. Existe em dois arquivos quase iguais.",
+   casa:"2 casas", tec:"src/domain/pilot-reaction.js × web/cockpit/pilot-reaction.js"},
+  {nome:"Chegada (cruzar a linha de volta)", status:"copiado", selo:"3 versões", versoes:3,
+   desc:"Detectar quando o carro fecha a volta. Três detectores diferentes pra mesma coisa.",
+   casa:"3 casas", tec:"web/cockpit/chegada-detector.js × command-box/cerebro/chegada-gps.js × src/telemetry/detector.js"},
+  {nome:"Fase da curva (início/meio/fim)", status:"copiado", selo:"2 espelhos", versoes:2,
+   desc:"Dividir a curva em fases. O mesmo arquivo está copiado em duas pastas.",
+   casa:"2 cópias", tec:"src/domain/fase-curva.js × src/telemetry/fase-curva.js"},
+
+  // ---------------- CASA PARADA ----------------
+  {nome:"Nota / Score", status:"parada", selo:"pronta, sem uso", versoes:1,
+   desc:"Casa completa de nota: nota da volta, nota compensada e categoria. Está pronta e boa — e NENHUMA tela usa. Você já pagou por ela.",
+   casa:"src/domain/score.js", tec:"src/domain/score.js — 0 consumidores fora de teste (verificado por grep)"},
+  {nome:"Linha de referência / melhor volta", status:"parada", selo:"pronta, sem uso", versoes:1,
+   desc:"Calcula a melhor volta de referência e o atraso por trecho contra ela. Pronta e não usada por nenhuma tela.",
+   casa:"src/domain/reference-line.js", tec:"src/domain/reference-line.js (+ baseline-vectors.js) — 0 consumidores fora de teste"},
+  {nome:"Coach / Lições (motor robusto)", status:"parada", selo:"pronto, mal usado", versoes:1,
+   desc:"Motor de coaching completo no domínio (decide atacar/manter, classifica o erro, prioriza). Só um exemplo o liga — nenhuma tela de verdade. As telas usam frases próprias e o cérebro tem o seu.",
+   casa:"src/domain/p1-coach.js", tec:"src/domain/p1-coach.js (+ pedagogical-decider, error-classifier, attack-priority) — só importado por examples/p1-coach-wireup.js"},
+
+  // ---------------- O CÉREBRO ----------------
+  {nome:"O cérebro (deveria reger, hoje refaz)", status:"cerebro", selo:"paralelo e desligado", versoes:6,
+   desc:"Deveria mandar nas contas. Em vez disso refaz as suas: atraso, velocidade, ritmo/nota, coach, chegada, preditivo. E não está ligado a nenhuma tela de app de verdade — só protótipos e testes. Ignora as casas reais que já existem.",
+   casa:"web/command-box/cerebro/", tec:"cerebro-vivo.js · cerebro-painel.js · cerebro-coach.js · cerebro-velocidade.js · cerebro-preditivo.js · chegada-gps.js — importado só por mockups e *.smoke.mjs"},
+
+  // ---------------- EM ORDEM ----------------
+  {nome:"Freio / frenagem", status:"ordem", selo:"cadeia limpa", versoes:1,
+   desc:"Um motor de física do freio, e os outros reaproveitam. É cadeia, não cópia. (Só usa a distância própria — cai no item vermelho da distância.)",
+   casa:"web/cockpit/freio-trecho.js", tec:"freio-trecho.js (motor) → trail-cockpit-motor.js, command-box/frenagem-real.js (reusam)"},
+  {nome:"Atraso (delta) no painel", status:"ordem", selo:"tem casa e usa", versoes:1,
+   desc:"O atraso pra melhor volta no painel do piloto. Tem casa e é usada por 2 telas. Atenção: o cérebro refaz o seu à parte (ver 'O cérebro').",
+   casa:"web/cockpit/delta-calculator.js", tec:"delta-calculator.js → usado por main.js e main-t3000.js"},
+  {nome:"Ápice / Vmin", status:"ordem", selo:"papéis distintos", versoes:3,
+   desc:"Achar o ápice e a velocidade mínima da curva. Vários arquivos, mas com papéis diferentes — ok.",
+   casa:"apice-calculator + vmin-*", tec:"web/cockpit/apice-calculator.js · command-box/{vmin-aprendizado,vmin-curvas-reais}.js · src/domain/fase-curva.js"},
+  {nome:"Detecção de trecho", status:"ordem", selo:"revisar sobreposição", versoes:3,
+   desc:"Saber em que trecho da pista o carro está. Peças com papéis; vale revisar se há sobreposição.",
+   casa:"trecho-detector + track-detector", tec:"web/cockpit/{trecho-detector,track-detector}.js · src/domain/trajectory-monitor.js"},
+  {nome:"Classificação do tipo de curva", status:"ordem", selo:"1 motor + dados", versoes:1,
+   desc:"Dizer se a curva é lenta, média, rápida. Um motor só, com a tabela das curvas de Brasília à parte.",
+   casa:"web/cockpit/classificador-trecho.js", tec:"classificador-trecho.js + command-box/tipos-curva-brasilia.js (dados)"},
+  {nome:"Passagem (tempo por trecho)", status:"ordem", selo:"papéis distintos", versoes:3,
+   desc:"Tempo de cada trecho. Um adapta o dado real, um aprende, um modela a volta.",
+   casa:"passagem-real + aprendizado + lap", tec:"command-box/passagem-real.js · web/cockpit/aprendizado-tempo-passagem.js · src/domain/lap.js"},
+  {nome:"Preditivo (temperatura/desgaste)", status:"ordem", selo:"atenção: cérebro tem o seu", versoes:3,
+   desc:"Prever quando algo passa do limite. Atenção: o cérebro também tem o dele.",
+   casa:"padrao-acumulador + tire-wear", tec:"web/cockpit/padrao-acumulador.js · command-box/cerebro/cerebro-preditivo.js · src/domain/tire-wear.js"},
+  {nome:"Alertas críticos", status:"ordem", selo:"1 casa", versoes:1,
+   desc:"Os 20 alertas por limiar de sensor. Tudo num lugar só.",
+   casa:"web/cockpit/alertas-criticos.js", tec:"alertas-criticos.js"},
+  {nome:"Mensagens do piloto", status:"ordem", selo:"1 casa", versoes:1,
+   desc:"As 13 frases pedagógicas mapeadas do atraso. Num lugar só.",
+   casa:"web/cockpit/mensagens-pedagogicas.js", tec:"mensagens-pedagogicas.js"},
+  {nome:"Combustível", status:"ordem", selo:"1 casa", versoes:1,
+   desc:"Voltas restantes de combustível e progresso do stint. Uma casa (uso em tela não confirmado).",
+   casa:"src/domain/fuel-calc.js", tec:"src/domain/fuel-calc.js"},
+  {nome:"Desgaste de pneu", status:"ordem", selo:"1 casa", versoes:1,
+   desc:"Estimativa de vida útil do pneu. Uma casa.",
+   casa:"src/domain/tire-wear.js", tec:"src/domain/tire-wear.js (+ web/cockpit/tipo-pneu-normalizer.js)"},
+  {nome:"Consistência / qualidade do dado", status:"ordem", selo:"1 casa cada", versoes:1,
+   desc:"O quanto o piloto repete a volta e o quanto o dado é confiável. Uma casa para cada.",
+   casa:"repeatability + data-quality", tec:"src/domain/repeatability.js · src/domain/data-quality.js"},
+  {nome:"Alvos do dinamômetro", status:"ordem", selo:"cadeia", versoes:1,
+   desc:"A rotação ideal de troca a partir da curva de potência do motor. Cadeia limpa.",
+   casa:"dyno-target-calculator", tec:"src/domain/{dyno-target-calculator,tolerance-from-dyno,dyno-csv-parser}.js · web/cockpit/dyno-loader.js"},
+  {nome:"Classificação de erro", status:"ordem", selo:"1 casa", versoes:1,
+   desc:"Diz qual foi o erro (freou cedo, saiu forte...). Uma casa.",
+   casa:"src/domain/error-classifier.js", tec:"src/domain/error-classifier.js"},
+  {nome:"Prioridade de ataque", status:"ordem", selo:"1 casa", versoes:1,
+   desc:"Onde vale mais a pena ganhar tempo. Uma casa.",
+   casa:"src/domain/attack-priority.js", tec:"src/domain/attack-priority.js"},
+];
+
+const ORDEM = {copiado:0, parada:1, cerebro:2, ordem:3};
+CONTAS.sort((a,b)=> (ORDEM[a.status]-ORDEM[b.status]) || (b.versoes-a.versoes));
+
+const filtros = {tudo:true, copiado:true, parada:true, cerebro:true, ordem:true};
+const grade = document.getElementById('grade');
+const vazio = document.getElementById('vazio');
+const q = document.getElementById('q');
+
+function render(){
+  const termo = q.value.trim().toLowerCase();
+  grade.innerHTML = '';
+  let n = 0;
+  for(const c of CONTAS){
+    if(!filtros[c.status]) continue;
+    if(termo && !(c.nome.toLowerCase().includes(termo) || c.desc.toLowerCase().includes(termo) || (c.tec||'').toLowerCase().includes(termo))) continue;
+    n++;
+    const el = document.createElement('div');
+    el.className = 'conta s-'+c.status;
+    el.innerHTML = `
+      <div class="cab">
+        <div class="nome">${c.nome}</div>
+        <span class="selo ${c.status}">${c.selo}</span>
+      </div>
+      <div class="desc">${c.desc}</div>
+      <div class="linha"><span class="casa">Casa: <b>${c.casa}</b></span></div>
+      <div class="tec">${c.tec}</div>`;
+    grade.appendChild(el);
+  }
+  vazio.style.display = n ? 'none' : 'block';
+}
+
+document.querySelectorAll('.chip').forEach(ch=>{
+  ch.addEventListener('click', ()=>{
+    const f = ch.dataset.f;
+    if(f==='tudo'){
+      const turnOn = ch.dataset.on!=='1' ? true : false;
+      // "Tudo" liga/desliga todos
+      const novo = ch.dataset.on==='1' ? false : true;
+      ['copiado','parada','cerebro','ordem'].forEach(k=>filtros[k]=novo);
+      document.querySelectorAll('.chip').forEach(c2=>c2.dataset.on = novo?'1':'0');
+      ch.dataset.on = novo?'1':'0';
+    } else {
+      filtros[f] = !filtros[f];
+      ch.dataset.on = filtros[f]?'1':'0';
+      const todos = ['copiado','parada','cerebro','ordem'].every(k=>filtros[k]);
+      document.querySelector('.c-tudo').dataset.on = todos?'1':'0';
+    }
+    render();
+  });
+});
+q.addEventListener('input', render);
+render();
+</script>
+</body>
+</html>

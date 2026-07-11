@@ -20,15 +20,9 @@
 // estratégia decidida pro PAce TPS×GPS).
 
 // ── Geometria básica ──────────────────────────────────────────
-
-const R_TERRA = 6378137;
-const D2R = Math.PI / 180;
-
-function distM(a, b) {
-  const x = (b.lng - a.lng) * D2R * Math.cos(((a.lat + b.lat) / 2) * D2R);
-  const y = (b.lat - a.lat) * D2R;
-  return Math.hypot(x, y) * R_TERRA;
-}
+// Distância em metros: casa única em geo.js (antes era cópia local desta fórmula).
+import { distanciaPontos as distM } from './geo.js';
+import { kmhParaMs } from './velocidade.js';
 
 /** Distância acumulada (m) ao longo da passagem — eixo X de todos os gráficos. */
 export function comDistanciaAcumulada(pontos) {
@@ -69,7 +63,7 @@ export function simularFreioPelaFisica(pontos) {
     const a = pts[Math.max(0, i - 1)], b = pts[Math.min(pts.length - 1, i + 1)];
     const ds = b.distM - a.distM;
     if (!(ds > 0.5)) return 0;
-    const v1 = (a.kmh ?? 0) / 3.6, v2 = (b.kmh ?? 0) / 3.6;
+    const v1 = kmhParaMs(a.kmh ?? 0), v2 = kmhParaMs(b.kmh ?? 0);
     return (v2 * v2 - v1 * v1) / (2 * ds); // m/s² (negativo = freando)
   });
   const acelSuave = suavizar(acel, 3);

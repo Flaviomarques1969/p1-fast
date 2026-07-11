@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TV do box — o que falta pra mostrar o carro ao vivo</title>
+<style>
+  :root{
+    --bg:#0b0e13; --panel:#11161f; --panel2:#141b26; --line:#222c3a;
+    --ink:#eef2f8; --muted:#9aa7b8; --faint:#6b7a8d;
+    --decisao:#e7b53c; --decisao-bg:#221c0c; --decisao-line:#5a4716;
+    --ligar:#37c98a; --ligar-bg:#0d2019; --ligar-line:#1d5a41;
+    --espera:#6f8bb0; --espera-bg:#121a26; --espera-line:#2a3a52;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{width:100%;padding:34px 38px 60px}
+  header h1{font-size:30px;font-weight:800;letter-spacing:-.02em;margin:0 0 8px}
+  header p.sub{font-size:16px;line-height:1.5;color:var(--muted);max-width:1100px;margin:0 0 4px}
+  header p.tiny{font-size:13px;color:var(--faint);margin:10px 0 0}
+
+  .legend{display:flex;gap:14px;flex-wrap:wrap;margin:22px 0 26px}
+  .leg{display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px solid var(--line);
+    border-radius:12px;background:var(--panel);font-size:13.5px;color:var(--muted)}
+  .leg b{color:var(--ink);font-weight:700}
+  .dot{width:11px;height:11px;border-radius:50%;flex:0 0 auto}
+  .dot.d{background:var(--decisao)} .dot.l{background:var(--ligar)} .dot.e{background:var(--espera)}
+
+  .cols{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  @media(max-width:1100px){.cols{grid-template-columns:1fr}}
+  .col{border:1px solid var(--line);border-radius:16px;background:var(--panel);overflow:hidden;display:flex;flex-direction:column}
+  .col h2{margin:0;font-size:15px;font-weight:800;letter-spacing:.02em;text-transform:uppercase;
+    padding:16px 18px;display:flex;align-items:center;gap:11px;border-bottom:1px solid var(--line)}
+  .col .lead{font-size:13px;color:var(--muted);padding:13px 18px 4px;line-height:1.45}
+  .col.d h2{color:var(--decisao);background:var(--decisao-bg)}
+  .col.l h2{color:var(--ligar);background:var(--ligar-bg)}
+  .col.e h2{color:var(--espera);background:var(--espera-bg)}
+  .col h2 .badge{margin-left:auto;font-size:12px;font-weight:700;color:var(--faint);
+    border:1px solid var(--line);border-radius:20px;padding:3px 10px;text-transform:none;letter-spacing:0}
+
+  .items{padding:14px 14px 16px;display:flex;flex-direction:column;gap:12px;flex:1}
+  .card{border:1px solid var(--line);border-radius:13px;background:var(--panel2);padding:15px 16px;position:relative}
+  .card.d{border-left:4px solid var(--decisao)}
+  .card.l{border-left:4px solid var(--ligar)}
+  .card.e{border-left:4px solid var(--espera)}
+  .card .t{font-size:16px;font-weight:750;margin:0 0 7px;line-height:1.3}
+  .card .desc{font-size:13.5px;color:var(--muted);line-height:1.5;margin:0 0 9px}
+  .card .meta{font-size:12px;color:var(--faint);display:flex;gap:8px;align-items:flex-start;line-height:1.45}
+  .card .meta svg{flex:0 0 auto;margin-top:1px}
+  .pill{display:inline-block;font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:20px;margin-bottom:9px}
+  .pill.maior{color:var(--decisao);background:var(--decisao-bg);border:1px solid var(--decisao-line)}
+  .pill.menor{color:var(--faint);background:#0e141d;border:1px solid var(--line)}
+  .pill.eu{color:var(--ligar);background:var(--ligar-bg);border:1px solid var(--ligar-line)}
+  .pill.sensor{color:var(--espera);background:var(--espera-bg);border:1px solid var(--espera-line)}
+
+  .tie{margin-top:24px;border:1px solid var(--espera-line);border-radius:16px;
+    background:linear-gradient(180deg,var(--espera-bg),#0c121b);padding:20px 22px;display:flex;gap:16px;align-items:flex-start}
+  .tie .ic{flex:0 0 auto;color:var(--espera)}
+  .tie h3{margin:0 0 6px;font-size:16px;font-weight:800;color:var(--espera)}
+  .tie p{margin:0;font-size:14px;line-height:1.55;color:var(--muted);max-width:1100px}
+  .tie b{color:var(--ink)}
+
+  footer{margin-top:26px;color:var(--faint);font-size:12.5px;line-height:1.6}
+  footer code{color:var(--muted);background:#0e141d;border:1px solid var(--line);padding:1px 6px;border-radius:6px;font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>TV do box — o que falta pra mostrar o carro ao vivo</h1>
+    <p class="sub">Hoje essa tela é um <b>protótipo com voltas de mentirinha</b>. Pra ela virar a TV de 32&Prime; do box
+    mostrando o seu carro <b>de verdade, ao vivo</b>, faltam 4 coisas. Aqui elas estão separadas por quem destrava cada uma:
+    o que depende de <b>decisão sua</b>, o que é <b>só ligar</b> (eu faço) e o que <b>depende do sensor ou do dia de pista</b>.</p>
+    <p class="tiny">Verificado no código real em 24/06: o "cérebro" existe em <code style="color:var(--faint)">web/command-box/cerebro/</code> (11 peças) e nenhuma tela de verdade usa ele. O protótipo da TV é <code style="color:var(--faint)">web/command-box/replay-hoje.html</code>.</p>
+  </header>
+
+  <div class="legend">
+    <div class="leg"><span class="dot d"></span><b>Decisão sua</b>&nbsp;— trava o resto. Você escolhe, eu executo.</div>
+    <div class="leg"><span class="dot l"></span><b>Só ligar</b>&nbsp;— sem decisão e sem peça nova. Eu faço.</div>
+    <div class="leg"><span class="dot e"></span><b>Depende de sensor / pista</b>&nbsp;— não dá pra forçar; espera o carro ou o dia de pista.</div>
+  </div>
+
+  <div class="cols">
+
+    <!-- COLUNA 1: DECISÃO SUA -->
+    <section class="col d">
+      <h2><span class="dot d"></span>Decisão sua <span class="badge">trava o resto</span></h2>
+      <div class="lead">Nada anda de verdade enquanto isto não for decidido. É a maior peça que falta.</div>
+      <div class="items">
+
+        <div class="card d">
+          <span class="pill maior">A MAIOR PEÇA</span>
+          <p class="t">Hospedar o "cérebro" na nuvem</p>
+          <p class="desc">O cérebro é a peça que pega o dado cru e transforma no <b>pacote pronto pra TV mostrar</b>
+          (o número certo, a frase certa, na hora certa). Ele <b>já está escrito</b>, mas não está plugado em lugar
+          nenhum — está parado. Pela sua arquitetura, ele tem que <b>rodar na nuvem</b> (não dentro da TV).
+          Decidir hospedar isso como um serviço fixo é o que destrava a tela inteira.</p>
+          <p class="meta">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4M12 16h.01"/><circle cx="12" cy="12" r="9"/></svg>
+            Sem isso, todo bloco continua de mentirinha — não tem onde a conta de verdade morar pra alimentar a tela.
+          </p>
+        </div>
+
+        <div class="card d">
+          <span class="pill menor">DECISÃO MENOR</span>
+          <p class="t">A TV precisa de senha pra abrir?</p>
+          <p class="desc">A TV do box vai abrir a tela num endereço da internet. Dá pra exigir login ou deixar aberta.
+          <b>Minha recomendação: sem senha</b> — é uma TV sua, no seu box; senha só atrapalha no dia de corrida.</p>
+          <p class="meta">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5 9-9"/></svg>
+            Decisão rápida; não trava nada. Só preciso de um "sim, sem senha" ou "não, quero senha".
+          </p>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- COLUNA 2: SÓ LIGAR -->
+    <section class="col l">
+      <h2><span class="dot l"></span>Só ligar <span class="badge">eu faço</span></h2>
+      <div class="lead">Não tem decisão nem peça nova. É trabalho meu, pode começar quando você liberar.</div>
+      <div class="items">
+
+        <div class="card l">
+          <span class="pill eu">EU FAÇO</span>
+          <p class="t">Pôr a tela no ar e tirar o andaime</p>
+          <p class="desc">Hoje é um arquivo de protótipo. Pra TV abrir, falta <b>publicar num endereço</b> que a TV alcança
+          e <b>tirar as voltas de demonstração</b> (as voltas falsas que servem só pra ensaiar a tela).</p>
+          <p class="meta">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9h18M9 21V9"/><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+            Publicar = "colocar no ar". Só faço depois do seu OK (é uma porta pra fora).
+          </p>
+        </div>
+
+        <div class="card l">
+          <span class="pill eu">EU FAÇO</span>
+          <p class="t">Fazer a bolinha do carro andar</p>
+          <p class="desc">A conta de <b>onde o carro está no desenho da pista</b> já existe. Falta alguém <b>publicar essa
+          posição ao vivo</b> e a tela <b>consumir</b> — hoje só a demonstração move a bolinha; com carro real, ela ainda
+          não anda.</p>
+          <p class="meta">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5 8 12 8 12s8-7 8-12a8 8 0 0 0-8-8z"/></svg>
+            Só "acende de verdade" junto com a peça de baixo (notebook publicando ao vivo na pista).
+          </p>
+        </div>
+
+        <div class="card l">
+          <span class="pill eu">EU FAÇO</span>
+          <p class="t">Blocos com fonte real: ligar. Sem fonte: dizer "sem dado"</p>
+          <p class="desc">Vários blocos hoje mostram número falso. Os que <b>têm fonte real</b> (ex.: temperatura de motor,
+          atraso por trecho, o desenho da volta) eu <b>ligo na fonte</b>. Os que <b>não têm</b>, a tela passa a mostrar
+          <b>"sem dado"</b> em vez de inventar número — mais honesto e mais útil no box.</p>
+          <p class="meta">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>
+            Os que dependem de sensor ainda não instalado caem na coluna da direita.
+          </p>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- COLUNA 3: DEPENDE DE SENSOR / PISTA -->
+    <section class="col e">
+      <h2><span class="dot e"></span>Depende de sensor / pista <span class="badge">espera o carro</span></h2>
+      <div class="lead">Não dá pra forçar por software. Depende de peça física no carro ou de rodar na pista.</div>
+      <div class="items">
+
+        <div class="card e">
+          <span class="pill sensor">FALTA SENSOR NO CARRO</span>
+          <p class="t">Combustível, temperatura de pneu e de câmbio</p>
+          <p class="desc">Esses blocos só viram número real quando o <b>sensor estiver instalado no carro</b>. Até lá, o
+          certo é a tela mostrar "sem dado" (cai na regra da coluna do meio), não inventar.</p>
+          <p class="meta">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3h6l1 4H8z"/><path d="M8 7v12a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V7"/></svg>
+            Trabalho de bancada/carro, não de software.
+          </p>
+        </div>
+
+        <div class="card e">
+          <span class="pill sensor">PRECISA DA VOLTA DE REFERÊNCIA</span>
+          <p class="t">Frenagem, curva mínima e passagem</p>
+          <p class="desc">Esses três só ficam reais com a <b>volta de referência carregada pro carro certo</b> — é a "melhor
+          volta" que serve de espelho pra comparar. Sem ela carregada, não tem com o quê comparar.</p>
+          <p class="meta">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l3 8 4-16 3 8h4"/></svg>
+            Já existe a base; é amarrar a referência ao carro/configuração na hora.
+          </p>
+        </div>
+
+        <div class="card e">
+          <span class="pill sensor">DIA DE PISTA — EM ANDAMENTO</span>
+          <p class="t">O notebook publicando ao vivo</p>
+          <p class="desc">Esta é a que <b>amarra tudo</b>: a tela só "acende de verdade" quando o <b>notebook do carro
+          estiver mandando o dado ao vivo</b> pra nuvem. Esse é exatamente o trabalho do <b>dia de pista</b>, que ainda
+          está em andamento.</p>
+          <p class="meta">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 7v5l3 2"/></svg>
+            Sem o ao vivo, todo o resto fica pronto mas "esperando o carro falar".
+          </p>
+        </div>
+
+      </div>
+    </section>
+
+  </div>
+
+  <!-- AMARRA TUDO -->
+  <div class="tie">
+    <div class="ic">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>
+    </div>
+    <div>
+      <h3>O que amarra todas as 4</h3>
+      <p>Nada disso "acende de verdade" sozinho. Tudo depende do <b>notebook estar publicando o dado ao vivo na pista</b> —
+      o trabalho do dia de pista. As peças de "só ligar" eu adianto agora; as de "sensor/pista" esperam o carro.
+      <b>A decisão sua</b> — hospedar o cérebro na nuvem — é o que abre caminho pra todo o resto sair do mentirinha pro real.</p>
+    </div>
+  </div>
+
+  <footer>
+    Mapa gerado em 24/06/2026 a partir do código real do projeto (não inventado). &nbsp;·&nbsp;
+    Cérebro: <code>web/command-box/cerebro/</code> (órfão) &nbsp;·&nbsp; Protótipo da TV: <code>web/command-box/replay-hoje.html</code> &nbsp;·&nbsp; Canal de produção do ao vivo: <code>cockpit-bubi-live</code>.
+  </footer>
+
+</div>
+</body>
+</html>

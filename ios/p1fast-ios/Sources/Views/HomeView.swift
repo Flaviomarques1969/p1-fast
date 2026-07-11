@@ -87,9 +87,31 @@ struct HomeData {
     /// mocks/previews antigos que não passam esses campos.
     var voltasTotal: Int = 0
     var melhorVoltaMs: Int? = nil
+    /// Prontidão do próximo evento (pendências resolvidas / total), 0–100.
+    /// nil = sem dado (evento nunca teve checklist montada) → anel some.
+    /// Alimenta o `HeroEventoCard`. Calculada no ReadyRoot (dado real,
+    /// somente leitura) — a Home continua função pura do `HomeData`.
+    var prontidaoPct: Int? = nil
+    /// Pendências ainda abertas do próximo evento (total − resolvidas).
+    /// 0 = nada aberto ou sem dado → linha de pendências some no herói.
+    var pendenciasAbertas: Int = 0
     let eventoAtivoHoje: EventoMock?
     let proximoEvento: EventoMock?
     let carrosRecentes: [CarroMock]
+    /// Stint acontecendo AGORA — alimenta o card "Stint ao vivo" no topo da
+    /// primeira tela (Etapa 1, Flávio 25/06). nil = nada rodando.
+    var stintAoVivo: StintAoVivoInfo? = nil
+}
+
+/// Resumo do stint ao vivo pro card da primeira tela — só o que o usuário
+/// precisa pra reconhecer "está rolando agora" e tocar pra assistir.
+struct StintAoVivoInfo: Equatable {
+    /// Título curto: o tipo do objetivo ("Ataque") ou "Stint livre".
+    let titulo: String
+    /// Nome do piloto, quando houver.
+    let piloto: String?
+    /// Voltas já completadas no stint.
+    let voltas: Int
 }
 
 struct EventoMock: Identifiable, Equatable {
@@ -185,18 +207,38 @@ struct HomeView: View {
     }
 
     private var shell: some View {
-        ScrollView {
-            content
-                .padding(.horizontal, Spacing.lg)
-                .padding(.top, Spacing.md)
-                .padding(.bottom, 32)
-                .frame(maxWidth: .infinity, alignment: .leading)
+        ScrollViewReader { proxy in
+            ScrollView {
+                content
+                    .padding(.horizontal, Spacing.lg)
+                    .padding(.top, Spacing.md)
+                    .padding(.bottom, 32)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .id("home-fim")
+            }
+            .background(Color.surface)
+            .onAppear {
+                // SÓ-DEV (prova por foto, mesmo padrão do --p1-scroll-ferramentas
+                // da Garagem): rola a Home até o fim (números do rodapé). Sem
+                // efeito no app real (só entra com o launch arg).
+                if ProcessInfo.processInfo.arguments.contains("--p1-scroll-home-fim") {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                        proxy.scrollTo("home-fim", anchor: .bottom)
+                    }
+                }
+            }
         }
-        .background(Color.surface)
     }
 
     @ViewBuilder
     private var content: some View {
+        // Home "Dia de Pista" (Conceito A, Flávio 2026-07-11). O estado cheio
+        // é montado pela FilledContent contra o CONTRATO (herói + ao vivo +
+        // melhor volta + carros + números). Os botões antigos "ASSISTIR AO
+        // VIVO"/"TESTE AO VIVO" e a caixa "ATALHOS DEV" saíram da Home — as
+        // telas continuam existindo (structs preservados abaixo; a porta pras
+        // ferramentas de teste passa a ser a Garagem, área da J4). O indicador
+        // "ao vivo" agora é a AoVivoRow dentro do estado cheio.
         VStack(alignment: .leading, spacing: Spacing.lg) {
             switch state {
             case .filled(let data):
@@ -207,29 +249,6 @@ struct HomeView: View {
                     onCadastrarCarro: { router.path.append(HomeNavTarget.garagemNovo) },
                     onCriarEvento: { router.path.append(HomeNavTarget.eventosNovo) }
                 )
-            }
-            // AO VIVO — par de botões (espectador + teste de campo). Agrupados
-            // com respiro pequeno (Spacing.sm) pra lerem como uma dupla; o
-            // respiro acima vem do VStack pai (Spacing.lg). Antes cada botão
-            // somava +24 no topo e abria buracos de 48px (Flávio 2026-06-22).
-            VStack(spacing: Spacing.sm) {
-                // ASSISTIR AO VIVO — tela de espectador (vídeo + volta/trecho).
-                AssistirButton(onAbrir: {
-                    router.path.append(HomeNavTarget.assistir)
-                })
-                // Botão de TESTE do espelhamento ao vivo — abre a
-                // TesteAoVivoView (viewer Daily.co).
-                TesteAoVivoButton(onAbrir: {
-                    router.path.append(HomeNavTarget.testeAoVivo)
-                })
-            }
-            // Atalho dev pra captura rápida em test drive — fica embaixo
-            // do conteúdo canônico. Só renderiza quando o caller injetou
-            // um builder válido.
-            if telemetriaDevView != nil {
-                DevShortcuts(onAbrirTelemetria: {
-                    router.path.append(HomeNavTarget.telemetriaDemo)
-                })
             }
         }
     }
@@ -358,79 +377,128 @@ private struct FilledContent: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.lg) {
-            // Header — espelha `.header` do mockup-home-cheio.html.
-            // Botão "Stint" (iniciar o Stint) fica AQUI no topo, ao lado do
-            // "Hoje em <pista>", do tamanho do "Novo evento", azul cheio
-            // (decisão Flávio 15/06). É a ação principal da Home.
-            HStack(alignment: .center, spacing: Spacing.sm) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("P1 FAST")
-                        .font(.system(size: 11, weight: .semibold))
-                        .tracking(1.98) // 0.18em em 11pt
-                        .foregroundStyle(Color.textFaint)
-                    Text(headerStatusLine(data: data))
-                        .font(.titleP1)
-                        .tracking(-0.44) // -0.02em em 22pt
-                        .foregroundStyle(Color.text)
+            // 1. CABEÇALHO — "P1 Fast" (P1 branco + Fast azul) + acesso à conta
+            //    discreto (avatar). Conta/Sair vive dentro da Garagem hoje, então
+            //    o avatar abre a Garagem. O botão "Stint" saiu daqui — a ação
+            //    principal "Iniciar Stint" agora mora DENTRO do herói.
+            HStack(alignment: .center) {
+                (Text("P1 ").foregroundStyle(Color.text)
+                 + Text("Fast").foregroundStyle(Color.accent))
+                    .font(.system(size: 24, weight: .heavy))
+                    .tracking(-0.72)
+                Spacer(minLength: 0)
+                Button { onOpen(.garagem) } label: {
+                    Image(systemName: "person.crop.circle")
+                        .font(.system(size: 24, weight: .regular))
+                        .foregroundStyle(Color.textMuted)
                 }
-                Spacer(minLength: Spacing.sm)
-                FAB("Stint", action: onStint)
+                .buttonStyle(.plain)
             }
             .padding(.horizontal, Spacing.xs)
-            .padding(.vertical, Spacing.sm)
+            .padding(.top, Spacing.xs)
 
-            // 4 números canônicos (desenho original do mockup), agora clicáveis:
-            // cada um abre a tela do seu componente. "Carros" sai daqui — os
-            // carros já têm a lista "Carros recentes" logo abaixo, clicável.
-            SummaryStats([
-                StatItem(value: "\(data.eventosTotal)", label: "Eventos",
-                         onTap: { onOpen(.eventos) }),
-                StatItem(value: "\(data.voltasTotal)", label: "Voltas",
-                         onTap: { onOpen(.voltasResumo) }),
-                StatItem(value: "\(data.stintsTotal)", label: "Stints",
-                         onTap: { onOpen(.stintsLista) }),
-                StatItem(value: data.melhorVoltaMs.map(formatVoltaCurta) ?? "—", label: "Melhor",
-                         onTap: { onOpen(.melhorVolta) }),
-            ])
+            // 2. HERÓI DO EVENTO — próximo evento / evento de hoje, com prontidão
+            //    real e a ação "Iniciar Stint". Sem evento futuro → herói honesto
+            //    "Sem eventos planejados" com atalho "Criar evento".
+            heroSection
 
+            // 3. AO VIVO — indicador de "ao vivo agora" → tela de espectador.
+            //    Alimentado pelo stint ao vivo preservado (Etapa 1, Flávio 25/06):
+            //    há stint rolando → ponto verde + subtítulo; senão, entrada calma.
+            AoVivoRow(
+                aoVivoAgora: data.stintAoVivo != nil,
+                subtitulo: subtituloAoVivo,
+                onTap: { onOpen(.assistir) }
+            )
+
+            // 4. MELHOR VOLTA — tempo real (dado honesto: "—" sem volta gravada).
+            secaoTitulo("Sua melhor volta", link: "Histórico") { onOpen(.melhorVolta) }
+            MelhorVoltaCard(
+                melhorMs: data.melhorVoltaMs,
+                contexto: nil,
+                evolucaoMs: nil,
+                onTap: { onOpen(.melhorVolta) }
+            )
+
+            // 5. CARROS — até 3 carros reais; toca → hub do carro. Link "Garagem"
+            //    no título abre a garagem inteira.
             if !data.carrosRecentes.isEmpty {
-                Text("Carros recentes".uppercased())
-                    .font(.system(size: 11, weight: .semibold))
-                    .tracking(1.54) // 0.14em em 11pt
-                    .foregroundStyle(Color.textFaint)
-                    .padding(.horizontal, Spacing.xs)
-                    .padding(.top, Spacing.sm)
-
+                secaoTitulo("Seus carros", link: "Garagem") { onOpen(.garagem) }
                 VStack(spacing: Spacing.sm) {
                     ForEach(Array(data.carrosRecentes.prefix(3))) { carro in
-                        carroLink(carro) { CarroRow(carro: carro) }
+                        CarroRowCompacta(
+                            apelido: carro.apelido,
+                            sub: carro.modeloCategoria,
+                            cor: carro.cor,
+                            stints: carro.stints,
+                            onTap: carro.carroId.isEmpty ? nil : { onOpen(.carroHub(carroId: carro.carroId)) }
+                        )
                     }
                 }
             }
 
-            // Próximos eventos no fim da página (decisão Flávio 2026-05-12).
-            // Antes ficava logo após o header — agora carros vêm primeiro.
-            // O bloco DevShortcuts (atalhos dev) é renderizado depois deste
-            // FilledContent pelo parent.
-            if data.eventoAtivoHoje != nil || data.proximoEvento != nil {
-                Text("Próximos eventos".uppercased())
-                    .font(.system(size: 11, weight: .semibold))
-                    .tracking(1.54)
-                    .foregroundStyle(Color.textFaint)
-                    .padding(.horizontal, Spacing.xs)
-                    .padding(.top, Spacing.sm)
-            }
-
-            if let evento = data.eventoAtivoHoje {
-                eventoLink(evento) { EventoAtivoHojeCard(evento: evento) }
-            }
-
-            if let proximo = data.proximoEvento {
-                eventoLink(proximo) {
-                    ProximoEventoCard(evento: proximo, hojeISO: data.eventoAtivoHoje?.dataISO ?? todayISO())
-                }
-            }
+            // 6. NÚMEROS — rodapé discreto (eventos / voltas / stints), clicáveis.
+            NumerosRodape(
+                eventos: data.eventosTotal,
+                voltas: data.voltasTotal,
+                stints: data.stintsTotal,
+                onEventos: { onOpen(.eventos) },
+                onVoltas: { onOpen(.voltasResumo) },
+                onStints: { onOpen(.stintsLista) }
+            )
         }
+    }
+
+    /// Herói do topo. Escolhe evento de hoje > próximo evento; sem nenhum,
+    /// mostra o herói honesto de "sem eventos" com atalho pra criar. Passa a
+    /// data ISO CRUA — o `HeroEventoCard` formata internamente (igual ao real).
+    @ViewBuilder
+    private var heroSection: some View {
+        if let ev = data.eventoAtivoHoje ?? data.proximoEvento {
+            HeroEventoCard(
+                pista: ev.pista,
+                dataISO: ev.dataISO,
+                pistaOficial: ev.pistaOficial,
+                horario: ev.horario,
+                diasAte: data.eventoAtivoHoje != nil ? 0 : max(0, daysFromTodayToISO(ev.dataISO)),
+                prontidaoPct: data.prontidaoPct,
+                pendenciasAbertas: data.pendenciasAbertas,
+                onPendencias: { onOpen(.pendencias) },
+                onStint: onStint
+            )
+        } else {
+            HeroSemEvento(onCriarEvento: { onOpen(.eventosNovo) })
+        }
+    }
+
+    /// Subtítulo da AoVivoRow a partir do stint ao vivo (quando há um rolando).
+    private var subtituloAoVivo: String? {
+        guard let v = data.stintAoVivo else { return nil }
+        var partes = [v.titulo]
+        if let p = v.piloto, !p.isEmpty { partes.append(p) }
+        partes.append(v.voltas == 1 ? "1 volta" : "\(v.voltas) voltas")
+        return partes.joined(separator: " · ")
+    }
+
+    /// Título de seção com um link discreto à direita (ex.: "Seus carros" ·
+    /// "Garagem"). Mesmo padrão visual das seções da referência aprovada.
+    @ViewBuilder
+    private func secaoTitulo(_ titulo: String, link: String, onLink: @escaping () -> Void) -> some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(titulo.uppercased())
+                .font(.system(size: 11, weight: .semibold))
+                .tracking(1.54)
+                .foregroundStyle(Color.textFaint)
+            Spacer(minLength: 0)
+            Button(action: onLink) {
+                Text(link)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color.textFaint)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, Spacing.xs)
+        .padding(.top, Spacing.sm)
     }
 
     /// Embrulha o card do evento num link que abre o evento (decisão Flávio
@@ -482,11 +550,101 @@ private struct FilledContent: View {
     }
 }
 
+// MARK: - Herói sem evento
+
+/// Variante honesta do herói quando não há evento de hoje nem próximo evento:
+/// diz "Sem eventos planejados" e oferece o atalho "Criar evento". Fica no
+/// lugar do `HeroEventoCard` no topo da Home (decisão do mandato J5). Não é
+/// componente das J1–J3 — é estrutura da Home, então mora aqui.
+private struct HeroSemEvento: View {
+    let onCriarEvento: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Spacing.md) {
+            Text("Nenhum evento")
+                .font(.system(size: 10, weight: .bold))
+                .tracking(1.4)
+                .textCase(.uppercase)
+                .foregroundStyle(Color.textFaint)
+            Text("Sem eventos planejados")
+                .font(.system(size: 22, weight: .bold))
+                .tracking(-0.44)
+                .foregroundStyle(Color.text)
+            Text("Crie um evento pra montar as pendências e abrir o cockpit no dia de pista.")
+                .font(.system(size: 13, weight: .regular))
+                .foregroundStyle(Color.textMuted)
+                .fixedSize(horizontal: false, vertical: true)
+            Button(action: onCriarEvento) {
+                Text("Criar evento")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundStyle(Color.onAccent)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 15)
+                    .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color.accent))
+                    .shadow(color: Color.accent.opacity(0.22), radius: 14, x: 0, y: 8)
+            }
+            .buttonStyle(.plain)
+            .padding(.top, Spacing.xs)
+        }
+        .padding(18)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(Color.surfaceRaised))
+        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(Color.border, lineWidth: 1))
+    }
+}
+
 // MARK: - Cards
 
 /// Card destacado em accent — evento ativo hoje. Espelha o `.card` do
 /// mockup-home-cheio "Stint em andamento" mas com border accent (focus
 /// visual do estado "está acontecendo agora").
+/// Card destacado do STINT AO VIVO — topo da primeira tela quando há um stint
+/// rodando agora (Etapa 1, Flávio 25/06). Borda accent + ponto pulsando pra
+/// ler como "ao vivo". Toca pra abrir a tela do espectador (vídeo + dados).
+private struct StintAoVivoCard: View {
+    let info: StintAoVivoInfo
+
+    var body: some View {
+        Card(style: .accent) {
+            VStack(alignment: .leading, spacing: Spacing.sm) {
+                HStack(spacing: 7) {
+                    AoVivoDot()
+                    Text("STINT AO VIVO")
+                        .font(.system(size: 11, weight: .semibold))
+                        .tracking(1.1)
+                        .foregroundStyle(Color.accent)
+                }
+                Text(info.titulo)
+                    .font(.system(size: 18, weight: .semibold))
+                    .tracking(-0.27)
+                    .foregroundStyle(Color.text)
+                Text(subtitulo)
+                    .font(.system(size: 13, weight: .regular))
+                    .foregroundStyle(Color.textFaint)
+            }
+        }
+    }
+
+    private var subtitulo: String {
+        let voltasTxt = info.voltas == 1 ? "1 volta" : "\(info.voltas) voltas"
+        if let p = info.piloto, !p.isEmpty { return "\(p) · \(voltasTxt)" }
+        return voltasTxt
+    }
+}
+
+/// Ponto que pulsa — sinal visual de "ao vivo". Traço, sem emoji.
+private struct AoVivoDot: View {
+    @State private var on = false
+    var body: some View {
+        Circle()
+            .fill(Color.accent)
+            .frame(width: 9, height: 9)
+            .opacity(on ? 0.35 : 1)
+            .animation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true), value: on)
+            .onAppear { on = true }
+    }
+}
+
 private struct EventoAtivoHojeCard: View {
     let evento: EventoMock
 
@@ -879,6 +1037,10 @@ extension HomeData {
         carrosTotal: 2,
         eventosTotal: 12,
         stintsTotal: 47,
+        voltasTotal: 158,
+        melhorVoltaMs: 102300,
+        prontidaoPct: 64,
+        pendenciasAbertas: 3,
         eventoAtivoHoje: EventoMock(
             pista: "Brasília",
             pistaOficial: "Auto. Int. Nelson Piquet",

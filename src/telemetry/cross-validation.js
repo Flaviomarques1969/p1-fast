@@ -14,6 +14,7 @@
 
 import { Quality } from '../domain/data-quality.js';
 import { logger } from '../core/logger.js';
+import { msParaKmh } from '../domain/velocidade.js';
 
 const DEFAULT_COOLDOWN_MS = 30_000;
 
@@ -122,7 +123,7 @@ export class CrossValidationEngine {
     if (snap.quality.t4000_quality !== Quality.OK || (snap.quality.racebox_quality !== Quality.OK && snap.quality.iphone_quality !== Quality.OK)) {
       this.windows.v001.exit(); return;
     }
-    const diffKmh = Math.abs((can - gnss) * 3.6);
+    const diffKmh = Math.abs(msParaKmh(can - gnss));
     if (diffKmh > 5) {
       if (this.windows.v001.enter(snap.tMono)) {
         this._emit({
@@ -196,7 +197,7 @@ export class CrossValidationEngine {
     if (rpm < 1500) { this.windows.v004.exit(); return; }
     const expectedKmhPer1000 = this.gearMap[gear];
     if (!expectedKmhPer1000) return;
-    const speedKmh = speed * 3.6;
+    const speedKmh = msParaKmh(speed);
     const expectedKmh = (rpm / 1000) * expectedKmhPer1000;
     const errPct = Math.abs(speedKmh - expectedKmh) / Math.max(1, expectedKmh);
     if (errPct > 0.15) {

@@ -27,6 +27,9 @@ struct PendenciasView: View {
     @EnvironmentObject private var repo: PendenciaRepository
     @EnvironmentObject private var estoqueRepo: EstoqueRepository
     @EnvironmentObject private var carroRepo: CarroRepository
+    /// Banco real pra execução do checklist do dia (marcar início/fim).
+    @Environment(\.databaseQueue) private var dbQueue
+    @State private var execDiaStore: DiaCheckStore?
 
     @State private var grupos: [PendenciaGrupoView] = []
     @State private var grupoExpandido: String?
@@ -94,6 +97,16 @@ struct PendenciasView: View {
         } message: {
             Text("Apaga \(selecionados.count) item(ns) que você incluiu. Não dá pra desfazer.")
         }
+        .sheet(item: $execDiaStore) { store in
+            NavigationStack {
+                ExecucaoDiaView(store: store, semearDemo: false)
+                    .toolbar {
+                        ToolbarItem(placement: .topBarLeading) {
+                            Button("Fechar") { execDiaStore = nil }
+                        }
+                    }
+            }
+        }
     }
 
     // MARK: - Conteúdo
@@ -102,6 +115,7 @@ struct PendenciasView: View {
     private var content: some View {
         VStack(alignment: .leading, spacing: Spacing.md) {
             header
+            checklistDoDiaBotao
             VStack(spacing: Spacing.sm) {
                 ForEach(grupos) { g in
                     GrupoCard(
@@ -157,6 +171,40 @@ struct PendenciasView: View {
         let total = grupos.reduce(0) { $0 + $1.total }
         let check = grupos.reduce(0) { $0 + $1.checados }
         return "\(check) de \(total) itens prontos"
+    }
+
+    /// Acesso à execução do checklist do DIA (marcar início/fim do dia),
+    /// gravando de verdade no banco (tabela dia_check, âncora evento+dia).
+    @ViewBuilder
+    private var checklistDoDiaBotao: some View {
+        Button { abrirChecklistDia() } label: {
+            HStack(spacing: 8) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Checklist do dia")
+                        .font(.system(size: 15, weight: .semibold)).foregroundStyle(Color.text)
+                    Text("marcar início e fim do dia")
+                        .font(.system(size: 11.5)).foregroundStyle(Color.textFaint)
+                }
+                Spacer(minLength: 0)
+                Text("›").font(.system(size: 14)).foregroundStyle(Color.textMuted)
+                    .frame(width: 26, height: 26)
+                    .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.surfaceHover))
+            }
+            .padding(.horizontal, 14).padding(.vertical, 13)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(RoundedRectangle(cornerRadius: 13, style: .continuous).fill(Color.surfaceRaised))
+            .overlay(RoundedRectangle(cornerRadius: 13, style: .continuous).stroke(Color.border, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func abrirChecklistDia() {
+        guard let q = dbQueue else { return }
+        execDiaStore = DiaCheckStore(queue: q, eventoId: eventoId, dia: Self.hojeISO())
+    }
+    private static func hojeISO() -> String {
+        let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"; f.timeZone = .current
+        return f.string(from: Date())
     }
 
     // MARK: - Barras de modo (Editar / Excluir)

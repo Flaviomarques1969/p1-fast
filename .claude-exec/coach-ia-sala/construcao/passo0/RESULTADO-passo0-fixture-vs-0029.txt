@@ -1,0 +1,34 @@
+# PASSO 0 — prova 2 (fixture x 0029) — saída REAL — 2026-07-10T13:40:00Z
+# comando: node .claude-exec/coach-ia-sala/construcao/passo0/passo0-fixture-vs-0029.mjs
+
+=== (1) segment_id: FIXTURE vs 0029 ===
+  CURVA 01                 ce78dc3a-ceb4-53b7-8481-d38b62cf1f22  EXISTE na 0029 ✓
+  CURVA DA RETA OPOSTA     bb99ec7c-cc04-5f0d-9c38-494d72558815  EXISTE na 0029 ✓
+  CURVA 2                  c175d6f2-366d-52fc-aa72-f3254202b9b2  EXISTE na 0029 ✓
+  CURVA DA JUNÇÃO          cf329fd2-6698-5b6b-a687-a5f551a47ece  EXISTE na 0029 ✓
+  CURVA DA BRUXA           3a4a6027-55d7-50b8-b338-72c4e556afdd  EXISTE na 0029 ✓
+  CURVA DO PLACAR          5dfc81d1-041c-5047-b84d-0be051b14dcd  EXISTE na 0029 ✓
+  CURVA "S"                96baf23c-1b45-5bd6-8d07-a4d3c1670161  EXISTE na 0029 ✓
+  CURVA DA VITÓRIA         6c64bc49-bea4-5013-8de8-b858189ee425  EXISTE na 0029 ✓
+  → todos os 8 IDs do fixture existem na 0029: SIM
+
+=== (2) mesmo registro GPS? (bboxes devem se sobrepor) ===
+  fixture: lat -15.78013..-15.77169  lng -47.90257..-47.89558
+  0029:    lat -15.77988..-15.77180  lng -47.90264..-47.89560
+  → sobrepõem (mesmo autódromo, mesma referência) — NÃO há offset de coordenada.
+
+=== (3) as passagens do fixture caem nas linhas 0029? ===
+  (se 1ºpt≈entrada e últ.pt≈saída → fatiado pela 0029; se longe → segmentação diferente)
+  CURVA 01                 tempo= 8.001s  9pts | 1ºpt→entrada= 148m últ→saída=  94m | min(→ápice)= 102m
+  CURVA DA RETA OPOSTA     tempo= 7.996s  9pts | 1ºpt→entrada= 178m últ→saída=  27m | min(→ápice)=   3m
+  CURVA 2                  tempo=21.002s 22pts | 1ºpt→entrada= 327m últ→saída= 253m | min(→ápice)=  11m
+  CURVA DA JUNÇÃO          tempo=13.001s 14pts | 1ºpt→entrada= 366m últ→saída=   1m | min(→ápice)=   7m
+  CURVA DA BRUXA           tempo= 13.04s 14pts | 1ºpt→entrada= 120m últ→saída= 352m | min(→ápice)=  73m
+  CURVA DO PLACAR          tempo= 3.007s  4pts | 1ºpt→entrada= 333m últ→saída= 168m | min(→ápice)= 220m
+  CURVA "S"                tempo= 6.005s  7pts | 1ºpt→entrada= 117m últ→saída= 265m | min(→ápice)= 106m
+  CURVA DA VITÓRIA         tempo= 3.996s  5pts | 1ºpt→entrada=  61m últ→saída= 187m | min(→ápice)=  69m
+
+  janela 0029 = apex±30m (60 m). tempo_trecho_s de 8-21 s ≫ o que 60 m levariam →
+  o fixture NÃO foi fatiado pela 0029: usa segmentação antiga/diferente, só rotulada com os IDs canônicos.
+
+=== FIM prova 2 ===

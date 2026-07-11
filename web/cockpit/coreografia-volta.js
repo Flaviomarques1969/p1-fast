@@ -13,11 +13,8 @@
 //   onResumoVolta()                              — mostrar resumo (reta longa)
 //   onPainel()                                   — voltar pro painel padrão
 
-function distM(a, b) {
-  const kLat = 110540;
-  const kLng = 111320 * Math.cos(((a.lat + b.lat) / 2) * Math.PI / 180);
-  return Math.hypot((a.lng - b.lng) * kLng, (a.lat - b.lat) * kLat);
-}
+// distância em metros: casa única (geo.js)
+import { distanciaPontos as distM } from './geo.js';
 
 function centroLinha(l) { return { lat: (l.a.lat + l.b.lat) / 2, lng: (l.a.lng + l.b.lng) / 2 }; }
 

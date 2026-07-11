@@ -35,6 +35,7 @@ struct EventoDetalheView: View {
     @EnvironmentObject private var pendenciaRepo: PendenciaRepository
     @EnvironmentObject private var estoqueRepo: EstoqueRepository
     @EnvironmentObject private var voltaVideoRepo: VoltaVideoRepository
+    @Environment(\.databaseQueue) private var dbQueue
     let eventoId: String
     let onClose: () -> Void
 
@@ -133,6 +134,19 @@ struct EventoDetalheView: View {
                     onClose: { sheet = nil }
                 )
                 .environmentObject(stintRepo)
+            } else {
+                EmptyView()
+            }
+        case .checklistStint(let stintId, let label):
+            if let q = dbQueue {
+                NavigationStack {
+                    ExecucaoStintRealView(queue: q, stintId: stintId, stintLabel: label)
+                        .toolbar {
+                            ToolbarItem(placement: .topBarLeading) {
+                                Button("Fechar") { sheet = nil }
+                            }
+                        }
+                }
             } else {
                 EmptyView()
             }
@@ -375,18 +389,23 @@ struct EventoDetalheView: View {
             VStack(spacing: 8) {
                 if !reais.isEmpty {
                     // Eventos criados pelo usuário — stints reais do GRDB.
-                    ForEach(reais) { stint in
-                        StintCardReal(
-                            stint: stint,
-                            isFinalizing: finalizingStintId == stint.id,
-                            onTap: { abrirStintReal(stint) },
-                            onCancel: (stint.podeCancelar && podeEditarStint(stint)) ? {
-                                Task {
-                                    try? await stintRepo.cancel(stintId: stint.id)
-                                    await loadStintsReais()
-                                }
-                            } : nil
-                        )
+                    ForEach(Array(reais.enumerated()), id: \.element.id) { idx, stint in
+                        VStack(spacing: 6) {
+                            StintCardReal(
+                                stint: stint,
+                                isFinalizing: finalizingStintId == stint.id,
+                                onTap: { abrirStintReal(stint) },
+                                onCancel: (stint.podeCancelar && podeEditarStint(stint)) ? {
+                                    Task {
+                                        try? await stintRepo.cancel(stintId: stint.id)
+                                        await loadStintsReais()
+                                    }
+                                } : nil
+                            )
+                            if !stint.isCancelado {
+                                checklistStintBotao(stintId: stint.id, label: "Stint \(reais.count - idx)")
+                            }
+                        }
                     }
                 } else {
                     // Eventos seedados — fallback pros mocks de design.
@@ -397,6 +416,28 @@ struct EventoDetalheView: View {
                 AddStintCTA(onTap: { sheet = .novoStint })
             }
         }
+    }
+
+    // Entrada do checklist do stint (preso a ESTE stint real; grava em stint_check).
+    @ViewBuilder
+    private func checklistStintBotao(stintId: String, label: String) -> some View {
+        Button { sheet = .checklistStint(stintId: stintId, label: label) } label: {
+            HStack(spacing: 8) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Checklist do stint")
+                        .font(.system(size: 12.5, weight: .semibold)).foregroundStyle(Color.text)
+                    Text("cada um marca os seus itens")
+                        .font(.system(size: 11)).foregroundStyle(Color.textFaint)
+                }
+                Spacer(minLength: 0)
+                Text("abrir ›").font(.system(size: 12, weight: .medium)).foregroundStyle(Color.accent)
+            }
+            .padding(.horizontal, 13).padding(.vertical, 10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(RoundedRectangle(cornerRadius: Radius.md, style: .continuous).fill(Color.surfaceHover))
+            .overlay(RoundedRectangle(cornerRadius: Radius.md, style: .continuous).stroke(Color.border, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Helpers
@@ -457,6 +498,7 @@ enum EventoDetalheSheet: Identifiable, Equatable {
     case captureAtivo(stintId: String)
     case triagemVideo(stintId: String)
     case posStint(stintId: String)
+    case checklistStint(stintId: String, label: String)
     case pendencias
     case editar
     case stintMock(StintMock)
@@ -467,6 +509,7 @@ enum EventoDetalheSheet: Identifiable, Equatable {
         case .captureAtivo(let id): return "capture-\(id)"
         case .triagemVideo(let id): return "triagem-\(id)"
         case .posStint(let id): return "pos-\(id)"
+        case .checklistStint(let id, _): return "checklist-stint-\(id)"
         case .pendencias: return "pendencias"
         case .editar: return "editar"
         case .stintMock(let stint): return "stintmock-\(stint.id)"

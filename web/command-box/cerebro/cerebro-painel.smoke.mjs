@@ -50,7 +50,16 @@ const checks = [
   ['lado coerente com o delta', (stintBest < pbEverSec) ? p.ritmo.lado === 'a-frente' : true],
   ['META ligada: alvo 1:32', p.meta && p.meta.tempoAlvoStr === '1:32'],
   ['META atingidas = voltas <= alvo', p.meta && p.meta.atingidas === entradas.slice(1).filter(e => e.timeSec <= 92.0).length],
-  ['coach/preditivo ainda pendentes (honesto)', p.coach === null && p.preditivo === null],
+  ['barra do stint: lista volta-a-volta presente', !!p.stintBar && Array.isArray(p.stintBar.lapHistory)],
+  ['barra do stint: nº de voltas na lista = voltas reais', p.stintBar && p.stintBar.lapHistory.length === entradas.length],
+  ['barra do stint: total = plano (12)', p.stintBar && p.stintBar.voltas === 12],
+  ['barra do stint: sem parada no plano → paradas vazias', p.stintBar && Array.isArray(p.stintBar.paradas) && p.stintBar.paradas.length === 0],
+  ['barra do stint: pbEver = referência real (91.95)', p.stintBar && Math.abs(p.stintBar.pbEver - pbEverSec) < 1e-6],
+  ['barra do stint: cada volta tem n e timeSec reais', p.stintBar && p.stintBar.lapHistory.every((v, i) => v.n === entradas[i].lapNumber && Math.abs(v.timeSec - entradas[i].timeSec) < 1e-6)],
+  ['barra do stint: volta em curso = após as fechadas', p.stintBar && p.stintBar.current === entradas.length + 1],
+  ['coach ainda pendente (honesto)', p.coach === null && p._pendentes.includes('coach')],
+  ['preditivo LIGADO (Onda 5): fora de pendentes', !p._pendentes.includes('preditivo')],
+  ['sem temperatura nesta volta → preditivo null (honesto)', p.preditivo === null],
 ];
 console.log('META  :', JSON.stringify(p.meta));
 
@@ -61,5 +70,53 @@ for (const [nome, passou] of checks) {
   if (!passou) ok = false;
 }
 console.log(`\nstintBest=${fmtTempo(stintBest)}  PB=${fmtTempo(pbEverSec)}  delta=${(stintBest - pbEverSec).toFixed(2)}s  tag="${p.ritmo.tag}"`);
+
+// ---- BARRA DO STINT: paradas no box do plano viram as voltas certas ----
+// Plano: 8 voltas, parada na 6 (configuracao-stint manda paradas:[{volta,motivo}]).
+const cerebroBox = criarCerebroPainel({ plano: { voltas: 8, paradas: [{ volta: 6, motivo: 'troca de piloto' }] }, pbEverSec });
+[1, 2, 3].forEach(n => cerebroBox.onVolta({ n, tempoSec: 92 }));
+const sbBox = cerebroBox.snapshot().stintBar;
+console.log('\n=== BARRA DO STINT (plano 8 voltas, box na 6) ===');
+console.log('voltas=', sbBox.voltas, '| paradas=', JSON.stringify(sbBox.paradas), '| volta em curso=', sbBox.current);
+// Sem nada informado no plano → barra ZERADA (voltas=0): a tela mostra só aquece + resfria.
+const sbZero = criarCerebroPainel({ plano: {} }).snapshot().stintBar;
+const checksBox = [
+  ['total da barra = voltas do plano (8)', sbBox.voltas === 8],
+  ['parada no box virou a volta 6', sbBox.paradas.length === 1 && sbBox.paradas[0] === 6],
+  ['volta em curso = 4 (após 3 fechadas)', sbBox.current === 4],
+  ['sem plano informado → barra zerada (voltas=0)', sbZero && sbZero.voltas === 0 && sbZero.paradas.length === 0],
+];
+console.log('\n=== CONFERÊNCIAS BARRA/PARADAS ===');
+for (const [nome, passou] of checksBox) {
+  console.log(`${passou ? 'OK  ' : 'FALHOU'}  ${nome}`);
+  if (!passou) ok = false;
+}
+
+// ---- ONDA 5: alerta preditivo de temperatura (cenário com temp subindo) ----
+// 5 voltas com a água subindo ~5°C/volta (50→70) e crítico 80°C: tem que projetar
+// o estouro em ~2 voltas e sair com +°C de desvio. Sem dado de temp = null (honesto).
+const cerebroT = criarCerebroPainel({ plano: { voltas: 12 }, pbEverSec, tempLimiteC: 80 });
+[50, 55, 61, 66, 70].forEach((tC, i) => {
+  cerebroT.onSample({ waterTempC: tC });          // pico da volta
+  cerebroT.onVolta({ n: i + 1, tempoSec: 92 });   // fecha a volta
+});
+const pt = cerebroT.snapshot();
+console.log('\n=== ONDA 5 (preditivo de temperatura) ===');
+console.log('PREDITIVO:', JSON.stringify(pt.preditivo));
+const semTemp = criarCerebroPainel({ plano: { voltas: 12 } });
+[1, 2, 3, 4, 5].forEach(n => semTemp.onVolta({ n, tempoSec: 92 }));
+const checks5 = [
+  ['preditivo dispara com temp subindo', pt.preditivo !== null],
+  ['preditivo traz ETA em voltas', !!(pt.preditivo && /voltas/.test(pt.preditivo.eta))],
+  ['preditivo traz desvio +°C', !!(pt.preditivo && /\+\d+°C/.test(pt.preditivo.metricaStr))],
+  ['preditivo fora de pendentes', !pt._pendentes.includes('preditivo')],
+  ['voltas com temperatura → preditivo só com temp; sem temp = null', semTemp.snapshot().preditivo === null],
+];
+console.log('\n=== CONFERÊNCIAS ONDA 5 ===');
+for (const [nome, passou] of checks5) {
+  console.log(`${passou ? 'OK  ' : 'FALHOU'}  ${nome}`);
+  if (!passou) ok = false;
+}
+
 console.log(ok ? '\nTUDO VERDE\n' : '\nFALHOU\n');
 process.exit(ok ? 0 : 1);

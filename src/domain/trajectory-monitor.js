@@ -27,6 +27,7 @@
 // tudo por parâmetro. O caller (cockpit/UI) carrega refSamples.
 
 import { Confidence } from './lesson-schema.js';
+import { distanciaPontos } from './geo.js';
 
 // ── Limiares (mesmas constantes de fase-curva.js, mantidos em sincronia) ──
 const BRAKE_G_THRESHOLD     = -0.20;   // accLong abaixo disso = frenagem
@@ -35,22 +36,17 @@ const YAW_THRESHOLD_DEG_S   = 15;      // gyroAlpha acima disso = giro
 const COURSE_DELTA_DEG      = 6;       // delta de course entre samples consecutivos
 const KMH_DROP_PER_SEC      = 8;       // fallback sem IMU: queda de kmh/s
 const MIN_SAMPLES           = 4;       // abaixo disso, monitor desiste
-const M_PER_DEG_LAT         = 111000;
-
 // ─── Conversão geográfica ───────────────────────────────────
 
 /**
- * Distância em metros entre dois pontos lat/lng (aproximação plana,
- * válida para distâncias < 5km — escala de autódromo).
+ * Distância em metros entre dois pontos lat/lng — casa única (src/domain/geo.js).
+ * Mantém os guard-rails (retorna null em ponto inválido).
  */
 export function distanceMetersGeo(a, b) {
   if (a == null || b == null) return null;
   if (!Number.isFinite(a.lat) || !Number.isFinite(a.lng)) return null;
   if (!Number.isFinite(b.lat) || !Number.isFinite(b.lng)) return null;
-  const dLat = (b.lat - a.lat) * M_PER_DEG_LAT;
-  const cosLat = Math.cos((a.lat * Math.PI) / 180);
-  const dLng = (b.lng - a.lng) * M_PER_DEG_LAT * cosLat;
-  return Math.hypot(dLat, dLng);
+  return distanciaPontos(a, b);
 }
 
 // ─── Detecção de eventos no stream do trecho ────────────────

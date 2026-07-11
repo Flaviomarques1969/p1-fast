@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Central de Cálculos — hoje × com a central</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --line:#283040; --ink:#e6edf3; --mut:#9aa7b4;
+    --bad:#ff6b6b; --bad-bg:#2a1416; --good:#39d98a; --good-bg:#0f241b;
+    --accent:#6cb6ff; --accent-bg:#0e2034; --chip:#1c2330;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--bg);color:var(--ink);font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+  body{padding:28px 32px 48px}
+  .topo{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:24px}
+  h1{font-size:30px;font-weight:800;letter-spacing:.3px}
+  .sub{color:var(--mut);font-size:16px;margin-top:6px;max-width:760px;line-height:1.45}
+  .selo{flex:none;color:var(--mut);font-size:12.5px;text-align:right;line-height:1.5;border:1px solid var(--line);border-radius:10px;padding:10px 14px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:stretch}
+  @media(max-width:1100px){.grid{grid-template-columns:1fr}}
+  .col{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px 22px 24px;display:flex;flex-direction:column}
+  .col.hoje{border-color:#3a2226}
+  .col.depois{border-color:#1d3b2c}
+  .cab{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+  .cab .ic{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;flex:none}
+  .hoje .cab .ic{background:var(--bad-bg);color:var(--bad)}
+  .depois .cab .ic{background:var(--good-bg);color:var(--good)}
+  .cab h2{font-size:21px;font-weight:800}
+  .cab .tag{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--mut)}
+  .lead{color:var(--mut);font-size:15px;line-height:1.5;margin:8px 0 18px}
+
+  /* HOJE — telas com contas por dentro */
+  .telas{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:8px}
+  @media(max-width:560px){.telas{grid-template-columns:1fr}}
+  .tela{background:#11161e;border:1px solid var(--line);border-radius:12px;padding:12px}
+  .tela .nome{font-weight:700;font-size:13.5px;margin-bottom:9px;display:flex;align-items:center;gap:7px;color:var(--ink)}
+  .tela .nome svg{color:var(--mut)}
+  .conta{display:inline-flex;align-items:center;gap:5px;background:var(--chip);border:1px solid var(--line);border-radius:7px;padding:3px 8px;font-size:11.5px;color:#c7d0da;margin:0 4px 5px 0}
+  .conta.dup{border-color:#5a2a2e;color:#ffb4b4;background:#241316}
+  .barulho{margin-top:6px;font-size:11px;color:var(--bad)}
+
+  /* DEPOIS — central + casas */
+  .central{background:#0f1c16;border:1px solid #1d3b2c;border-radius:14px;padding:16px;margin-bottom:14px}
+  .central .titcent{font-weight:800;font-size:14px;color:var(--good);display:flex;align-items:center;gap:8px;margin-bottom:12px;text-transform:uppercase;letter-spacing:.6px}
+  .casas{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px}
+  @media(max-width:560px){.casas{grid-template-columns:1fr 1fr}}
+  .casa{background:#13211a;border:1px solid #224a36;border-radius:10px;padding:10px 11px}
+  .casa .cn{font-weight:700;font-size:13px;color:#eafff4}
+  .casa .cd{font-size:11px;color:#86b9a1;margin-top:2px}
+  .fluxo{display:flex;align-items:center;justify-content:center;gap:8px;color:#5e7d6e;font-size:12px;margin:6px 0 12px}
+  .fluxo svg{color:#39d98a}
+  .consome{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px}
+  @media(max-width:560px){.consome{grid-template-columns:1fr}}
+  .uso{background:#11161e;border:1px solid var(--line);border-radius:10px;padding:10px 11px;text-align:center}
+  .uso .un{font-weight:700;font-size:13px}
+  .uso .ul{font-size:10.5px;color:var(--accent);margin-top:3px;text-transform:uppercase;letter-spacing:.6px}
+
+  .bloco-tit{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--mut);margin:18px 0 10px}
+  .lista{display:flex;flex-direction:column;gap:9px}
+  .item{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.4}
+  .item .mk{flex:none;width:20px;height:20px;border-radius:6px;display:grid;place-items:center;margin-top:1px}
+  .hoje .item .mk{background:var(--bad-bg);color:var(--bad)}
+  .depois .item .mk{background:var(--good-bg);color:var(--good)}
+  .item b{color:#fff}
+  .num{font-variant-numeric:tabular-nums;font-weight:800}
+
+  .rodape{margin-top:26px;border-top:1px solid var(--line);padding-top:16px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;color:var(--mut);font-size:12.5px}
+  .ganhos{background:linear-gradient(180deg,#101a23,#0d1117);border:1px solid var(--line);border-radius:16px;padding:20px 22px;margin-top:22px}
+  .ganhos h3{font-size:16px;margin-bottom:14px}
+  .gcards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  @media(max-width:900px){.gcards{grid-template-columns:1fr 1fr}}
+  @media(max-width:520px){.gcards{grid-template-columns:1fr}}
+  .gc{background:#11161e;border:1px solid var(--line);border-radius:12px;padding:14px}
+  .gc .gh{display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px;margin-bottom:6px}
+  .gc .gh svg{color:var(--good)}
+  .gc p{color:var(--mut);font-size:12.5px;line-height:1.45}
+</style>
+</head>
+<body>
+
+  <div class="topo">
+    <div>
+      <h1>Central de Cálculos</h1>
+      <div class="sub">Cada conta (freio, ápice, marcha, atraso pra melhor volta, nota…) mora num lugar só. Todas as telas e o cérebro usam <b>a mesma conta</b>. Ninguém refaz por dentro.</div>
+    </div>
+    <div class="selo">P1 Fast · 23/06/2026<br>Desenho pra decidir<br>Nada no sistema foi alterado</div>
+  </div>
+
+  <div class="grid">
+
+    <!-- ===================== HOJE ===================== -->
+    <section class="col hoje">
+      <div class="cab">
+        <div class="ic">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </div>
+        <div>
+          <div class="tag">como é hoje</div>
+          <h2>Cada um faz a sua conta</h2>
+        </div>
+      </div>
+      <p class="lead">A mesma conta aparece copiada em vários lugares. Quando precisa mudar, tem que mudar em todas — e é fácil esquecer uma. Aí uma tela mostra um número e outra mostra outro pro mesmo dado.</p>
+
+      <div class="telas">
+        <div class="tela">
+          <div class="nome"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg> Vista Piloto</div>
+          <span class="conta dup">freio</span><span class="conta dup">marcha</span><span class="conta dup">distância</span><span class="conta dup">atraso</span><span class="conta">passagem</span>
+          <div class="barulho">conta real e conta de mentira convivem</div>
+        </div>
+        <div class="tela">
+          <div class="nome"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg> Vista Engenheiro</div>
+          <span class="conta dup">faz tudo</span><span class="conta dup">por dentro</span>
+          <div class="barulho">~todas as contas por dentro, sem reaproveitar</div>
+        </div>
+        <div class="tela">
+          <div class="nome"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3a4 4 0 0 0 0 18M12 3a4 4 0 0 1 0 18"/></svg> Cérebro</div>
+          <span class="conta dup">delta</span><span class="conta dup">velocidade</span><span class="conta dup">coach</span>
+          <div class="barulho">refaz em vez de usar as casas reais</div>
+        </div>
+      </div>
+
+      <div class="bloco-tit">O que eu encontrei (números reais)</div>
+      <div class="lista">
+        <div class="item"><span class="mk"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6 6 18M6 6l12 12"/></svg></span><div>A continha de <b>distância entre dois pontos do GPS</b> está copiada em <span class="num">16</span> arquivos diferentes.</div></div>
+        <div class="item"><span class="mk"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6 6 18M6 6l12 12"/></svg></span><div><b>Marcha</b> calculada em <span class="num">2</span> lugares (um antigo, um em produção).</div></div>
+        <div class="item"><span class="mk"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6 6 18M6 6l12 12"/></svg></span><div><b>Ponto de troca da luz de marcha</b> definido em <span class="num">2</span> lugares.</div></div>
+        <div class="item"><span class="mk"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6 6 18M6 6l12 12"/></svg></span><div>O <b>cérebro</b> (que devia mandar nas contas) faz as próprias e ignora as casas reais de atraso, nota e lições.</div></div>
+      </div>
+
+      <div style="margin-top:auto;padding-top:16px">
+        <div class="bloco-tit" style="margin-top:0">O risco disso</div>
+        <p class="lead" style="margin:0">Telas mostrando número diferente pro mesmo dado. Conserto que arruma um lugar e esquece a cópia. E cada melhoria custa mais, porque tem que repetir em todo canto.</p>
+      </div>
+    </section>
+
+    <!-- ===================== DEPOIS ===================== -->
+    <section class="col depois">
+      <div class="cab">
+        <div class="ic">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg>
+        </div>
+        <div>
+          <div class="tag">como fica com a central</div>
+          <h2>Uma conta, uma casa, todos usam</h2>
+        </div>
+      </div>
+      <p class="lead">A conta é feita <b>uma vez só</b>, num lugar só. As telas e o cérebro <b>só mostram</b> o resultado pronto. Mexeu na conta? Todo mundo já vê igual, na hora.</p>
+
+      <div class="central">
+        <div class="titcent"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg> A central — cada conta na sua casa</div>
+        <div class="casas">
+          <div class="casa"><div class="cn">Freio</div><div class="cd">já é casa única</div></div>
+          <div class="casa"><div class="cn">Ápice / Vmin</div><div class="cd">papéis separados</div></div>
+          <div class="casa"><div class="cn">Marcha</div><div class="cd">unificar as 2</div></div>
+          <div class="casa"><div class="cn">Atraso (delta)</div><div class="cd">casa real existe</div></div>
+          <div class="casa"><div class="cn">Nota / Lições</div><div class="cd">casa real existe</div></div>
+          <div class="casa"><div class="cn">Distância GPS</div><div class="cd">uma só, em vez de 16</div></div>
+        </div>
+      </div>
+
+      <div class="fluxo"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M6 13l6 6 6-6"/></svg> as telas só recebem o resultado pronto</div>
+
+      <div class="consome">
+        <div class="uso"><div class="un">Vista Piloto</div><div class="ul">só exibe</div></div>
+        <div class="uso"><div class="un">Vista Engenheiro</div><div class="ul">só exibe</div></div>
+        <div class="uso"><div class="un">Cérebro / Coach</div><div class="ul">rege, não refaz</div></div>
+      </div>
+
+      <div class="bloco-tit">O que muda na prática</div>
+      <div class="lista">
+        <div class="item"><span class="mk"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span><div>Mexe a conta <b>num lugar só</b> → todas as telas já mostram igual.</div></div>
+        <div class="item"><span class="mk"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span><div><b>Menos bug</b>: não existe cópia esquecida pra divergir.</div></div>
+        <div class="item"><span class="mk"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span><div><b>Mais rápido de evoluir</b>: melhora uma vez, vale em tudo.</div></div>
+        <div class="item"><span class="mk"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span><div>Já existe uma <b>trava automática</b> que impede voltar a bagunçar.</div></div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- ===================== GANHOS ===================== -->
+  <div class="ganhos">
+    <h3>O que isso te dá (em linguagem de negócio)</h3>
+    <div class="gcards">
+      <div class="gc"><div class="gh"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg> Confiança no número</div><p>O dado que aparece numa tela é o mesmo de todas. Acaba "uma tela diz 8, outra diz 9".</p></div>
+      <div class="gc"><div class="gh"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9z"/></svg> Velocidade pra crescer</div><p>Cada melhoria de cálculo entra uma vez e vale no sistema inteiro. Menos retrabalho.</p></div>
+      <div class="gc"><div class="gh"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Menos risco de erro</div><p>Sem cópias soltas, não tem como consertar um lugar e esquecer o outro.</p></div>
+      <div class="gc"><div class="gh"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg> Domínio</div><p>Você sabe onde cada conta mora. Pra mudar uma regra, tem um endereço só.</p></div>
+    </div>
+  </div>
+
+  <div class="rodape">
+    <div>Verde = já está assim ou tem casa pronta. Vermelho = está copiado/refeito hoje.</div>
+    <div>Desenho de referência · não altera código, banco nem produção.</div>
+  </div>
+
+</body>
+</html>

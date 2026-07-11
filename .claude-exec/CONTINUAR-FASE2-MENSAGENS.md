@@ -1,12 +1,24 @@
-# CONTINUAR — Mensagens do cockpit (Fase 1 feita, Fase 2 IMPLEMENTADA + INTEGRADA)
-# Gatilho de retomada: "RETOMAR FASE 2" ou "voltei". Atualizado 2026-07-05 (tarde).
+# CONTINUAR — Mensagens do cockpit (Fase 1 feita, Fase 2 NO AR na linha ativa)
+# Gatilho de retomada: "RETOMAR FASE 2" ou "voltei". Atualizado 2026-07-05 (18h).
+
+## ★★★ PONTO DE RETOMADA (05/07 18h — Flávio saiu, "dar um clique e voltar") ★★★
+- **Fase 2 AUTORIZADA e INCORPORADA na produção do cockpit** (linha ativa `sync/notebook-dia-de-pista-2026-06-23`, topo `2a9788c8`), COMPLETA (mensagens + IA temperatura + memória + ajuste por carro, com a leitura da nuvem). Frase literal do Flávio dada. Backups: `backup/sync-pre-fase2-2026-07-05` (c28a532b) e `backup/sync-fase2-incompleta-2026-07-05` (04bc72aa).
+- **SOFTWARE NO AR — CONFIRMADO pelo notebook 18h45** (canal 20260705T184500Z): linha ativa `2a9788c8`, `.exe` x64 montado e verde (domínio 411/411, WinUI 0/0), leitura da nuvem presente, ajuste por carro funciona. Item 5 do PLANO marcado 🟢 (código no ar).
+- **FALTA SÓ (do Flávio, no próximo dia de pista):** validação DE CAMPO — motor ligado + `IR-AO-VIVO-PRODUCAO.cmd` na tela 10,5". O notebook NÃO rodou o launcher de produção (é a ação que vai ao vivo no carro; fica pro Flávio). Não trava.
+- **Pendência futura (não trava):** calibrar números do Bubi (ref 62/+3/base 30/fator 0,5) com dado real de pista.
+- Nada de banco/Vercel/`cockpit-bubi-live`/`main` foi tocado. Desfazer = reset da linha ativa pra um dos backups + recompilar.
+## ★★★ fim do ponto de retomada ★★★
+
 
 ## >>> ATUALIZAÇÃO 2026-07-05 TARDE — Fase 2 INTEGRADA + tela Garagem (item 4) começada <<<
 - **Fase 2 INTEGRADA no .exe pelo notebook** (commit `53e249dc`): pegou a linha `claude/fase2-ia-temperatura` (com meu item 3), rebaseou por cima a PERSISTÊNCIA em disco por carro (`~/p1fast-sessoes/aprendizado-<carroId>.json`, só no `--live`), novo `MainWindow.Aprendizado.cs`. Domínio 401/401 (no notebook, .NET 8 nativo), WinUI x64 0 erro. Prova determinística: água 68°C/30s (< 70 fixo) → "Temperatura Motor Subindo" disparou por passar o normal do carro +3, saiu ao normalizar. Persistência sobreviveu entre maestros.
 - **Item 3 (água pré-ignição):** o notebook perguntou o gancho; RESPONDI (canal 20260705T153403Z): NÃO precisa gancho novo — meu `Avaliar(tempC, motorRodando, t)` já capta a água fria com rpm<500 e congela o offset na 1ª ignição. Único requisito: alimentar `IngestMotor` desde que o T4000 conecta, com o carro desligado, antes da ignição. Seguro (sem água fria → offset 0).
 - **Item 4 (tela Garagem) — decisões do Flávio no painel `20260705-120925-garagem-limites-alerta`:** 1=dentro do "Setup do Carro" · 2=**TODOS os limites** (pneu, motor, bateria, mistura) · 3=agora. **ETAPA 1 FEITA** (branch `claude/fase2-ia-temperatura`): 10 campos em `CarroSetupOverrides.swift` (snake_case, mesmo `configuracoes.overrides` que sincroniza celular↔nuvem) + 6º grupo "Alertas" em `SetupAvancadoView.swift`. Prova: app iOS compila (xcodebuild BUILD SUCCEEDED do zero) + modelo 8/8 no smoke (round-trip, compat com carro antigo). Xcode 26.4 ESTÁ neste iMac.
 - **Achado de calibração (notebook, não é bug):** confiança só cresce com rpm≥500; carro imaturo adapta rápido. Reforça o §5: calibrar ref 62/+3/base 30/fator 0,5 com dado real do Bubi.
-- **FALTA na tela Garagem:** ETAPA 2 (sincronização já coberta pelo overrides existente) e **ETAPA 3 = o .exe LER os limites do carro (da nuvem) ao abrir a sessão**, em vez do `AlertaLimites.Default` fixo — combinar com o notebook. E mostrar a tela rodando no simulador iOS pro Flávio (adiado, como o screenshot do cockpit).
+- **ETAPA 3 — LADO DO CÉREBRO FEITO 05/07 tarde** (commit 47eff256, na linha `claude/fase2-ia-temperatura` já com a persistência 53e249dc do notebook por rebase): NOVO `LimitesDoCarro.De(overridesJson)` converte o `configuracoes.overrides` do carro (chaves `alerta_*`) em `(AlertaLimites, AprendizadoLimites)` — chave ausente/JSON inválido = default (best-effort). `CockpitOrchestrator` ganhou params opcionais `alertaLimites`/`aprendizadoLimites` (null = intacto) e repassa ao `AlertasCriticos`. Prova: **411/411** (LDC_01..10, inclui fiação ponta-a-ponta via MotorMaximaNormalC). Avisei o notebook (canal 20260705T155457Z).
+- **ETAPA 3 FECHADA DOS DOIS LADOS 05/07 (commit notebook a683e1cb):** o `.exe` lê `configuracoes.overrides` do carro da nuvem (REST, best-effort 5s) e alimenta o maestro via `LimitesDoCarro.De`. Prova: override motor quente 72 → água 72°C dispara "Motor Quente" (limite do carro manda, não o 70 fixo). WinUI x64 0/0, 411/411. **Item 4 (ajuste pelo celular) agora TEM EFEITO real.**
+- **AJUSTE que pedi ao notebook (canal 20260705T161354Z):** ele lia a config por `data_aplicacao desc`; o app grava/lê a "Setup base" = a MAIS ANTIGA (`created_at asc`). Pedi alinhar pra `created_at.asc&limit=1` (senão, com múltiplas configs, lê linha diferente da editada). Refino, não quebra.
+- **FALTA:** (a) o app GRAVAR de fato pelo celular (uso normal — a alça fecha no campo); (b) mostrar a tela "Alertas" rodando no simulador iOS (adiado); (c) calibrar números do Bubi com dado real; (d) **decisão de PRODUÇÃO do Flávio** (ele pediu "mandar pro ar" 05/07 — aguardando a frase literal `MIGRAR PARA PRODUÇÃO: ...`). ETAPA 2 (sincronização) coberta pelo overrides.
 ## >>> fim da atualização tarde <<<
 
 

@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Pergunta — 20260625-172034-cb-etapa2-tela-de-baixo</title>
+<style>
+  :root { --bg:#0f1115; --card:#171a21; --fg:#e8e8e8; --muted:#9aa0a6; --accent:#4f8cff; --ok:#22c55e; --warn:#f59e0b; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background:var(--bg); color:var(--fg); padding:24px; }
+  .wrap { max-width: 720px; margin: 0 auto; }
+  .card { background:var(--card); border-radius:12px; padding:24px; box-shadow: 0 8px 32px rgba(0,0,0,.35); }
+  h1 { font-size: 1.25rem; margin: 0 0 4px; }
+  .meta { color: var(--muted); font-size: .85rem; margin-bottom: 16px; }
+  .pergunta { font-size: 1.05rem; line-height: 1.45; margin: 0 0 20px; }
+  .opcoes { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+  .opcao { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; border: 1px solid #2a2f3a; border-radius: 10px; cursor: pointer; transition: all .15s; }
+  .opcao:hover { border-color: var(--accent); }
+  .opcao input { margin-top: 4px; }
+  .opcao-corpo { flex: 1; }
+  .opcao-titulo { font-weight: 600; }
+  .opcao-just { color: var(--muted); font-size: .9rem; margin-top: 2px; }
+  .recomendado { display: inline-block; background: rgba(34,197,94,.15); color: var(--ok); padding: 1px 8px; border-radius: 999px; font-size: .75rem; margin-left: 8px; }
+  textarea { width: 100%; background:#0f1115; color:var(--fg); border:1px solid #2a2f3a; border-radius: 8px; padding: 10px; resize: vertical; font-family: inherit; font-size: .95rem; }
+  label.bloco { display: block; margin: 16px 0 6px; color: var(--muted); font-size: .85rem; }
+  .acoes { display: flex; gap: 10px; margin-top: 18px; }
+  button { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 10px 16px; font-size: 1rem; cursor: pointer; }
+  button.secundario { background: transparent; border: 1px solid #2a2f3a; color: var(--fg); }
+  .status { margin-top: 12px; color: var(--muted); font-size: .85rem; }
+  .outra-wrap { display: none; }
+  .outra-wrap.ativo { display: block; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>Decisão</h1>
+    <div class="meta">ID: <code>20260625-172034-cb-etapa2-tela-de-baixo</code> &middot; tipo: ux</div>
+    <p class="pergunta">A tela do stint ao vivo (vídeo em cima + mapa/telemetria embaixo) JÁ EXISTE no app e já faz esse arranjo (decisão sua de 09/06). O plano da ETAPA 2 deixou em aberto o que vai EMBAIXO: manter a versão simples atual ou trocar pelo painel denso do piloto. O que você quer embaixo da tela de quem está assistindo o stint?</p>
+
+    <form id="form">
+      <div class="opcoes">
+        <label class="opcao">
+          <input type="radio" name="opcao" value="Manter simples (mapa + bolinha + ritmo)" />
+          <div class="opcao-corpo">
+            <div class="opcao-titulo">Manter SIMPLES: mapa de Brasília + bolinha do carro + velocidade/volta/melhor <span class="recomendado">Recomendado</span></div>
+            <div class="opcao-just">É o que já está construído e combina com o que você ditou dia 25: "experiência do USUÁRIO COMUM assistindo o stint" — ele não precisa do painel denso do piloto. Não mexe em nada congelado. Eu deixo essa tela viva e demonstro no simulador com a volta gravada do Bubi.</div>
+          </div>
+        </label>
+        <label class="opcao">
+          <input type="radio" name="opcao" value="Trocar pelo painel denso do piloto" />
+          <div class="opcao-corpo">
+            <div class="opcao-titulo">Trocar pelo PAINEL DENSO do piloto embaixo (delta + frenada + sensores)</div>
+            <div class="opcao-just">Mais informação, mas esse painel é DEITADO e de formato CONGELADO (você travou em 24/06). Numa tela de espectador em PÉ ele fica espremido/ilegível, ou exige reformatar — o que é proibido sem sua autorização. Mistura o público: piloto x quem só assiste.</div>
+          </div>
+        </label>
+        <label class="opcao">
+          <input type="radio" name="opcao" value="Outra" />
+          <div class="opcao-corpo">
+            <div class="opcao-titulo">Outra</div>
+            <div class="opcao-just">Descreva abaixo o que você quer embaixo da tela de espectador.</div>
+          </div>
+        </label>
+      </div>
+
+      <div class="outra-wrap" id="outra-wrap">
+        <label class="bloco" for="outra-texto">Sua opção</label>
+        <textarea id="outra-texto" rows="2" placeholder="Descreva a sua opção"></textarea>
+      </div>
+
+      <label class="bloco" for="comentario">Comentário (opcional)</label>
+      <textarea id="comentario" rows="3" placeholder="Contexto, ressalvas, prazos..."></textarea>
+
+      <div class="acoes">
+        <button type="button" id="exportar">Exportar JSON</button>
+        <button type="button" class="secundario" id="limpar">Limpar</button>
+      </div>
+      <div class="status" id="status"></div>
+    </form>
+  </div>
+</div>
+
+<script>
+  const PERGUNTA_ID = "20260625-172034-cb-etapa2-tela-de-baixo";
+  const STORAGE_KEY = "padrao-flavio:" + PERGUNTA_ID;
+
+  function carregarLocalStorage() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const dados = JSON.parse(raw);
+      if (dados.escolha) {
+        const radio = document.querySelector('input[name="opcao"][value="' + CSS.escape(dados.escolha) + '"]');
+        if (radio) radio.checked = true;
+      }
+      if (dados.outra_texto) {
+        document.getElementById("outra-texto").value = dados.outra_texto;
+      }
+      if (dados.comentario) {
+        document.getElementById("comentario").value = dados.comentario;
+      }
+      atualizarOutraWrap();
+    } catch (e) { /* noop */ }
+  }
+
+  function salvarLocalStorage() {
+    const escolhaEl = document.querySelector('input[name="opcao"]:checked');
+    const dados = {
+      escolha: escolhaEl ? escolhaEl.value : "",
+      outra_texto: document.getElementById("outra-texto").value,
+      comentario: document.getElementById("comentario").value,
+    };
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(dados)); } catch (e) { /* noop */ }
+  }
+
+  function atualizarOutraWrap() {
+    const escolhaEl = document.querySelector('input[name="opcao"]:checked');
+    const ativo = escolhaEl && escolhaEl.value === "Outra";
+    document.getElementById("outra-wrap").classList.toggle("ativo", ativo);
+  }
+
+  function montarPayload() {
+    const escolhaEl = document.querySelector('input[name="opcao"]:checked');
+    const escolha = escolhaEl ? escolhaEl.value : "";
+    const outraOpcaoUsada = escolha === "Outra";
+    const outraTexto = document.getElementById("outra-texto").value.trim();
+    const comentario = document.getElementById("comentario").value.trim();
+    return {
+      pergunta_id: PERGUNTA_ID,
+      pergunta: document.querySelector(".pergunta").innerText.trim(),
+      escolha: outraOpcaoUsada ? (outraTexto || "Outra") : escolha,
+      outra_opcao_usada: outraOpcaoUsada,
+      comentario: comentario,
+      respondido_em: new Date().toISOString(),
+    };
+  }
+
+  function exportar() {
+    const payload = montarPayload();
+    if (!payload.escolha) {
+      document.getElementById("status").textContent = "Escolha uma opção antes de exportar.";
+      return;
+    }
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = PERGUNTA_ID + ".json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    document.getElementById("status").textContent = "JSON exportado: " + PERGUNTA_ID + ".json — coloque em ./.claude-perguntas/respostas/ e diga 'fiz'.";
+  }
+
+  function limpar() {
+    document.querySelectorAll('input[name="opcao"]').forEach(r => r.checked = false);
+    document.getElementById("outra-texto").value = "";
+    document.getElementById("comentario").value = "";
+    try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+    atualizarOutraWrap();
+    document.getElementById("status").textContent = "Limpo.";
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    carregarLocalStorage();
+    document.querySelectorAll('input[name="opcao"]').forEach(r => {
+      r.addEventListener("change", () => { salvarLocalStorage(); atualizarOutraWrap(); });
+    });
+    document.getElementById("outra-texto").addEventListener("input", salvarLocalStorage);
+    document.getElementById("comentario").addEventListener("input", salvarLocalStorage);
+    document.getElementById("exportar").addEventListener("click", exportar);
+    document.getElementById("limpar").addEventListener("click", limpar);
+  });
+</script>
+</body>
+</html>

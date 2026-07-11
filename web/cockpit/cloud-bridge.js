@@ -15,7 +15,11 @@ import { leituraPlausivel } from './t3000-usb-parser.js';
 
 const SUPABASE_ANON = SUPABASE_ANON_KEY;
 
-const CHANNEL_NAME    = 'cockpit-bubi-live';
+// Canal padrão = PRODUÇÃO. Override SÓ pra dev/teste via ?canal=<nome> na URL — o padrão NUNCA muda
+// (a TV de produção abre sem parâmetro → produção). Só troca qual canal a tela OUVE; nunca publica.
+const CHANNEL_NAME    = (typeof location !== 'undefined' && location.search
+  ? (new URLSearchParams(location.search).get('canal') || 'cockpit-bubi-live')
+  : 'cockpit-bubi-live');
 const PUBLISH_HZ      = 5;
 const PUBLISH_PERIOD  = 1000 / PUBLISH_HZ;
 
@@ -31,6 +35,7 @@ let _onGpsPoint = [];
 let _onSample = [];
 let _onEvento = [];   // aviso de volta/trecho (consumido pelo cérebro)
 let _onPosicao = [];  // posição já calculada pela NUVEM — a tela só exibe
+let _onPainel = [];   // PainelPronto já calculado pela NUVEM (cérebro) — a tela só exibe
 let _retryMs = 2000;
 let _retryTimer = null;
 let _quero = false; // intenção: a ponte deve ficar no ar (religa sozinha se cair)
@@ -85,6 +90,12 @@ export function onPosicao(fn) {
   if (typeof fn === 'function') _onPosicao.push(fn);
 }
 
+/** Registrar callback pro PAINEL PRONTO (PainelPronto) já calculado na nuvem pelo
+ *  cérebro (tools/nuvem-cerebro.mjs). A tela só EXIBE — não recalcula nada. */
+export function onPainel(fn) {
+  if (typeof fn === 'function') _onPainel.push(fn);
+}
+
 export async function startCloudBridge() {
   if (_channel) return _status;
   _quero = true;
@@ -105,6 +116,7 @@ export async function startCloudBridge() {
     _channel.on('broadcast', { event: 'sample' },  (msg) => { if (msg && msg.payload) _fan(_onSample,   msg.payload); });
     _channel.on('broadcast', { event: 'evento' },  (msg) => { if (msg && msg.payload) _fan(_onEvento,   msg.payload); });
     _channel.on('broadcast', { event: 'posicao' }, (msg) => { if (msg && msg.payload) _fan(_onPosicao,  msg.payload); });
+    _channel.on('broadcast', { event: 'painel'  }, (msg) => { if (msg && msg.payload) _fan(_onPainel,   msg.payload); });
     await new Promise((resolve, reject) => {
       _channel.subscribe((status, err) => {
         if (status === 'SUBSCRIBED') { _retryMs = 2000; setStatus('online'); resolve(); }

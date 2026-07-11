@@ -1,0 +1,243 @@
+<title>Proposta B — Cockpit de Gestão</title>
+<style>
+  :root{
+    --bg:#0a0b0d; --bg2:#101216; --card:#13161b; --card2:#161a20;
+    --line:rgba(255,255,255,.07); --line2:rgba(255,255,255,.10);
+    --txt:#f2f4f7; --sub:#9aa3ad; --mut:#5f6873;
+    --blue:#38bdf8; --green:#34d399; --amber:#fbbf24;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    background:#1b1d21; color:var(--txt);
+    font-family:system-ui,-apple-system,"SF Pro Text",sans-serif;
+    min-height:100vh; display:flex; flex-direction:column; align-items:center;
+    padding:48px 24px 64px;
+  }
+  h1.page{font-size:15px;font-weight:600;letter-spacing:-.01em;color:#c8ced6;margin-bottom:28px}
+  /* ============ DEVICE ============ */
+  .device{
+    width:375px;height:812px;border-radius:40px;overflow:hidden;position:relative;
+    background:linear-gradient(180deg,var(--bg2) 0%,var(--bg) 30%);
+    border:1px solid rgba(255,255,255,.12);
+    box-shadow:0 30px 80px rgba(0,0,0,.55),0 4px 18px rgba(0,0,0,.4);
+    display:flex;flex-direction:column;
+  }
+  .screen{flex:1;overflow-y:auto;padding:0 0 96px;scrollbar-width:none}
+  .screen::-webkit-scrollbar{display:none}
+  /* status bar */
+  .status{display:flex;justify-content:space-between;align-items:center;padding:16px 24px 4px;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--txt)}
+  .status svg{display:block}
+  /* header */
+  .hdr{display:flex;justify-content:space-between;align-items:baseline;padding:14px 20px 0}
+  .hdr .brand{font-size:20px;font-weight:800;letter-spacing:-.03em}
+  .hdr .brand em{font-style:normal;color:var(--blue)}
+  .hdr .date{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);font-weight:600}
+  /* ============ HERO ============ */
+  .hero{position:relative;padding:26px 20px 10px;overflow:hidden}
+  .hero .track{position:absolute;right:-38px;top:6px;width:250px;height:210px;opacity:.9;pointer-events:none}
+  .eyebrow{font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--mut);margin-bottom:8px}
+  .hero .lap{
+    font-size:68px;font-weight:800;line-height:1;letter-spacing:-.045em;
+    font-variant-numeric:tabular-nums;position:relative;z-index:2;
+    background:linear-gradient(180deg,#ffffff 0%,#c9d4de 100%);
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  }
+  .hero .lap small{font-size:34px;font-weight:700;letter-spacing:-.02em}
+  .hero .trend{display:inline-flex;align-items:center;gap:6px;margin-top:12px;position:relative;z-index:2;
+    font-size:13px;font-weight:600;color:var(--green);font-variant-numeric:tabular-nums;
+    background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.22);
+    padding:5px 11px;border-radius:999px}
+  .hero .where{margin-top:10px;font-size:12px;color:var(--sub);position:relative;z-index:2}
+  /* ============ KPIs ============ */
+  .kpis{display:flex;gap:0;margin:20px 16px 0;border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.02);overflow:hidden}
+  .kpi{flex:1;padding:12px 4px;text-align:center;cursor:pointer;transition:background .15s}
+  .kpi:hover{background:rgba(255,255,255,.03)}
+  .kpi + .kpi{border-left:1px solid var(--line)}
+  .kpi b{display:block;font-size:17px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+  .kpi span{display:block;margin-top:3px;font-size:9.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--mut)}
+  .kpi.amber b{color:var(--amber)}
+  /* ============ EVENT CARD ============ */
+  .section-label{padding:24px 20px 10px;font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--mut)}
+  .event{
+    margin:0 16px;border-radius:18px;padding:18px;
+    background:linear-gradient(160deg,var(--card2) 0%,var(--card) 70%);
+    border:1px solid var(--line2);
+  }
+  .event .top{display:flex;justify-content:space-between;align-items:flex-start}
+  .event h2{font-size:19px;font-weight:700;letter-spacing:-.02em}
+  .event .venue{margin-top:3px;font-size:12px;color:var(--sub)}
+  .badge{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--blue);
+    background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.25);
+    padding:4px 9px;border-radius:999px;white-space:nowrap}
+  .event .meta{display:flex;gap:14px;margin-top:14px;font-size:12.5px;color:var(--sub);font-variant-numeric:tabular-nums}
+  .event .meta span{display:inline-flex;align-items:center;gap:6px}
+  .event .meta svg{color:var(--mut)}
+  .ready{margin-top:16px}
+  .ready .row{display:flex;justify-content:space-between;font-size:11px;font-weight:600;margin-bottom:6px}
+  .ready .row .lbl{letter-spacing:.12em;text-transform:uppercase;color:var(--mut);font-size:10px}
+  .ready .row .val{color:var(--amber);font-variant-numeric:tabular-nums}
+  .bar{height:4px;border-radius:2px;background:rgba(255,255,255,.07);overflow:hidden}
+  .bar i{display:block;height:100%;width:64%;border-radius:2px;background:linear-gradient(90deg,#d99f14,var(--amber))}
+  .cta{
+    display:flex;align-items:center;justify-content:center;gap:8px;margin-top:16px;width:100%;
+    padding:14px;border:0;border-radius:13px;cursor:pointer;
+    background:linear-gradient(180deg,#4cc6fa,#2aa9e0);color:#04222f;
+    font-size:15px;font-weight:700;letter-spacing:-.01em;font-family:inherit;
+    box-shadow:0 6px 20px rgba(56,189,248,.25);
+  }
+  /* ============ CARS ============ */
+  .cars{display:flex;gap:10px;padding:0 16px;overflow-x:auto;scrollbar-width:none}
+  .cars::-webkit-scrollbar{display:none}
+  .car{
+    flex:0 0 auto;display:flex;align-items:center;gap:10px;
+    padding:11px 16px 11px 12px;border-radius:999px;cursor:pointer;
+    background:rgba(255,255,255,.03);border:1px solid var(--line2);
+  }
+  .swatch{width:26px;height:26px;border-radius:50%;border:1px solid rgba(255,255,255,.15)}
+  .car b{display:block;font-size:13.5px;font-weight:650;letter-spacing:-.01em}
+  .car span{display:block;font-size:10.5px;color:var(--mut);font-variant-numeric:tabular-nums;margin-top:1px}
+  /* ============ TAB BAR ============ */
+  .tabs{
+    position:absolute;left:0;right:0;bottom:0;height:82px;
+    display:flex;padding:10px 8px 24px;
+    background:rgba(12,13,16,.92);backdrop-filter:blur(18px);
+    border-top:1px solid var(--line);
+  }
+  .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--mut);cursor:pointer;font-size:10px;font-weight:600;letter-spacing:.02em}
+  .tab.on{color:var(--blue)}
+  .tab .dot{position:relative}
+  .tab .pend{position:absolute;top:-2px;right:-4px;width:7px;height:7px;border-radius:50%;background:var(--amber);border:1.5px solid var(--bg)}
+  /* footer */
+  .foot{max-width:520px;margin-top:32px;color:#8b929b;font-size:12.5px;line-height:1.6}
+  .foot b{color:#c8ced6;display:block;margin-bottom:8px;font-size:13px}
+  .foot ul{margin-left:16px}
+</style>
+
+<h1 class="page">Proposta B — Cockpit de Gestão</h1>
+
+<div class="device">
+  <div class="screen">
+    <div class="status">
+      <span>09:41</span>
+      <span style="display:flex;gap:6px;align-items:center">
+        <svg width="17" height="11" viewBox="0 0 17 11" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 8.5v1.5M5 6.5v3.5M9 4.5v5.5M13 2v8" stroke-linecap="round"/></svg>
+        <svg width="25" height="12" viewBox="0 0 25 12" fill="none" stroke="currentColor" stroke-width="1"><rect x=".5" y=".5" width="21" height="11" rx="3.5"/><rect x="2" y="2" width="15" height="8" rx="2" fill="currentColor" stroke="none"/><path d="M23 4v4" stroke-linecap="round" stroke-width="1.5"/></svg>
+      </span>
+    </div>
+
+    <div class="hdr">
+      <div class="brand">P1 <em>Fast</em></div>
+      <div class="date">Sex · 11 Jul</div>
+    </div>
+
+    <!-- HERO -->
+    <div class="hero">
+      <svg class="track" viewBox="0 0 240 200" fill="none">
+        <defs>
+          <linearGradient id="tg" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#38bdf8" stop-opacity=".55"/>
+            <stop offset="1" stop-color="#38bdf8" stop-opacity=".08"/>
+          </linearGradient>
+        </defs>
+        <!-- traçado estilizado Aut. Nelson Piquet (Brasília) -->
+        <path d="M40 168 L150 168 C168 168 176 160 176 148 L176 120 C176 108 184 100 196 100 L206 100 C218 100 226 92 226 80 L226 58 C226 46 218 38 206 38 L120 38 C108 38 100 46 100 58 L100 74 C100 86 92 94 80 94 L58 94 C46 94 38 102 38 114 L26 142 C20 156 26 168 40 168 Z"
+          stroke="url(#tg)" stroke-width="2" stroke-linejoin="round"/>
+        <circle cx="40" cy="168" r="3.5" fill="#38bdf8"/>
+      </svg>
+      <div class="eyebrow">Melhor volta · Brasília</div>
+      <div class="lap">1:42<small>.3</small></div>
+      <div class="trend">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8l3-3 2 2 3-4"/><path d="M10 3v3h-3" transform="rotate(180 8.5 4.5)"/></svg>
+        −0,8s vs mês passado
+      </div>
+      <div class="where">Celta 1.4 · Stint 3 · 24 abr</div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="kpis">
+      <div class="kpi"><b>12</b><span>Eventos</span></div>
+      <div class="kpi"><b>47</b><span>Stints</span></div>
+      <div class="kpi"><b>158</b><span>Voltas</span></div>
+      <div class="kpi amber"><b>64%</b><span>Pronto</span></div>
+    </div>
+
+    <!-- PRÓXIMO EVENTO -->
+    <div class="section-label">Próximo evento</div>
+    <div class="event">
+      <div class="top">
+        <div>
+          <h2>Brasília</h2>
+          <div class="venue">Autódromo Nelson Piquet</div>
+        </div>
+        <div class="badge">Em 2 dias</div>
+      </div>
+      <div class="meta">
+        <span>
+          <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="1.5" y="2.5" width="11" height="10" rx="2"/><path d="M1.5 5.5h11M4.5 1v2.5M9.5 1v2.5"/></svg>
+          Sáb · 2 de maio
+        </span>
+        <span>
+          <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="7" cy="7" r="5.5"/><path d="M7 4v3l2 1.5"/></svg>
+          09:00
+        </span>
+      </div>
+      <div class="ready">
+        <div class="row"><span class="lbl">Prontidão do carro</span><span class="val">64%</span></div>
+        <div class="bar"><i></i></div>
+      </div>
+      <button class="cta">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2.8l8.5 5.2L4 13.2V2.8z"/></svg>
+        Iniciar Stint
+      </button>
+    </div>
+
+    <!-- GARAGEM -->
+    <div class="section-label">Garagem</div>
+    <div class="cars">
+      <div class="car">
+        <div class="swatch" style="background:linear-gradient(135deg,#c0c7cf,#7d868f)"></div>
+        <div><b>Celta 1.4</b><span>31 stints</span></div>
+      </div>
+      <div class="car">
+        <div class="swatch" style="background:linear-gradient(135deg,#1f2c46,#0e1524)"></div>
+        <div><b>Honda Civic</b><span>16 stints</span></div>
+      </div>
+      <div class="car" style="border-style:dashed;background:transparent">
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="#5f6873" stroke-width="1.5" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>
+        <div><b style="color:var(--sub)">Adicionar</b><span>novo carro</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB BAR -->
+  <div class="tabs">
+    <div class="tab on">
+      <svg width="21" height="21" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l7-6 7 6v7.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 3 16.5V9z"/></svg>
+      Home
+    </div>
+    <div class="tab">
+      <svg width="21" height="21" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="15" height="13" rx="2"/><path d="M2.5 8h15M6.5 2v3.5M13.5 2v3.5"/></svg>
+      Eventos
+    </div>
+    <div class="tab">
+      <span class="dot">
+        <svg width="21" height="21" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5h12M4 10h12M4 15.5h7"/><circle cx="16" cy="15.5" r="1" fill="currentColor" stroke="none"/></svg>
+        <i class="pend"></i>
+      </span>
+      Pendências
+    </div>
+    <div class="tab">
+      <svg width="21" height="21" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12l1.6-4.2A2 2 0 0 1 6.5 6.5h7a2 2 0 0 1 1.9 1.3L17 12M3 12h14v3.5a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1V15H6v.5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V12z"/><path d="M5.5 13.8h.01M14.5 13.8h.01"/></svg>
+      Garagem
+    </div>
+  </div>
+</div>
+
+<div class="foot">
+  <b>Conceito B — Cockpit de Gestão</b>
+  <ul>
+    <li>Um número manda na tela: a melhor volta. É o indicador que resume se o investimento em pista está dando retorno.</li>
+    <li>Prontidão de 64% em âmbar antecipa risco operacional antes do evento — decisão de preparo, não surpresa no autódromo.</li>
+    <li>Ação principal única e óbvia ("Iniciar Stint"): o caminho mais frequente custa um toque, o resto fica a um nível de distância.</li>
+  </ul>
+</div>

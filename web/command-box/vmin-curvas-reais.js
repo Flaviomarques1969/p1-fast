@@ -94,7 +94,15 @@ export function construirVminRealPorCurva(fixture, opts = {}) {
     const vminConfiavel = vminRaw < entradaRaw && vminRaw < saidaRaw;
     const vminKmh = R(vminRaw);
 
-    const bestVmin = Array.isArray(best.pontos) && best.pontos.length ? best.pontos[idxVmin(best.pontos)].kmh : vminRaw;
+    const bestPts = Array.isArray(best.pontos) ? best.pontos : [];
+    const bestIv = bestPts.length ? idxVmin(bestPts) : -1;
+    const bestVmin = bestIv >= 0 ? bestPts[bestIv].kmh : vminRaw;
+    // A referência (Vmin da MELHOR passagem do trecho) também só é leitura limpa quando
+    // a mínima dela é um VALE de verdade (mesma regra de honestidade ~1 Hz). Serve pro
+    // painel marcar "melhor ~89" (aproximado) quando a própria referência não foi limpa.
+    const vminRefConfiavel = bestIv >= 0
+      ? (bestPts[bestIv].kmh < bestPts[0].kmh && bestPts[bestIv].kmh < bestPts[bestPts.length - 1].kmh)
+      : false;
     const d = vminRaw - bestVmin;
     const label = Math.abs(d) <= KMH_BOM ? 'no ponto' : (d > 0 ? 'alto' : 'baixo');
 
@@ -102,6 +110,8 @@ export function construirVminRealPorCurva(fixture, opts = {}) {
       ...base,
       live, ghost,
       vminKmh, vminConfiavel,
+      vminRefKmh: R(bestVmin), vminRefConfiavel,   // Vmin da melhor passagem do trecho (número exibível)
+      tempoRefS: best.tempo_trecho_s,              // TEMPO que o carro fez nessa melhor passagem (s)
       label, tone: toneKmh(Math.abs(d)), delta: fmtKmh(d),
       voltaMostrada: mostrada.volta, voltaRef: best.volta,
     };

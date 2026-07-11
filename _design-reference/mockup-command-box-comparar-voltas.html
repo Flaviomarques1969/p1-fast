@@ -1,0 +1,644 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Command Box · Comparar voltas — frenagem e aceleração</title>
+<!--
+  TELA DE ANÁLISE (Command Box) — padrão premium.
+  Gráfico horizontal da VOLTA INTEIRA: acelera (verde, acima) / freia (vermelho, abaixo),
+  ghost da melhor volta, faixa de delta pro ghost, mapa real de Brasília com a posição na volta,
+  curvas nomeadas e voltas empilhadas/sobrepostas pra comparar.
+
+  REGRA DURA respeitada: a tela só EXIBE. Não abre conexão própria ao canal e não usa dado de
+  demonstração. O número vem do MOTOR de produção (web/cockpit/freio-trecho.js) sobre VOLTA REAL
+  gravada; o traçado/curvas vêm das casas oficiais (pista-oficial-brasilia.js, apices-semente).
+  Frenagem/aceleração de hoje = efeito físico medido pelo GPS (rótulo simulado-fisica); vira sensor
+  de pedal/pressão sem mudar a tela. Sem emojis (só traço SVG). Tratamento "você".
+-->
+<style>
+  :root{
+    --bg:#06080c; --panel:rgba(20,26,35,.66); --panel2:rgba(14,19,27,.8);
+    --linha:rgba(255,255,255,.07); --linha2:rgba(255,255,255,.13);
+    --tx:#eef2f8; --tx2:#a7b3c4; --tx3:#65718a;
+    --acel:#2fe08a; --acelGlow:rgba(47,224,138,.55);
+    --freio:#ff5a5f; --freioGlow:rgba(255,90,95,.5);
+    --ghost:#e9c46a; --ghostGlow:rgba(233,196,106,.5);
+    --c1:#49c9ff; --c2:#b98cff; --c3:#ffac5b; --c4:#34e0d0; --c5:#ff7ab8;
+    --sombra:0 24px 60px -28px rgba(0,0,0,.85);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;min-height:100%}
+  body{
+    background:
+      radial-gradient(1400px 760px at 76% -12%, #0f1826 0%, rgba(15,24,38,0) 58%),
+      radial-gradient(1100px 700px at 8% 110%, #10131c 0%, rgba(16,19,28,0) 55%),
+      var(--bg);
+    color:var(--tx); font:14px/1.5 ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased; padding:22px 26px 34px; letter-spacing:.1px;
+  }
+  .num{font-variant-numeric:tabular-nums; font-feature-settings:"tnum" 1}
+  .eyebrow{font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--tx3); font-weight:600}
+  .voltar{display:inline-flex; align-items:center; gap:7px; font-size:11px; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--tx3); font-weight:600; text-decoration:none; transition:.16s}
+  .voltar:hover{color:var(--tx)}
+
+  .hero-top{display:flex; align-items:flex-end; justify-content:space-between; gap:24px; margin-bottom:18px}
+  .hero-top h1{margin:4px 0 0; font-size:25px; font-weight:680; letter-spacing:.2px}
+  .hero-top .leg-sub{color:var(--tx2); font-size:13px; margin-top:5px; max-width:680px}
+  .ctx{display:flex; gap:9px; flex-wrap:wrap; justify-content:flex-end; align-items:center}
+  .chip{display:inline-flex; align-items:center; gap:7px; font-size:11.5px; color:var(--tx2);
+        border:1px solid var(--linha2); background:var(--panel2); border-radius:999px; padding:6px 12px; white-space:nowrap}
+  .chip b{color:var(--tx); font-weight:600}
+  .chip .dot{width:7px;height:7px;border-radius:50%}
+  .chip.prov{border-color:rgba(233,196,106,.42); color:var(--ghost); background:rgba(233,196,106,.06)}
+
+  .stage{display:grid; grid-template-columns:minmax(0,1fr) 360px; gap:18px; align-items:start}
+  @media (max-width:1180px){ .stage{grid-template-columns:1fr} }
+
+  .glass{background:linear-gradient(180deg,var(--panel),var(--panel2));
+    border:1px solid var(--linha); border-radius:18px; box-shadow:var(--sombra); backdrop-filter:blur(8px)}
+  .pad{padding:16px 18px}
+
+  .toolbar{display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:14px}
+  .seg{display:inline-flex; background:rgba(8,11,16,.7); border:1px solid var(--linha2); border-radius:12px; padding:3px}
+  .seg button{appearance:none; border:0; background:transparent; color:var(--tx2); font:inherit; font-size:12.5px; font-weight:550;
+    padding:7px 14px; border-radius:9px; cursor:pointer; display:inline-flex; gap:7px; align-items:center; transition:.16s}
+  .seg button.on{background:linear-gradient(180deg,#eef3fb,#cdd8ea); color:#0a1018; box-shadow:0 6px 16px -8px rgba(180,200,230,.6)}
+  .legenda{display:flex; gap:16px; align-items:center; margin-left:auto; color:var(--tx2); font-size:12px}
+  .legenda span{display:inline-flex; gap:7px; align-items:center}
+  .sw{width:16px;height:8px;border-radius:3px}
+
+  .plot{position:relative}
+  .corner-strip{position:relative; height:20px; margin:0 0 2px}
+  .corner-strip .cn{position:absolute; transform:translateX(-50%); font-size:10.5px; color:var(--tx3);
+    letter-spacing:.04em; white-space:nowrap; top:0}
+  .corner-strip .cn b{color:var(--tx2); font-weight:600}
+  svg{display:block; width:100%; height:auto; overflow:visible}
+  .xaxis{position:relative; height:16px; margin-top:2px}
+  .xaxis .xt{position:absolute; transform:translateX(-50%); font-size:10px; color:var(--tx3)}
+
+  .kpis{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:14px}
+  .kpi{border:1px solid var(--linha); border-radius:12px; padding:10px 13px; background:rgba(10,14,20,.5)}
+  .kpi .k{font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--tx3)}
+  .kpi .v{font-size:18px; font-weight:680; margin-top:3px}
+  .kpi .v.s{font-size:14px; font-weight:600}
+  .nota{color:var(--tx3); font-size:11.5px; margin-top:13px; line-height:1.55; max-width:880px}
+
+  /* mapa */
+  .card-h{display:flex; align-items:center; gap:8px; font-size:11px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--tx3); font-weight:600; margin:0 0 10px}
+  .card-h .leve{color:var(--tx3); letter-spacing:0; text-transform:none; font-weight:500; margin-left:auto; font-size:11.5px}
+  #mapa svg{margin:0 auto}
+  .map-legend{display:flex; justify-content:space-between; color:var(--tx3); font-size:11px; margin-top:8px}
+
+  /* voltas */
+  .laps{display:flex; flex-direction:column; gap:9px; max-height:none}
+  .lap{display:flex; align-items:center; gap:11px; border:1px solid var(--linha); border-radius:14px;
+    padding:11px 13px; background:linear-gradient(180deg,rgba(13,18,26,.7),rgba(9,12,18,.7)); cursor:pointer; transition:.16s; position:relative; overflow:hidden}
+  .lap:hover{border-color:var(--linha2); transform:translateY(-1px)}
+  .lap.on{border-color:rgba(120,170,255,.5)}
+  .lap.best{border-color:rgba(233,196,106,.55)}
+  .lap .accent{position:absolute; left:0; top:0; bottom:0; width:3px}
+  .lap .info{display:flex; flex-direction:column; min-width:0; gap:2px}
+  .lap .nm{font-weight:650; font-size:13.5px; display:flex; align-items:center; gap:8px}
+  .lap .tm{font-size:19px; font-weight:680; letter-spacing:.4px}
+  .lap .sub{font-size:11px; color:var(--tx2)}
+  .badge{font-size:9.5px; font-weight:800; letter-spacing:.08em; color:#1a1406; background:linear-gradient(180deg,#f1d488,#d9ad4f);
+    border-radius:5px; padding:2px 7px; text-transform:uppercase}
+  .tag-vivo{font-size:9.5px; font-weight:800; letter-spacing:.08em; color:#04130b; background:var(--acel); border-radius:5px; padding:2px 7px; text-transform:uppercase}
+  .lap .right{margin-left:auto; display:flex; flex-direction:column; align-items:flex-end; gap:4px}
+  .lap .delta{font-size:13px; font-weight:680}
+  .lap .delta.pos{color:var(--freio)} .lap .delta.neg{color:var(--acel)} .lap .delta.zero{color:var(--ghost)}
+  .eye{width:30px;height:30px;border-radius:9px;border:1px solid var(--linha2); display:flex;align-items:center;justify-content:center;
+    color:var(--tx3); background:rgba(8,11,16,.6); flex:none}
+  .lap.on .eye{color:#9fd0ff; border-color:rgba(120,170,255,.5)}
+
+  .btn{appearance:none; border:1px solid var(--linha2); background:linear-gradient(180deg,rgba(16,22,31,.9),rgba(10,14,20,.9)); color:var(--tx);
+    font:inherit; font-size:13px; font-weight:600; padding:12px; border-radius:13px; cursor:pointer; width:100%;
+    display:flex; gap:9px; align-items:center; justify-content:center; transition:.16s; margin-top:12px}
+  .btn:hover{border-color:rgba(120,170,255,.5); background:linear-gradient(180deg,rgba(22,30,42,.95),rgba(13,18,26,.95))}
+  .btn[disabled]{opacity:.38; cursor:default}
+
+  .ico{stroke:currentColor; stroke-width:1.8; fill:none; stroke-linecap:round; stroke-linejoin:round}
+  .lapline{fill:none; stroke-linejoin:round; stroke-linecap:round}
+  .ghost-line{fill:none; stroke:var(--ghost); stroke-width:2.4}
+  .cursor-line{stroke:rgba(255,255,255,.32); stroke-width:1; stroke-dasharray:2 4}
+  .grid-c{stroke:var(--linha); stroke-width:1}
+  .axislbl{fill:var(--tx3); font-size:11px}
+  .sidelbl{fill:var(--tx3); font-size:10px; letter-spacing:.12em; text-transform:uppercase}
+
+  /* readout flutuante */
+  .float{position:fixed; pointer-events:none; z-index:50; min-width:188px; opacity:0; transform:translateY(4px); transition:opacity .12s;
+    background:rgba(10,14,20,.92); border:1px solid var(--linha2); border-radius:13px; padding:11px 13px; box-shadow:var(--sombra); backdrop-filter:blur(10px)}
+  .float.show{opacity:1; transform:none}
+  .float .fc{font-size:11px; color:var(--tx3); letter-spacing:.08em; text-transform:uppercase; margin-bottom:7px}
+  .float .row{display:flex; align-items:center; gap:8px; font-size:12.5px; margin:3px 0}
+  .float .row .d{width:9px;height:9px;border-radius:3px; flex:none}
+  .float .row .nm{color:var(--tx2)} .float .row .vl{margin-left:auto; font-weight:650}
+  .vazio{color:var(--tx2); padding:40px 14px; text-align:center; line-height:1.7}
+
+  @keyframes draw{to{stroke-dashoffset:0}}
+  .anim{stroke-dasharray:1; stroke-dashoffset:1; animation:draw .9s cubic-bezier(.22,.7,.2,1) forwards}
+</style>
+</head>
+<body>
+  <header class="hero-top">
+    <div>
+      <a class="voltar" href="menu-command-box.html"><svg width="13" height="13" viewBox="0 0 24 24" class="ico"><path d="M15 18l-6-6 6-6"/></svg> Command Box · Análise de stint</a>
+      <h1>Comparar voltas — frenagem e aceleração</h1>
+      <div class="leg-sub">A volta inteira numa linha. Acima do centro o carro <b style="color:var(--acel)">acelera</b>,
+        abaixo ele <b style="color:var(--freio)">freia</b>. A volta mais rápida fica de <b style="color:var(--ghost)">ghost</b>;
+        a faixa de baixo mostra <b>onde você ganha ou perde</b> pra ela.</div>
+    </div>
+    <div class="ctx">
+      <span class="chip"><span class="dot" style="background:var(--acel)"></span> <b id="ctx-pista">Brasília</b></span>
+      <span class="chip"><b id="ctx-voltas">—</b> voltas</span>
+      <span class="chip" id="chip-vivo"><span class="dot" style="background:var(--tx3)"></span> ligando ao vivo…</span>
+      <span class="chip prov"><span class="dot" style="background:var(--ghost)"></span> efeito físico do GPS · provisório</span>
+    </div>
+  </header>
+
+  <div class="stage">
+    <!-- COLUNA PRINCIPAL -->
+    <section>
+      <div class="glass pad">
+        <div class="toolbar">
+          <div class="seg" id="modo">
+            <button data-modo="sobrepor" class="on"><svg width="14" height="14" viewBox="0 0 24 24" class="ico"><path d="M3 17h18M3 12h18M3 7h18"/></svg> Sobrepor</button>
+            <button data-modo="empilhar"><svg width="14" height="14" viewBox="0 0 24 24" class="ico"><rect x="3" y="4" width="18" height="5" rx="1.5"/><rect x="3" y="14" width="18" height="5" rx="1.5"/></svg> Empilhar</button>
+          </div>
+          <div class="legenda">
+            <span><span class="sw" style="background:var(--ghost)"></span> melhor (ghost)</span>
+            <span><span class="sw" style="background:linear-gradient(90deg,var(--acel),#bfffe0)"></span> acelera</span>
+            <span><span class="sw" style="background:linear-gradient(90deg,#ffd0d0,var(--freio))"></span> freia</span>
+          </div>
+        </div>
+        <div class="plot" id="plot">
+          <div class="corner-strip" id="corners"></div>
+          <div id="graf"></div>
+          <div id="delta"></div>
+          <div class="xaxis" id="xaxis"></div>
+        </div>
+        <div class="kpis" id="kpis"></div>
+        <div class="nota" id="nota"></div>
+      </div>
+    </section>
+
+    <!-- TRILHO DIREITO -->
+    <aside style="display:flex; flex-direction:column; gap:18px">
+      <div class="glass pad">
+        <div class="card-h">Brasília — posição na volta <span class="leve" id="map-corner">—</span></div>
+        <div id="mapa"></div>
+        <div class="map-legend"><span>linha de chegada</span><span id="map-vel">—</span></div>
+      </div>
+      <div class="glass pad">
+        <div class="card-h">Voltas do stint <span class="leve" id="cont">—</span></div>
+        <div class="laps" id="lista"></div>
+        <button class="btn" id="add"><svg width="16" height="16" viewBox="0 0 24 24" class="ico"><path d="M12 5v14M5 12h14"/></svg> Adicionar próxima volta</button>
+      </div>
+    </aside>
+  </div>
+
+  <div class="float" id="float"></div>
+
+<script type="module">
+import { comDistanciaAcumulada, simularFreioPelaFisica } from '/web/cockpit/freio-trecho.js';
+import { distanciaPontos } from '/web/cockpit/geo.js';
+import { geoParaDesenho, PONTOS_DESENHO, LARGURA_DESENHO, ALTURA_DESENHO } from '/web/cockpit/pista-oficial-brasilia.js';
+import { APICES_SEMENTE_BRASILIA } from '/web/cockpit/apices-semente-brasilia.js';
+// AO VIVO: só os ganchos da ponte ÚNICA (quem conecta é a ponte; a tela só OUVE, nunca publica).
+import { startCloudBridge, onGpsPoint, getStatus, onStatusChange } from '/web/cockpit/cloud-bridge.js';
+
+const CORES=['var(--c1)','var(--c2)','var(--c3)','var(--c4)','var(--c5)'];
+const COR_HEX={'var(--c1)':'#49c9ff','var(--c2)':'#b98cff','var(--c3)':'#ffac5b','var(--c4)':'#34e0d0','var(--c5)':'#ff7ab8'};
+const NOME_CURTO={'CURVA 01':'C1','CURVA DA RETA OPOSTA':'Reta Oposta','CURVA 2':'C2','CURVA DA JUNÇÃO':'Junção',
+  'CURVA DA BRUXA':'Bruxa','CURVA DO PLACAR':'Placar','CURVA "S"':'S','CURVA DA VITÓRIA':'Vitória'};
+const N=240, $=(s)=>document.querySelector(s);
+const estado={voltas:[], visiveis:new Set(), revelados:new Set(), melhorId:null, focoId:null, modo:'sobrepor', curvas:[], hover:null,
+  marco:null, live:{pts:[], lastCross:null, lastPt:null}, ultimoGps:0};
+
+// ───────────────────── carregar VOLTA REAL + fatiar ─────────────────────
+async function carregar(){
+  // Produção: começa LIMPA (sem voltas-demo) e enche com as voltas reais ao vivo.
+  // Modo demonstração (volta atrás): abrir com ?demo carrega a sessão gravada do Bubi 23/05.
+  const DEMO=new URLSearchParams(location.search).has('demo');
+  let mapa;
+  try{ mapa=await (await fetch('/web/command-box/fixtures/replay-hoje-mapa.json')).json(); }
+  catch(e){ return vazio('Não consegui carregar a referência da pista (linha de chegada).'); }
+  estado.marco=mapa&&mapa.marco;
+
+  if(DEMO){
+    let sessao={amostras:[]};
+    try{ sessao=await (await fetch('/web/command-box/fixtures/volta-real-gps-23-05.json')).json(); }catch(e){}
+    let pts=(sessao.amostras||[]).map(a=>({t:a[0],lat:a[1],lng:a[2]}));
+    if(pts.length<50) pts=(mapa.pts||[]).map(p=>({t:p[0],lat:p[1],lng:p[2]}));
+    let cortes=estado.marco?detectarCruzamentos(pts,estado.marco):[];
+    if(cortes.length<2&&mapa.cruzamentos) cortes=mapa.cruzamentos.slice();
+    const cruas=[];
+    for(let i=0;i<cortes.length-1;i++){
+      const seg=pts.filter(p=>p.t>=cortes[i]&&p.t<=cortes[i+1]); const dur=(cortes[i+1]-cortes[i])/1000;
+      if(seg.length>=30&&dur>40&&dur<360) cruas.push({seg,dur});
+    }
+    estado.voltas=cruas.map((v,i)=>processarVolta(v.seg,v.dur,i));
+    if(estado.voltas.length){
+      estado.melhorId=estado.voltas.reduce((m,v)=>v.durSec<m.durSec?v:m,estado.voltas[0]).id;
+      estado.curvas=projetarCurvas(ghost());
+      const inicio=new Set([estado.melhorId, estado.voltas[0].id]);
+      estado.revelados=new Set(inicio); estado.visiveis=new Set(inicio);
+      estado.focoId=estado.voltas.find(v=>v.id!==estado.melhorId&&estado.visiveis.has(v.id))?.id || estado.melhorId;
+    }
+    $('#ctx-pista').textContent='Brasília · Bubi · 23/05 · demonstração';
+  } else {
+    estado.voltas=[]; estado.curvas=[]; $('#add').style.display='none';
+    $('#ctx-pista').textContent='Brasília';
+  }
+  desenharTudo(); desenharMapa(); ligarHover(); idleStart(); ligarAoVivo();
+}
+
+// ───────────────────── AO VIVO (pela ponte única) ─────────────────────
+// A tela OUVE o canal pela ponte (sem conexão própria, sem publicar). Quando uma volta FECHA
+// (cruza a linha de chegada), a volta é montada com o MESMO motor e ENTRA sozinha na lista.
+// Sem carro na pista: provar com `CANAL=cb-dev-flavio node tools/nuvem-replay-gps.mjs 23-05 30`
+// e abrir a tela com ?canal=cb-dev-flavio. Canal padrão = produção, só ESCUTA (regra dura).
+async function ligarAoVivo(){
+  if(!estado.marco) return;
+  onStatusChange(()=>atualizarChipVivo());
+  onGpsPoint(p=>onLiveGps(p));
+  try{ await startCloudBridge(); }catch(e){ /* religa sozinha; chip mostra o estado */ }
+  atualizarChipVivo(); setInterval(atualizarChipVivo,1500);
+}
+function onLiveGps(p){
+  if(!p||p.lat==null||p.lng==null) return;
+  estado.ultimoGps=performance.now();
+  const pt={t:p.tWall||p.t||0, lat:p.lat, lng:p.lng}, L=estado.live;
+  if(L.lastPt && segCruza(L.lastPt,pt,estado.marco.a,estado.marco.b) && (pt.t-(L.lastCross??-1e15))>8000){
+    if(L.lastCross!=null){
+      const seg=L.pts.filter(x=>x.t>=L.lastCross && x.t<=pt.t), dur=(pt.t-L.lastCross)/1000;
+      if(seg.length>=20 && dur>8 && dur<360) finalizarVoltaLive(seg,dur);
+    }
+    L.lastCross=pt.t; L.pts=L.pts.filter(x=>x.t>=pt.t-360000);
+  }
+  L.lastPt=pt; L.pts.push(pt); atualizarChipVivo();
+}
+function finalizarVoltaLive(seg,dur){
+  const v=processarVolta(seg,dur,estado.voltas.length); v.aoVivo=true;
+  estado.voltas.push(v);
+  estado.melhorId=estado.voltas.reduce((m,x)=>x.durSec<m.durSec?x:m,estado.voltas[0]).id;
+  estado.curvas=projetarCurvas(ghost());
+  estado.revelados.add(v.id); estado.visiveis.add(v.id); estado.focoId=v.id;
+  desenharTudo();
+}
+function atualizarChipVivo(){
+  const el=$('#chip-vivo'); if(!el) return;
+  const recebendo=estado.ultimoGps>0 && (performance.now()-estado.ultimoGps)<4000, st=getStatus();
+  let cor='var(--tx3)', txt='ao vivo indisponível';
+  if(recebendo){cor='var(--acel)'; txt='AO VIVO · recebendo';}
+  else if(st==='online'){cor='var(--ghost)'; txt='ao vivo · aguardando o carro';}
+  else if(st==='connecting'){cor='var(--tx3)'; txt='ligando ao vivo…';}
+  el.innerHTML=`<span class="dot" style="background:${cor}"></span> ${txt}`;
+}
+
+function processarVolta(seg,durSec,ordem){
+  const comV=seg.map((p,i)=>{
+    let kmh=0;
+    if(i>0){const dm=distanciaPontos(seg[i-1],p), dt=(p.t-seg[i-1].t)/1000; if(dt>0) kmh=(dm/dt)*3.6;}
+    return {...p,kmh};
+  });
+  if(comV[1]) comV[0].kmh=comV[1].kmh;
+  const kk=comV.map(p=>p.kmh);                                  // mediana de 3 mata pico de GPS
+  for(let i=0;i<comV.length;i++){const t=[kk[Math.max(0,i-1)],kk[i],kk[Math.min(kk.length-1,i+1)]].sort((a,b)=>a-b); comV[i].kmh=t[1];}
+  for(let k=0;k<2;k++) for(let i=1;i<comV.length-1;i++) comV[i].kmh=(comV[i-1].kmh+comV[i].kmh*2+comV[i+1].kmh)/4;
+  const comDist=comDistanciaAcumulada(comV);
+  const {pontos}=simularFreioPelaFisica(comDist);
+  const t0=pontos[0].t; pontos.forEach(p=>p.elapsed=p.t-t0);
+  const distTotal=pontos[pontos.length-1].distM||1;
+  const grid=new Array(N);
+  for(let i=0;i<N;i++){
+    const p=amostraEm(pontos,(i/(N-1))*distTotal);
+    grid[i]={f:i/(N-1), s:(p.aceleradorPct||0)-(p.freioPct||0), acel:p.aceleradorPct||0, freio:p.freioPct||0,
+             kmh:p.kmh||0, lat:p.lat, lng:p.lng, elapsed:p.elapsed||0};
+  }
+  // suaviza levemente o traço (sinal derivado de GPS ~1Hz) — zonas de freio (dezenas de m) sobrevivem
+  for(let k=0;k<2;k++){
+    const ss=grid.map(g=>g.s);
+    for(let i=1;i<grid.length-1;i++){
+      const sm=(ss[i-1]+ss[i]*2+ss[i+1])/4;
+      grid[i].s=sm; grid[i].acel=Math.max(0,sm); grid[i].freio=Math.max(0,-sm);
+    }
+  }
+  return {id:'v'+ordem, ordem, durSec, distTotal, cor:CORES[ordem%CORES.length],
+          grid, vmax:Math.max(...pontos.map(p=>p.kmh||0)), pontos};
+}
+
+function amostraEm(P,d){
+  if(d<=P[0].distM) return P[0]; if(d>=P[P.length-1].distM) return P[P.length-1];
+  let lo=0,hi=P.length-1;
+  for(let i=1;i<P.length;i++){ if(P[i].distM>=d){lo=i-1;hi=i;break;} }
+  const a=P[lo],b=P[hi], f=(d-a.distM)/((b.distM-a.distM)||1), L=(x,y)=>(a[x]??0)+(((b[x]??0)-(a[x]??0))*f);
+  return {distM:d, kmh:L('kmh'), freioPct:L('freioPct'), aceleradorPct:L('aceleradorPct'),
+          lat:a.lat+((b.lat-a.lat)*f), lng:a.lng+((b.lng-a.lng)*f), elapsed:L('elapsed')};
+}
+
+function projetarCurvas(volta){
+  const out=[];
+  for(const [nome,ap] of Object.entries(APICES_SEMENTE_BRASILIA)){
+    let melhor=1e9, fr=0;
+    volta.grid.forEach(g=>{ const d=distanciaPontos({lat:g.lat,lng:g.lng},ap); if(d<melhor){melhor=d; fr=g.f;} });
+    out.push({nome, curto:NOME_CURTO[nome]||nome, f:fr});
+  }
+  return out.sort((a,b)=>a.f-b.f);
+}
+
+function detectarCruzamentos(pts,marco){
+  const A=marco.a,B=marco.b,cortes=[]; let ult=-1e9;
+  for(let i=1;i<pts.length;i++) if(segCruza(pts[i-1],pts[i],A,B)&&(pts[i].t-ult)>40000){cortes.push(pts[i].t);ult=pts[i].t;}
+  return cortes;
+}
+function segCruza(p1,p2,a,b){
+  const d=(x1,y1,x2,y2,x3,y3)=>(x3-x1)*(y2-y1)-(y3-y1)*(x2-x1);
+  const d1=d(a.lng,a.lat,b.lng,b.lat,p1.lng,p1.lat),d2=d(a.lng,a.lat,b.lng,b.lat,p2.lng,p2.lat);
+  const d3=d(p1.lng,p1.lat,p2.lng,p2.lat,a.lng,a.lat),d4=d(p1.lng,p1.lat,p2.lng,p2.lat,b.lng,b.lat);
+  return ((d1>0)!==(d2>0))&&((d3>0)!==(d4>0));
+}
+
+// ───────────────────── desenho premium ─────────────────────
+const W=1360, H=360, ML=66, MR=22, MT=22, MB=22, PW=W-ML-MR, PH=H-MT-MB, midY=MT+PH/2;
+const DH=120, DMT=14, DMB=26, DPH=DH-DMT-DMB, dZero=DMT+DPH/2;
+const xAt=f=>ML+f*PW, yAt=s=>midY-(s/100)*(PH/2*0.94);
+function ghost(){ return estado.voltas.find(v=>v.id===estado.melhorId); }
+function visiveis(){ return estado.voltas.filter(v=>estado.visiveis.has(v.id)&&estado.revelados.has(v.id)); }
+
+function smooth(P){ // Catmull-Rom -> Bézier; P=[{x,y}]
+  if(P.length<2) return '';
+  let d=`M${P[0].x.toFixed(1)} ${P[0].y.toFixed(1)}`;
+  for(let i=0;i<P.length-1;i++){
+    const p0=P[i-1]||P[i],p1=P[i],p2=P[i+1],p3=P[i+2]||p2;
+    d+=`C${(p1.x+(p2.x-p0.x)/6).toFixed(1)} ${(p1.y+(p2.y-p0.y)/6).toFixed(1)} ${(p2.x-(p3.x-p1.x)/6).toFixed(1)} ${(p2.y-(p3.y-p1.y)/6).toFixed(1)} ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
+  }
+  return d;
+}
+const linePts=(v)=>v.grid.map(g=>({x:xAt(g.f),y:yAt(g.s)}));
+function areaFrom(v){
+  const P=linePts(v); let d=`M${xAt(0).toFixed(1)} ${midY}`;
+  P.forEach(p=>d+=`L${p.x.toFixed(1)} ${p.y.toFixed(1)}`); d+=`L${xAt(1).toFixed(1)} ${midY}Z`; return d;
+}
+
+function desenharTudo(){
+  $('#ctx-voltas').textContent=estado.voltas.length;
+  if(!estado.voltas.length){ mostrarEspera(); return; }
+  estado.modo==='empilhar'?desenharEmpilhado():desenharSobreposto();
+  desenharDelta(); desenharCurvas(); desenharXaxis(); desenharLista(); kpisResumo();
+  $('#cont').textContent=`${estado.revelados.size} de ${estado.voltas.length}`;
+  $('#ctx-voltas').textContent=estado.voltas.length;
+  $('#add').disabled=estado.revelados.size>=estado.voltas.length;
+  $('#nota').innerHTML=`Eixo de baixo = a volta do começo ao fim (distância). A intensidade é o efeito físico real `+
+    `medido pelo GPS (<b>simulado-fisica</b>, ~1 leitura/seg): quando o sensor de pedal/pressão entrar na T4000, `+
+    `o mesmo gráfico passa a mostrar a pressão real, sem mudar a tela.`;
+}
+
+function mostrarEspera(){
+  $('#graf').innerHTML=`<div class="vazio">Aguardando as voltas.<br>`+
+    `<span style="color:var(--tx3)">Quando o carro rodar, cada volta entra aqui sozinha — a mais rápida vira a referência.</span></div>`;
+  $('#delta').innerHTML=''; $('#corners').innerHTML=''; $('#xaxis').innerHTML='';
+  $('#kpis').innerHTML=''; $('#cont').textContent='0 voltas';
+  $('#lista').innerHTML=`<div class="vazio" style="padding:18px 10px">Nenhuma volta ainda.</div>`;
+  $('#nota').innerHTML=`Base de frenagem limpa para o teste. As voltas reais entram ao vivo pela ponte do projeto; nada é inventado.`;
+}
+
+function defs(){
+  return `<defs>
+    <linearGradient id="gAcel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--acel)" stop-opacity=".34"/><stop offset="1" stop-color="var(--acel)" stop-opacity="0"/></linearGradient>
+    <linearGradient id="gFreio" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="var(--freio)" stop-opacity=".34"/><stop offset="1" stop-color="var(--freio)" stop-opacity="0"/></linearGradient>
+    <linearGradient id="gGhost" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--ghost)" stop-opacity=".26"/><stop offset=".5" stop-color="var(--ghost)" stop-opacity=".05"/><stop offset="1" stop-color="var(--ghost)" stop-opacity=".26"/></linearGradient>
+    <filter id="glow" x="-20%" y="-40%" width="140%" height="180%"><feGaussianBlur stdDeviation="3.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <clipPath id="clipUp"><rect x="${ML}" y="${MT}" width="${PW}" height="${PH/2}"/></clipPath>
+    <clipPath id="clipDn"><rect x="${ML}" y="${midY}" width="${PW}" height="${PH/2}"/></clipPath>
+  </defs>`;
+}
+function fundo(){
+  let g='';
+  estado.curvas.forEach(c=>{ g+=`<line class="grid-c" x1="${xAt(c.f).toFixed(1)}" y1="${MT}" x2="${xAt(c.f).toFixed(1)}" y2="${MT+PH}"/>`; });
+  g+=`<line x1="${ML}" y1="${midY}" x2="${ML+PW}" y2="${midY}" stroke="var(--linha2)"/>`;
+  g+=`<text class="sidelbl" x="6" y="${MT+11}">acelera</text><text class="sidelbl" x="6" y="${MT+PH-2}">freia</text>`;
+  return g;
+}
+
+function desenharSobreposto(){
+  const g=ghost(), outras=visiveis().filter(v=>v.id!==g.id);
+  let s=`<svg viewBox="0 0 ${W} ${H}" id="svgmain">`+defs()+fundo();
+  // ghost: área dupla (acima/abaixo) + linha luminosa
+  s+=`<path d="${areaFrom(g)}" fill="url(#gGhost)"/>`;
+  s+=`<path class="ghost-line" d="${smooth(linePts(g))}" filter="url(#glow)" opacity=".95"/>`;
+  // demais voltas: preenchimento sutil clippado (acelera em cima / freia embaixo) + linha
+  outras.forEach((v)=>{
+    const hex=COR_HEX[v.cor]||'#9fd0ff', foco=v.id===estado.focoId;
+    s+=`<path d="${areaFrom(v)}" fill="url(#gAcel)" clip-path="url(#clipUp)" opacity="${foco?.5:.22}"/>`;
+    s+=`<path d="${areaFrom(v)}" fill="url(#gFreio)" clip-path="url(#clipDn)" opacity="${foco?.5:.22}"/>`;
+    s+=`<path class="lapline anim" d="${smooth(linePts(v))}" stroke="${hex}" stroke-width="${foco?2.6:1.8}" opacity="${foco?1:.82}" ${foco?'filter="url(#glow)"':''}/>`;
+  });
+  s+=`<line class="cursor-line" id="cur-main" x1="0" y1="${MT}" x2="0" y2="${MT+PH}" style="display:none"/>`;
+  s+=`</svg>`;
+  $('#graf').innerHTML=s;
+}
+
+function desenharEmpilhado(){
+  const g=ghost(), vis=visiveis(); const h=96;
+  let html='';
+  vis.forEach(v=>{
+    const isG=v.id===g.id, hex=isG?'#e9c46a':(COR_HEX[v.cor]||'#9fd0ff');
+    const mid=h/2, P=v.grid.map(x=>({x:ML+x.f*(W-ML-MR), y:mid-(x.s/100)*(mid*0.8)}));
+    const Pg=g.grid.map(x=>({x:ML+x.f*(W-ML-MR), y:mid-(x.s/100)*(mid*0.8)}));
+    html+=`<div style="margin-bottom:9px"><div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--tx2);margin-bottom:1px">`+
+      `<span style="width:10px;height:10px;border-radius:3px;background:${hex}"></span><b style="color:var(--tx)">Volta ${v.ordem+1}</b>`+
+      `${isG?' <span class="badge">melhor</span>':''}<span class="num" style="margin-left:auto;color:var(--tx)">${fmt(v.durSec)}</span></div>`+
+      `<svg viewBox="0 0 ${W} ${h}" preserveAspectRatio="none" style="height:${h*0.5}px">`+defs()+
+        `<line x1="${ML}" y1="${mid}" x2="${W-MR}" y2="${mid}" stroke="var(--linha2)"/>`+
+        (isG?'':`<path d="${smooth(Pg)}" fill="none" stroke="var(--ghost)" stroke-width="1.4" stroke-dasharray="5 4" opacity=".6"/>`)+
+        `<path d="${smooth(P)}" fill="none" stroke="${hex}" stroke-width="2"/>`+
+      `</svg></div>`;
+  });
+  $('#graf').innerHTML=html;
+  $('#delta').innerHTML=''; // no empilhado, o ghost já aparece em cada faixa
+}
+
+function desenharDelta(){
+  if(estado.modo==='empilhar') return;
+  const g=ghost(), f=estado.voltas.find(v=>v.id===estado.focoId&&v.id!==g.id)||visiveis().find(v=>v.id!==g.id);
+  if(!f){ $('#delta').innerHTML=''; return; }
+  const dz=f.grid.map((x,i)=>x.elapsed-g.grid[i].elapsed); // ms: + atrás do ghost, - na frente
+  const mx=Math.max(0.25, ...dz.map(Math.abs))/1000;
+  const yD=ms=>dZero-((ms/1000)/mx)*(DPH/2);
+  const P=dz.map((ms,i)=>({x:xAt(i/(N-1)),y:yD(ms)}));
+  let d=`M${xAt(0)} ${dZero}`; P.forEach(p=>d+=`L${p.x.toFixed(1)} ${p.y.toFixed(1)}`); d+=`L${xAt(1)} ${dZero}Z`;
+  const finalMs=dz[dz.length-1], hex=COR_HEX[f.cor]||'#9fd0ff';
+  let s=`<svg viewBox="0 0 ${W} ${DH}" id="svgdelta">`+
+    `<defs><linearGradient id="gd" x1="0" y1="0" x2="0" y2="1">`+
+      `<stop offset="0" stop-color="var(--freio)" stop-opacity=".4"/><stop offset=".5" stop-color="var(--freio)" stop-opacity=".05"/>`+
+      `<stop offset=".5" stop-color="var(--acel)" stop-opacity=".05"/><stop offset="1" stop-color="var(--acel)" stop-opacity=".4"/></linearGradient></defs>`;
+  estado.curvas.forEach(c=>{ s+=`<line class="grid-c" x1="${xAt(c.f).toFixed(1)}" y1="${DMT}" x2="${xAt(c.f).toFixed(1)}" y2="${DMT+DPH}"/>`; });
+  s+=`<path d="${d}" fill="url(#gd)"/>`;
+  s+=`<path d="${smooth(P)}" fill="none" stroke="${hex}" stroke-width="1.8"/>`;
+  s+=`<line x1="${ML}" y1="${dZero}" x2="${ML+PW}" y2="${dZero}" stroke="var(--linha2)"/>`;
+  s+=`<text class="sidelbl" x="6" y="${DMT+10}">perde</text><text class="sidelbl" x="6" y="${DMT+DPH}">ganha</text>`;
+  s+=`<text class="axislbl" x="${ML+PW}" y="${DMT+DPH+18}" text-anchor="end">Delta da Volta ${f.ordem+1} pro ghost no fim: `+
+     `<tspan fill="${finalMs>=0?'var(--freio)':'var(--acel)'}" font-weight="700">${finalMs>=0?'+':''}${(finalMs/1000).toFixed(2)}s</tspan></text>`;
+  s+=`<line class="cursor-line" id="cur-delta" x1="0" y1="${DMT}" x2="0" y2="${DMT+DPH}" style="display:none"/>`;
+  s+=`</svg>`;
+  $('#delta').innerHTML=s;
+}
+
+function desenharCurvas(){
+  const el=$('#corners'); el.innerHTML='';
+  const box=$('#graf').getBoundingClientRect(); // largura real pra posicionar % (o SVG é responsivo)
+  estado.curvas.forEach(c=>{
+    const d=document.createElement('div'); d.className='cn'; d.style.left=(ML/W*100+ (c.f*(PW/W*100)))+'%';
+    d.innerHTML=`<b>${c.curto}</b>`; el.appendChild(d);
+  });
+}
+function desenharXaxis(){
+  const el=$('#xaxis'); el.innerHTML=''; const g=ghost(); const dist=g?g.distTotal:0;
+  for(let k=0;k<=10;k++){ const d=document.createElement('div'); d.className='xt num';
+    d.style.left=(ML/W*100+(k/10)*(PW/W*100))+'%';
+    d.textContent=k===0?'largada':k===10?'chegada':Math.round(dist*k/10)+'m'; el.appendChild(d);
+  }
+}
+
+// ───────────────────── mapa real de Brasília ─────────────────────
+function desenharMapa(){
+  // Mapa da pista é referência fixa (não depende de volta): traçado + curvas + linha de chegada.
+  let track=''; PONTOS_DESENHO.forEach((p,i)=>track+=(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)); track+='Z';
+  let pins='';
+  for(const ap of Object.values(APICES_SEMENTE_BRASILIA)){ const q=geoParaDesenho(ap.lat,ap.lng);
+    pins+=`<circle cx="${q.x.toFixed(1)}" cy="${q.y.toFixed(1)}" r="4.5" fill="#0a0e14" stroke="var(--tx3)" stroke-width="1.5"/>`;
+  }
+  let chegada='', cx=LARGURA_DESENHO/2, cy=ALTURA_DESENHO/2;
+  if(estado.marco){ const a=geoParaDesenho(estado.marco.a.lat,estado.marco.a.lng), b=geoParaDesenho(estado.marco.b.lat,estado.marco.b.lng);
+    cx=(a.x+b.x)/2; cy=(a.y+b.y)/2;
+    chegada=`<line x1="${a.x.toFixed(1)}" y1="${a.y.toFixed(1)}" x2="${b.x.toFixed(1)}" y2="${b.y.toFixed(1)}" stroke="var(--ghost)" stroke-width="3" opacity=".9"/>`;
+  }
+  let s=`<svg viewBox="0 0 ${LARGURA_DESENHO} ${ALTURA_DESENHO}" style="max-height:300px">`+
+    `<defs><filter id="mg" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="4"/></filter></defs>`+
+    `<path d="${track}" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="17" stroke-linejoin="round"/>`+
+    `<path d="${track}" fill="none" stroke="rgba(150,170,200,.5)" stroke-width="2.4" stroke-linejoin="round"/>`+
+    pins+chegada+
+    `<circle id="map-glow" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="11" fill="var(--acel)" opacity=".25" filter="url(#mg)" style="display:none"/>`+
+    `<circle id="map-dot" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="6" fill="#fff" stroke="var(--acel)" stroke-width="3" style="display:none"/>`+
+    `</svg>`;
+  $('#mapa').innerHTML=s;
+}
+
+// ───────────────────── voltas (cartões) ─────────────────────
+function desenharLista(){
+  const g=ghost(); let html='';
+  estado.voltas.forEach(v=>{
+    if(!estado.revelados.has(v.id)) return;
+    const isG=v.id===g.id, on=estado.visiveis.has(v.id), foco=v.id===estado.focoId;
+    const hex=isG?'#e9c46a':(COR_HEX[v.cor]||'#9fd0ff'), dl=v.durSec-g.durSec;
+    const cls=isG?'zero':(dl>0?'pos':'neg');
+    html+=`<div class="lap ${on?'on':''} ${isG?'best':''}" data-id="${v.id}" style="${foco?'box-shadow:0 0 0 1px '+hex+' inset':''}">`+
+      `<span class="accent" style="background:${hex}"></span>`+
+      `<div class="info"><div class="nm">Volta ${v.ordem+1}${isG?' <span class="badge">melhor · ghost</span>':''}${v.aoVivo?' <span class="tag-vivo">ao vivo</span>':''}</div>`+
+        `<div class="tm num">${fmt(v.durSec)}</div><div class="sub num">${Math.round(v.vmax)} km/h máx · ${(v.distTotal/1000).toFixed(2)} km</div></div>`+
+      `<div class="right">${spark(v,hex)}`+
+        `<div class="delta ${cls} num">${isG?'referência':(dl>0?'+':'')+(isG?'':dl.toFixed(1)+'s')}</div></div>`+
+      `<span class="eye">${on?olhoOn:olhoOff}</span></div>`;
+  });
+  $('#lista').innerHTML=html;
+  $('#lista').querySelectorAll('.lap').forEach(el=>{
+    el.addEventListener('click',()=>{ const id=el.dataset.id;
+      if(id===estado.melhorId){ estado.focoId=id; return desenharTudo(); }
+      estado.visiveis.has(id)?estado.visiveis.delete(id):estado.visiveis.add(id);
+      if(estado.visiveis.has(id)) estado.focoId=id;
+      desenharTudo();
+    });
+    el.addEventListener('mouseenter',()=>{ if(el.dataset.id!==estado.melhorId&&estado.visiveis.has(el.dataset.id)){estado.focoId=el.dataset.id; desenharSobreposto(); desenharDelta();} });
+  });
+}
+function spark(v,hex){
+  const w=66,h=28,mid=h/2; let P=v.grid.filter((_,i)=>i%4===0).map(g=>({x:(g.f)*w,y:mid-(g.s/100)*(mid*0.82)}));
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><line x1="0" y1="${mid}" x2="${w}" y2="${mid}" stroke="var(--linha2)"/>`+
+    `<path d="${smooth(P)}" fill="none" stroke="${hex}" stroke-width="1.6"/></svg>`;
+}
+const olhoOn=`<svg width="15" height="15" viewBox="0 0 24 24" class="ico"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>`;
+const olhoOff=`<svg width="15" height="15" viewBox="0 0 24 24" class="ico"><path d="M3 3l18 18M10.6 10.6a3 3 0 004.2 4.2M9.9 5.1A9.8 9.8 0 0112 5c6.5 0 10 7 10 7a16 16 0 01-3 3.6M6.1 6.6A16 16 0 002 12s3.5 7 10 7a9.8 9.8 0 002.1-.2"/></svg>`;
+
+// ───────────────────── KPIs ─────────────────────
+function kpisResumo(){
+  const g=ghost(); if(!g) return $('#kpis').innerHTML='';
+  const vis=visiveis().filter(v=>v.id!==g.id);
+  const pior=vis.reduce((m,v)=>v.durSec>(m?.durSec??-1)?v:m,null);
+  $('#kpis').innerHTML=
+    kpi('Melhor volta (ghost)',fmt(g.durSec),'var(--ghost)')+
+    kpi('Voltas no gráfico',String(visiveis().length))+
+    kpi('Vel. máx (melhor)',Math.round(g.vmax)+' <span style="font-size:12px">km/h</span>')+
+    kpi('Maior diferença', pior?('+'+(pior.durSec-g.durSec).toFixed(1)+'s'):'—', pior?'var(--freio)':'');
+}
+function kpi(k,v,cor){ return `<div class="kpi"><div class="k">${k}</div><div class="v num" ${cor?`style="color:${cor}"`:''}>${v}</div></div>`; }
+
+// ───────────────────── hover + idle playback ─────────────────────
+let idleRAF=null, idleT0=0, hovering=false;
+function ligarHover(){
+  const plot=$('#plot');
+  plot.addEventListener('mousemove',(e)=>{
+    const r=$('#graf').getBoundingClientRect();
+    const f=Math.max(0,Math.min(1,((e.clientX-r.left)/r.width*W-ML)/PW));
+    hovering=true; estado.hover=f; aplicarCursor(f,e.clientX,e.clientY);
+  });
+  plot.addEventListener('mouseleave',()=>{ hovering=false; estado.hover=null; $('#float').classList.remove('show');
+    ['#cur-main','#cur-delta'].forEach(s=>{const el=$(s); if(el) el.style.display='none';}); });
+}
+function aplicarCursor(f,mx,my){
+  const g=ghost(); if(!g) return;                 // sem volta ainda: nada a apontar
+  const x=xAt(f);
+  const cm=$('#cur-main'); if(cm){cm.setAttribute('x1',x);cm.setAttribute('x2',x);cm.style.display='';}
+  const cd=$('#cur-delta'); if(cd){cd.setAttribute('x1',x);cd.setAttribute('x2',x);cd.style.display='';}
+  const idx=Math.round(f*(N-1));
+  const gp=g.grid[idx], q=geoParaDesenho(gp.lat,gp.lng);
+  const dot=$('#map-dot'), glow=$('#map-glow');
+  if(dot){dot.setAttribute('cx',q.x.toFixed(1));dot.setAttribute('cy',q.y.toFixed(1));dot.style.display='';}
+  if(glow){glow.setAttribute('cx',q.x.toFixed(1));glow.setAttribute('cy',q.y.toFixed(1));glow.style.display='';}
+  const cur=curvaEm(f); $('#map-corner').textContent=cur?cur.curto:'reta';
+  $('#map-vel').textContent=Math.round(gp.kmh)+' km/h';
+  if(mx!=null) floatReadout(f,idx,mx,my,cur);
+}
+function curvaEm(f){ let best=null,dist=.08; estado.curvas.forEach(c=>{const d=Math.abs(c.f-f); if(d<dist){dist=d;best=c;}}); return best; }
+function floatReadout(f,idx,mx,my,cur){
+  const g=ghost(); const fl=$('#float');
+  let rows=`<div class="fc">${cur?cur.nome:'trecho de reta'} · ${Math.round(f*100)}% da volta</div>`;
+  const lista=[g,...visiveis().filter(v=>v.id!==g.id)];
+  lista.forEach(v=>{ const gg=v.grid[idx], hex=v.id===g.id?'#e9c46a':(COR_HEX[v.cor]||'#9fd0ff');
+    const txt=gg.s>=0?`<span style="color:var(--acel)">acelera ${Math.round(gg.s)}%</span>`:`<span style="color:var(--freio)">freia ${Math.round(-gg.s)}%</span>`;
+    rows+=`<div class="row"><span class="d" style="background:${hex}"></span><span class="nm">${v.id===g.id?'Melhor':'Volta '+(v.ordem+1)}</span><span class="vl">${txt}</span></div>`;
+  });
+  fl.innerHTML=rows; fl.classList.add('show');
+  const w=fl.offsetWidth||190; let L=mx+16; if(L+w>window.innerWidth-12) L=mx-w-16;
+  fl.style.left=L+'px'; fl.style.top=Math.min(my+12, window.innerHeight-fl.offsetHeight-12)+'px';
+}
+function idleStart(){
+  cancelAnimationFrame(idleRAF);
+  const loop=(t)=>{ if(!idleT0) idleT0=t;
+    if(!hovering && estado.modo==='sobrepor' && estado.voltas.length){ const f=((t-idleT0)/9000)%1; aplicarCursor(f,null,null); }
+    idleRAF=requestAnimationFrame(loop);
+  };
+  idleRAF=requestAnimationFrame(loop);
+}
+
+// ───────────────────── controles ─────────────────────
+$('#modo').addEventListener('click',(e)=>{ const b=e.target.closest('button'); if(!b) return;
+  estado.modo=b.dataset.modo; $('#modo').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));
+  desenharTudo(); if(estado.modo==='empilhar'){['#cur-main','#cur-delta'].forEach(s=>{const el=$(s); if(el)el.style.display='none';}); $('#float').classList.remove('show');}
+});
+$('#add').addEventListener('click',()=>{ const prox=estado.voltas.find(v=>!estado.revelados.has(v.id)); if(!prox) return;
+  estado.revelados.add(prox.id); estado.visiveis.add(prox.id); estado.focoId=prox.id; desenharTudo();
+});
+window.addEventListener('resize',()=>{ desenharCurvas(); desenharXaxis(); });
+
+function fmt(s){ const m=Math.floor(s/60); return `${m}:${(s-m*60).toFixed(1).padStart(4,'0')}`; }
+function vazio(msg){ $('#graf').innerHTML=`<div class="vazio">${msg}<br><span style="color:var(--tx3)">Sem dado real, a tela não inventa volta.</span></div>`;
+  $('#lista').innerHTML=''; $('#add').disabled=true; }
+
+carregar();
+</script>
+</body>
+</html>

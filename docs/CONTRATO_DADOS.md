@@ -43,7 +43,8 @@ Cada cálculo tem UMA casa. Telas usam a casa; **proibido** recriar a conta dent
 | Caminho ao vivo (canal → pacote pronto) | `web/command-box/cerebro/cerebro-vivo.js` |
 | Consolidação do painel (PainelPronto) | `web/command-box/cerebro/cerebro-painel.js` |
 | Velocidade | `web/command-box/cerebro/cerebro-velocidade.js` |
-| Coach (lições) | `web/command-box/cerebro/cerebro-coach.js` |
+| Coach (lições, km/h — Command Box/TV) | `web/command-box/cerebro/cerebro-coach.js` |
+| Coach de IA de stint (segundos — cockpit 10,5") | `web/command-box/cerebro/cerebro-coach-stint.js` |
 | Alerta preditivo (temperatura) | `web/command-box/cerebro/cerebro-preditivo.js` |
 | Chegada / linha por GPS | `web/command-box/cerebro/chegada-gps.js` |
 | Frenagem | `web/command-box/frenagem-real.js` · `frenagem-curvas-reais.js` |

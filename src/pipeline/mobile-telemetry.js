@@ -31,6 +31,7 @@
 // O módulo NUNCA bloqueia. Falha = aviso no chip de telemetria.
 
 import { logger } from '../core/logger.js';
+import { msParaKmh } from '../domain/velocidade.js';
 
 const SAMPLE_BUFFER_MAX = 600;   // ~10s a 60Hz, evita estourar memória
 
@@ -206,7 +207,7 @@ export class MobileTelemetry {
             lng: c.longitude,
             alt: Number.isFinite(c.altitude) ? c.altitude : null,
             speed,
-            kmh: speed != null ? speed * 3.6 : null,
+            kmh: speed != null ? msParaKmh(speed) : null,
             course: Number.isFinite(c.heading) ? c.heading : null,
             acc: c.accuracy,
             signalQuality: gpsAccToQuality(c.accuracy),

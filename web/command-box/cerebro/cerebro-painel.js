@@ -13,10 +13,12 @@
 //   Onda 1 (ESTA)  -> stint (voltas) + ritmo (PB vs stint)         [REAL]
 //   Onda 3         -> coach (frase/lição/pontuação)                 [pendente]
 //   Onda 4         -> meta do piloto (tempo-alvo + voltas seguidas) [pendente]
-//   Onda 5         -> alerta preditivo (+°C / curva / ETA)          [pendente]
+//   Onda 5 (ESTA)  -> alerta preditivo de temperatura (+°C / ETA)     [REAL]
 // O que ainda não foi construído sai como null e o painel mantém "aguardando
 // ligação" só naquele bloco — honesto, sem fingir dado.
 // ============================================================================
+
+import { avaliarPreditivo } from './cerebro-preditivo.js';
 
 /** Formata segundos -> "M:SS.dd" (ex.: 91.95 -> "1:31.95"). */
 export function fmtTempo(sec) {
@@ -41,9 +43,17 @@ export function fmtRelogio(sec) {
  * @param {number} opts.pbEverSec    melhor volta histórica do carro+config (referência do ritmo)
  * @param {number} opts.stintNumero  número do stint atual (ex.: 3)
  * @param {number} opts.stintTotal   total de stints planejados (ex.: 5)
+ * @param {object} opts.coachStint   acumulador de stint do Coach de IA (cerebro-coach-stint.js).
+ *                                    OPCIONAL: sem ele, o campo `coach` continua `null` e em
+ *                                    `_pendentes` — comportamento IDÊNTICO ao de hoje (não quebra
+ *                                    nenhum chamador). Com ele, o campo passa a exibir o pacote v1.
  */
 export function criarCerebroPainel(opts = {}) {
   const plano = opts.plano || {};
+  // Coach de IA (Onda 3) — conta em SEGUNDOS, casa própria (cerebro-coach-stint.js). Peça
+  // separada: alimentada pelos deltas de trecho via onDeltaCoach; a v0 km/h (cerebro-coach.js)
+  // fica intocada. Sem acumulador injetado → coach permanece null honesto (pendente).
+  const coachStint = opts.coachStint || null;
   const cfg = {
     pbEverSec: opts.pbEverSec != null ? opts.pbEverSec : null,
     stintNumero: opts.stintNumero != null ? opts.stintNumero : null,
@@ -58,10 +68,16 @@ export function criarCerebroPainel(opts = {}) {
     // Default (decisão Flávio 19/06, ajustável no plano): sub 1:32 (92.0s) em 8 voltas.
     alvoMetaSec: plano.tempoAlvoSec != null ? plano.tempoAlvoSec : 92.0,
     metaN: plano.metaVoltasSeguidas != null ? plano.metaVoltasSeguidas : 8,
+    // Onda 5: limite crítico de temperatura (°C) pra projetar o alerta preditivo.
+    // Default = Bubi (Celta 1.4): crítico 80°C (decisão Flávio 27/05/2026, mesma
+    // régua de ALERTA_LIMITES_DEFAULT.waterMaxC). A nuvem passa o do carro real.
+    tempLimiteC: opts.tempLimiteC != null ? opts.tempLimiteC : 80,
   };
 
   // ---- estado vivo do stint -------------------------------------------------
   const voltas = [];          // { n, tempoSec } de voltas FECHADAS neste stint
+  const voltasTemp = [];      // { volta, maxTempC } por volta — base do alerta preditivo (Onda 5)
+  let maxTempVoltaAtual = null; // maior waterTempC visto na volta em curso
   let ultimaAmostra = null;   // último sample cru recebido
   let decorridoS = null;      // relógio do stint (cronometroTotalS), se vier no sample
 
@@ -73,6 +89,10 @@ export function criarCerebroPainel(opts = {}) {
                    : (ev.tempoSec != null ? ev.tempoSec : null);
     if (tempoSec == null || !isFinite(tempoSec) || tempoSec <= 0) return;
     voltas.push({ n, tempoSec });
+    // fecha o pico de temperatura desta volta (se houve dado real) e zera pra próxima.
+    // Sem temperatura, NÃO inventa ponto — a série só tem voltas com dado real.
+    if (typeof maxTempVoltaAtual === 'number') voltasTemp.push({ volta: n, maxTempC: maxTempVoltaAtual });
+    maxTempVoltaAtual = null;
   }
 
   /** Recebe uma amostra crua de telemetria (evento 'sample'). */
@@ -80,6 +100,10 @@ export function criarCerebroPainel(opts = {}) {
     if (!s) return;
     ultimaAmostra = s;
     if (typeof s.cronometroTotalS === 'number') decorridoS = s.cronometroTotalS;
+    // Onda 5: acumula o pico de temperatura (água do motor) da volta em curso.
+    if (typeof s.waterTempC === 'number') {
+      maxTempVoltaAtual = maxTempVoltaAtual == null ? s.waterTempC : Math.max(maxTempVoltaAtual, s.waterTempC);
+    }
   }
 
   // ---- ONDA 1: bloco STINT (voltas) ----------------------------------------
@@ -157,20 +181,51 @@ export function criarCerebroPainel(opts = {}) {
     };
   }
 
+  // ---- ONDA 1b: BARRA DO STINT (reflete o PLANEJAMENTO do stint) ------------
+  // Regra do Flávio (27/06): a barra mostra a QUANTIDADE de voltas que ele
+  // definiu no planejamento — a 1ª é sempre AQUECE, a última é sempre RESFRIA,
+  // e onde ele marcou parada no box entra "box" naquela volta. O cérebro entrega
+  // o total + as paradas + as voltas já fechadas (tempo real); a tela só DESENHA.
+  // Sem plano de voltas, devolve null (a barra fica em demonstração — honesto).
+  function calcStintBar() {
+    // Paradas no box do plano (configuracao-stint: paradas:[{ volta, motivo }]) → números de volta.
+    const paradas = (plano.paradas || [])
+      .map(p => (typeof p === 'number' ? p : (p && p.volta)))
+      .filter(v => v != null);
+    return {
+      // total do plano (1ª=aquece, última=resfria). Sem nada informado → 0 = barra ZERADA
+      // (a tela mostra só os dois blocos aquece + resfria — Flávio 27/06). Não fabrica volta.
+      voltas: cfg.voltaTotal != null ? cfg.voltaTotal : 0,
+      paradas,                                               // voltas com parada no box → "box"
+      lapHistory: voltas.map(v => ({ n: v.n, timeSec: v.tempoSec })),  // voltas fechadas (tempo real)
+      current: voltas.length + 1,                            // volta em curso (após as fechadas)
+      pbEver: cfg.pbEverSec,                                 // melhor volta histórica (referência de cor)
+    };
+  }
+
   /** Devolve o RESULTADO PRONTO do painel (o que a nuvem manda pra TV exibir). */
   function snapshot() {
     const stint = calcStint();
+    const stintBar = calcStintBar();
     const ritmo = calcRitmo();
     const meta = calcMeta();
     const pendentes = [];
     // ondas ainda não construídas — declaradas como pendentes (painel fica honesto)
-    const coach = null;     if (coach == null) pendentes.push('coach');
+    // Onda 3 (coach): se há acumulador de stint, o campo passa a carregar o pacote v1
+    // (null | 'silencio' | 'oportunidade'). null honesto preservado: sem acumulador OU sem
+    // oportunidade confiável ainda → coach null e 'coach' segue em _pendentes (como hoje).
+    const coach = coachStint ? coachStint.pacote() : null;
+    if (coach == null) pendentes.push('coach');
     if (meta == null) pendentes.push('meta');
-    const preditivo = null; if (preditivo == null) pendentes.push('preditivo');
+    // Onda 5 (REAL): alerta preditivo de temperatura. avaliarPreditivo devolve null
+    // quando não há risco / faltam voltas / falta dado — honesto, sem inventar. A onda
+    // está construída, então 'preditivo' NÃO entra mais em pendentes.
+    const preditivo = avaliarPreditivo(voltasTemp, { limiteC: cfg.tempLimiteC });
     return {
       _versao: 1,
       _geradoComVoltas: voltas.length,
       stint,
+      stintBar,
       ritmo,
       coach,
       meta,
@@ -179,7 +234,11 @@ export function criarCerebroPainel(opts = {}) {
     };
   }
 
-  return { onVolta, onSample, snapshot,
+  /** Encaminha o delta de um trecho ao acumulador do coach (se houver). Aditivo:
+   *  sem acumulador, é no-op — não altera o fluxo atual do cérebro. */
+  function onDeltaCoach(evDelta) { if (coachStint && typeof coachStint.onDelta === 'function') coachStint.onDelta(evDelta); }
+
+  return { onVolta, onSample, onDeltaCoach, snapshot,
     // acesso só-leitura pra testes
     _estado: () => ({ voltas: voltas.slice(), decorridoS, ultimaAmostra }) };
 }

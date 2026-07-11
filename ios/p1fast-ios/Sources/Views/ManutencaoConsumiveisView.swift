@@ -22,6 +22,12 @@ import P1FastCore
 @MainActor
 final class ManutencaoConsumiveisStore: ObservableObject {
     @Published private(set) var statusPorItem: [String: StatusManutencao] = [:]
+    /// Quantos itens estão "em atenção" (vermelho/amarelo) por carro. Alimenta
+    /// o resumo e o pontinho de status da Garagem (decisão Flávio 2026-06-22).
+    /// SEPARADO de `statusPorItem` de propósito: aquele é o carro aberto na
+    /// tela de Manutenção; este é a visão da lista, e um não pode sobrescrever
+    /// o outro.
+    @Published private(set) var atencaoPorCarro: [String: Int] = [:]
 
     private let queue: DatabaseQueue
     init(queue: DatabaseQueue) { self.queue = queue }
@@ -51,6 +57,33 @@ final class ManutencaoConsumiveisStore: ObservableObject {
             statusPorItem = novo
         } catch {
             print("ManutencaoConsumiveisStore.carregarStatus falhou: \(error)")
+        }
+    }
+
+    /// Conta, por carro, quantos dos 30 itens estão em atenção (vermelho ou
+    /// amarelo) — mesma definição de "pendências" do painel do carro. NÃO toca
+    /// `statusPorItem` (que é o carro aberto na tela de Manutenção). Usado pela
+    /// Garagem pro resumo "Atenção" e pro pontinho de cada carro.
+    func carregarAtencao(carrosIds: [String]) async {
+        guard let team = TeamContext.currentTeamId else { atencaoPorCarro = [:]; return }
+        let agora = DB.nowMs()
+        do {
+            let novo = try await queue.read { db -> [String: Int] in
+                var m: [String: Int] = [:]
+                for carroId in carrosIds {
+                    var n = 0
+                    for item in CatalogoConsumiveisCelta.itens {
+                        let s = try ManutencaoHistorico.status(
+                            db, item: item, carroId: carroId, timeId: team, agoraMs: agora)
+                        if s.severidade == .vermelho || s.severidade == .amarelo { n += 1 }
+                    }
+                    m[carroId] = n
+                }
+                return m
+            }
+            atencaoPorCarro = novo
+        } catch {
+            print("ManutencaoConsumiveisStore.carregarAtencao falhou: \(error)")
         }
     }
 

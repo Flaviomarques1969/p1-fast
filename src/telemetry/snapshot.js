@@ -14,6 +14,7 @@
 //   • origem rastreável (cada canal sabe de qual fonte veio)
 
 import { Quality, worstOf, qualityLabel } from '../domain/data-quality.js';
+import { msParaKmh } from '../domain/velocidade.js';
 
 /**
  * Constrói CarTelemetrySnapshot a partir do output do TelemetryTimebase.
@@ -242,7 +243,7 @@ export function snapshotToSample(snap) {
     lat:   snap.position.lat,
     lng:   snap.position.lon,
     speed,
-    kmh:   speed != null ? speed * 3.6 : null,
+    kmh:   speed != null ? msParaKmh(speed) : null,
     accLong: snap.dynamics?.accel_longitudinal ?? null,
     accLat:  snap.dynamics?.accel_lateral ?? null,
     accVert: snap.dynamics?.accel_vertical ?? null,

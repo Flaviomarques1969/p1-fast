@@ -33,14 +33,8 @@ const MIN_PASSAGENS = 1;          // orientação só depois de ao menos 1 passa
 const JANELA_PASSAGENS = 2;       // média das últimas N passagens (estabilidade)
 const VMIN_BANDA_KMH = 2;         // Vmin abaixo da referência além disso → FREIA MENOS (modo treino)
 
-function distM(a, b) {
-  // distância geográfica aproximada em metros (suficiente pra escala de trecho)
-  const kLat = 110540;
-  const kLng = 111320 * Math.cos(((a.lat + b.lat) / 2) * Math.PI / 180);
-  const dx = (a.lng - b.lng) * kLng;
-  const dy = (a.lat - b.lat) * kLat;
-  return Math.hypot(dx, dy);
-}
+// distância em metros: casa única (geo.js)
+import { distanciaPontos as distM } from './geo.js';
 
 function comprimentoM(pontos) {
   let total = 0;

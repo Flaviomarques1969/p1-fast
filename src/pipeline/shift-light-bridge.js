@@ -6,6 +6,8 @@
 // caller mantém atualizados por outro canal — sem acoplar este módulo à
 // fonte de RPM. Sample sem RPM é descartado (não fabricar dados).
 
+import { msParaKmh } from '../domain/velocidade.js';
+
 export function createShiftLightBridge({ shiftDetector, getRpm, getTps = () => null } = {}) {
   if (!shiftDetector || typeof shiftDetector.pushSample !== 'function') {
     throw new Error('shift-light-bridge: shiftDetector com pushSample obrigatório');
@@ -25,7 +27,7 @@ export function createShiftLightBridge({ shiftDetector, getRpm, getTps = () => n
     if (!Number.isFinite(rpm) || rpm <= 0) return; // sem RPM real → não emite
     const speed = Number.isFinite(sample.kmh)
       ? sample.kmh
-      : (Number.isFinite(sample.speed) ? sample.speed * 3.6 : null);
+      : (Number.isFinite(sample.speed) ? msParaKmh(sample.speed) : null);
     if (!Number.isFinite(speed)) return;
     const tps = (() => {
       const v = getTps(sample);

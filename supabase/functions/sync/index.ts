@@ -45,7 +45,11 @@ export const ALLOWED_TABLES = new Set([
   "manutencoes",
   // Estoque unificado (geral + por carro) — backup na nuvem desde 2026-06-14
   // (migration 0046_estoque_unificado_sync). Tem time_id direto, igual a `pecas`.
-  "estoque_item"
+  "estoque_item",
+  // Fase 1 multi-aparelho (migration 0049): equipe + checklists com time_id direto.
+  "equipe_membros",
+  "stint_check",
+  "dia_check"
 ]);
 export const ALLOWED_OPS = new Set([
   "insert",

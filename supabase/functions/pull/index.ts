@@ -25,6 +25,8 @@ export const TEAM_TABLES = new Set([
   "eventos", "sessoes", "voltas", "segment_executions", "mensagens",
   "retas_especiais", "trofeus_ganhos",
   "estoque_item", // estoque unificado — restaurável em outro aparelho (0046)
+  // Fase 1 multi-aparelho (0049): equipe + checklists do stint e do dia.
+  "equipe_membros", "stint_check", "dia_check",
 ]);
 
 export const GLOBAL_TABLES = new Set([

@@ -84,16 +84,25 @@ final class OrientationGate: ObservableObject {
     }
 
     // ── Caminho aparelho (gravidade) com HISTERESE ───────────────────────
+    // Régua do Flávio (11/07): o cockpit ATIVA quando o giro passa de 50%
+    // (45° dos 90°) e desativa voltando abaixo de ~32% (29°). A diferença
+    // entre ida e volta continua evitando o tremular na fronteira.
     private func applyGravity(x: Double, y: Double) {
+        // Flávio 11/07: só giro pra ESQUERDA/DIREITA ativa — inclinar pra FRENTE
+        // (tela pro teto) não conta. Quando o aparelho deita, a gravidade sai do
+        // plano da tela (x²+y² → 0) e a conta do ângulo vira ruído; nesse caso
+        // MANTEMOS o estado como está (nem abre, nem fecha).
+        let noPlano = (x * x + y * y).squareRoot()
+        guard noPlano > 0.5 else { return }
         let phi = atan2(x, -y) * 180 / .pi
         let a = abs(phi)
         let emPaisagem = (landscapeAngle != nil)
         let angle: Double?
         if emPaisagem {
-            if a < 42 || a > 138 { angle = nil }
+            if a < 29 || a > 151 { angle = nil }
             else { angle = phi > 0 ? -90 : 90 }
         } else {
-            if a > 58 && a < 122 { angle = phi > 0 ? -90 : 90 }
+            if a > 45 && a < 135 { angle = phi > 0 ? -90 : 90 }
             else { angle = nil }
         }
         setAngle(angle, src: "gravity")

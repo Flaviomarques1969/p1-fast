@@ -46,6 +46,12 @@ public enum SyncBackfill {
         "manutencoes",
         // Estoque unificado (geral + por carro) — sincroniza desde 2026-06-14.
         "estoque_item",
+        // Fase 1 multi-aparelho (2026-06-25): equipe + checklists. time_id
+        // direto; sem FK entre si; o time já existe na nuvem via
+        // ensure_personal_team. Vão no fim (não são parents de ninguém).
+        "equipe_membros",
+        "stint_check",
+        "dia_check",
     ]
 
     /// Roda o backfill. Retorna o nº total de rows enfileiradas (0 quando
@@ -82,6 +88,7 @@ public enum SyncBackfill {
         "combustiveis", "pneus", "eventos",
         "pecas_locais", "pecas", "pecas_movimentacoes", "manutencoes",
         "estoque_item",
+        "equipe_membros", "stint_check", "dia_check",
     ]
 
     private static func backfillTable(

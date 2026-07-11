@@ -66,11 +66,11 @@ const GRDB_TABLES = grdbTables(grdb);
 
 // ─── Tests ────────────────────────────────────────────────
 // Contagem atualizada conforme migrations vão entrando.
-// Recontado 10/06/2026 com o leitor corrigido (if not exists + dígitos):
-// 45 tabelas na nuvem. As 13 SÓ-nuvem abaixo não têm espelho no app de
-// propósito — são do painel web, shift light, dyno, canal ao vivo e
-// engenharia Camada 2 (emitem/consomem via REST direto).
-const PG_TABLE_COUNT_ESPERADO = 46;
+// Recontado 26/06/2026: 51 tabelas na nuvem (entraram estoque_item/freios/
+// sessao_dumps/equipe_membros/stint_check/dia_check nas migs 0046–0049).
+// As 14 SÓ-nuvem abaixo não têm espelho no app de propósito — são do painel
+// web, shift light, dyno, canal ao vivo, engenharia Camada 2 e o resgate.
+const PG_TABLE_COUNT_ESPERADO = 51;
 const PG_ONLY_TABLES = new Set([
   'engineering_findings', 'engineering_recommendations',     // MS-16.3 Camada 2
   'melhores_passagens_trecho', 'padroes_telemetria_por_volta', // painel web (0025/0026)
@@ -78,8 +78,9 @@ const PG_ONLY_TABLES = new Set([
   'pontos_troca_aprendidos', 'perfis_reacao_piloto',         // aprendizagem shift light
   'envelopes_seguranca_stint', 'qualidade_troca_marcha',     // stint/câmbio (0034)
   't4000_live_commands', 't4000_live_events',                // canal ao vivo (0023)
+  'sessao_dumps',                                            // caixa de resgate TEMPORÁRIA, só-nuvem (0048)
 ]);
-const GRDB_REQUIRED_COUNT = PG_TABLE_COUNT_ESPERADO - PG_ONLY_TABLES.size; // 32
+const GRDB_REQUIRED_COUNT = PG_TABLE_COUNT_ESPERADO - PG_ONLY_TABLES.size; // 51 - 14 = 37
 // Tabelas SÓ-locais (não espelham a nuvem de propósito): infraestrutura de
 // sync + evento_pendencias_extra (pendências incluídas à mão pelo usuário —
 // migration v29, app mono-iPhone, não sincroniza).
@@ -91,8 +92,11 @@ const GRDB_REQUIRED_COUNT = PG_TABLE_COUNT_ESPERADO - PG_ONLY_TABLES.size; // 32
 // item_arquivado (v32, 2026-06-14): "Apagados" (lixeira) por entidade da
 // Garagem. LOCAL-ONLY de propósito — apagar é reversível e fica só no iPhone;
 // o dado original (que sobe pra nuvem) nunca é tocado.
-const GRDB_LOCAL_ONLY = ['evento_pendencias_extra', 'evento_pendencia_pegou', 'item_arquivado', 'sync_meta', 'sync_queue'];
-const GRDB_TABLE_COUNT_ESPERADO = GRDB_REQUIRED_COUNT + GRDB_LOCAL_ONLY.length; // 33 + 5 = 38
+// checklist_item/checklist_tique (v35): lista PADRÃO de checagens de pista —
+// local do iPhone. A parte que sincroniza entre aparelhos é stint_check/dia_check
+// (migration 0049), que ESPELHA a nuvem e por isso NÃO entra aqui.
+const GRDB_LOCAL_ONLY = ['checklist_item', 'checklist_tique', 'evento_pendencias_extra', 'evento_pendencia_pegou', 'item_arquivado', 'sync_meta', 'sync_queue'];
+const GRDB_TABLE_COUNT_ESPERADO = GRDB_REQUIRED_COUNT + GRDB_LOCAL_ONLY.length; // 37 + 7 = 44
 
 t(`PG tem ${PG_TABLE_COUNT_ESPERADO} tabelas em public`, () => {
   if (PG_TABLES.size !== PG_TABLE_COUNT_ESPERADO) throw new Error('size=' + PG_TABLES.size);

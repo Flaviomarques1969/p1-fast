@@ -1,0 +1,45 @@
+=== 1. TEMPO_TRECHO_S por curva × volta (dia/volta) — relógio ===
+voltas na ordem: 23/05 v1 · 23/05 v2 · 23/05 v3 · 23/05 v4 · 24/05 v1 · 24/05 v2 · 24/05 v3
+CURVA 01               ref=5.995s  pts/passagem=[9,7,7,9,8,7,7]  tempos=[8.00, 6.00, 6.00, 8.00, 7.00, 6.00, 6.00]
+CURVA DA RETA OPOSTA   ref=6.998s  pts/passagem=[9,9,8,8,9,10,8]  tempos=[8.00, 8.00, 7.00, 7.00, 8.00, 9.00, 7.01]
+CURVA 2                ref=18.001s  pts/passagem=[22,19,19,19,22,19,20]  tempos=[21.00, 18.00, 18.00, 18.01, 21.00, 18.00, 19.00]
+CURVA DA JUNÇÃO        ref=12.994s  pts/passagem=[14,15,15,14,16,15,14]  tempos=[13.00, 14.00, 13.99, 12.99, 15.00, 14.00, 13.00]
+CURVA DA BRUXA         ref=9.999s  pts/passagem=[14,12,12,11,13,12,12]  tempos=[13.04, 11.00, 11.00, 10.00, 12.00, 11.00, 10.48]
+CURVA DO PLACAR        ref=3.001s  pts/passagem=[4,5,5,4,5,4,5]  tempos=[3.01, 4.00, 4.00, 3.00, 4.00, 3.00, 3.99]
+CURVA "S"              ref=5.004s  pts/passagem=[7,7,7,8,6,7,8]  tempos=[6.00, 5.99, 6.00, 7.00, 5.00, 6.00, 7.00]
+CURVA DA VITÓRIA       ref=3.996s  pts/passagem=[5,5,6,6,6,5,6]  tempos=[4.00, 4.00, 5.00, 5.00, 5.00, 4.00, 5.00]
+
+=== 1b. Soma dos 8 trechos por volta (proxy do tempo de volta) ===
+23/05 v1: 76.0 s
+23/05 v2: 71.0 s
+23/05 v3: 71.0 s
+23/05 v4: 71.0 s
+24/05 v1: 77.0 s
+24/05 v2: 71.0 s
+24/05 v3: 71.5 s
+mediana=71.0s → out-laps (>5% acima): 23/05 v1, 24/05 v1
+
+=== 2. GAP vs melhor histórica, só voltas voadoras (regra J2 §4.5) ===
+CURVA 01               voadoras=5 hit(≥0,10s)=1 media=0.403 p25=0.000 minPts=7
+CURVA DA RETA OPOSTA   voadoras=5 hit(≥0,10s)=2 media=0.602 p25=0.001 minPts=8
+CURVA 2                voadoras=5 hit(≥0,10s)=1 media=0.202 p25=0.000 minPts=19
+CURVA DA JUNÇÃO        voadoras=5 hit(≥0,10s)=3 media=0.603 p25=0.008 minPts=14
+CURVA DA BRUXA         voadoras=5 hit(≥0,10s)=4 media=0.697 p25=0.485 minPts=11
+CURVA DO PLACAR        voadoras=5 hit(≥0,10s)=3 media=0.599 p25=0.004 minPts=4
+CURVA "S"              voadoras=5 hit(≥0,10s)=5 media=1.394 p25=0.996 minPts=7
+CURVA DA VITÓRIA       voadoras=5 hit(≥0,10s)=3 media=0.606 p25=0.005 minPts=5
+
+=== 2b. Eleição J2 (curva-nível, piso 0,10 no quantil baixo) ===
+ELEGÍVEL: CURVA "S" p25=0.996s hit=5/5 minPts=7
+ELEGÍVEL: CURVA DA BRUXA p25=0.485s hit=4/5 minPts=11
+
+=== 3. QA-1: distância MÍNIMA (m) do ápice-semente a QUALQUER ponto das passagens da curva ===
+(o cabeçalho do próprio semente promete: "ápice nunca está a mais de ~10 m da linha")
+CURVA 01               minDist=3.2 m (2 px)  | ponto mais perto do semente em TODO o fixture: CURVA 01 (3.2 m)
+CURVA DA RETA OPOSTA   minDist=2.5 m (1 px)  | ponto mais perto do semente em TODO o fixture: CURVA DA VITÓRIA (0.7 m)
+CURVA 2                minDist=4.0 m (2 px)  | ponto mais perto do semente em TODO o fixture: CURVA 2 (4.0 m)
+CURVA DA JUNÇÃO        minDist=5.2 m (3 px)  | ponto mais perto do semente em TODO o fixture: CURVA DA JUNÇÃO (5.2 m)
+CURVA DA BRUXA         minDist=70.4 m (41 px)  ← FORA da promessa de ~10 m  | ponto mais perto do semente em TODO o fixture: CURVA DA BRUXA (70.4 m)
+CURVA DO PLACAR        minDist=235.0 m (138 px)  ← FORA da promessa de ~10 m  | ponto mais perto do semente em TODO o fixture: CURVA DA BRUXA (166.5 m)
+CURVA "S"              minDist=99.9 m (59 px)  ← FORA da promessa de ~10 m  | ponto mais perto do semente em TODO o fixture: CURVA "S" (99.9 m)
+CURVA DA VITÓRIA       minDist=82.4 m (49 px)  ← FORA da promessa de ~10 m  | ponto mais perto do semente em TODO o fixture: CURVA DA VITÓRIA (82.4 m)

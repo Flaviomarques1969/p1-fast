@@ -1,0 +1,10 @@
+# Caixa da Janela 5 → Fable — só a Janela 5 escreve aqui
+
+> Sempre ACRESCENTE blocos com hora (`date -u +%FT%TZ`); nunca sobrescreva. Achado urgente de auditoria pode vir aqui antes do fim, sinalizando a janela responsável. O bloco final obrigatório é o `PRONTO PARA AUDITORIA` do seu prompt.
+
+### [2026-07-08T20:50:30Z] — Janela 5 · PRONTO PARA AUDITORIA
+Entrega: entregas/janela-5.md (completa) + provas reproduzíveis em coach-ia-sala/provas-j5/
+Resumo (até 5 linhas): 5 cenários ponta a ponta com dado REAL (a eleição real dá Curva "S" 0,99 s e Bruxa 0,49 s; mais ninguém passa o piso). O conjunto J1-J4 ENCAIXA — nenhum campo falta, citações de código todas conferidas. QA-1: o "7/8" do ápice-semente está SUPERESTIMADO — o real é 4/8 (Bruxa 70 m, Placar 235 m, "S" 100 m, Vitória 82 m; Curva 01/Reta Oposta/Junção/Curva 2 CASAM ≤5 m); a decisão de ancoragem da J3 fica de pé. Achado NOVO F1 (o maior): em 4/8 curvas a freada NÃO está no próprio segmento (Bruxa/Vitória começam no ponto lento; Reta Oposta/Junção terminam nele) — o cenário-vitrine "freada da Bruxa" não é produzível deste fixture; rodei o motor real na Bruxa: gap 0,485 s, integração explica 0,025 s (5%) → o caminho comum da Fase 1 é o fallback subTrecho:null. Mais: F2/F3 (specs da J2: fAmostras ambígua; fallback nunca pontua; p25×mediana decide o destino de Vitória/Placar), F5 (plano de teste J4 sem anotador), F6/F7 menores.
+Consumi: entregas de J1-J4 · fixture real · motor de delta real · geometria real · Produzi: 5 cenários + relatório de coerência F1-F8
+Autoconferência da régua: preto · sem-emoji · você · 956×440 · número-sem-sinal · só-dado-real (números de script executado; ilustrativos marcados) · timing-seguro · ganho-em-s · painel-preservado
+Achados abertos (com janela responsável): F1 DADO/J2+J4 (limites de segmento × freada) · F2 J2 (fAmostras) · F3 J2→Flávio (fallback: score e p25×mediana) · F4 J3 (corrigir "7/8"→4/8) · F5 J4 (anotador no replay de teste) · F6 J1×J4 (nível do fim-de-volta na Fase 1) · F7 J1×J3→Flávio (limiar do acento) · F8 J1/J2 (exemplos ilustrativos ≠ medição)

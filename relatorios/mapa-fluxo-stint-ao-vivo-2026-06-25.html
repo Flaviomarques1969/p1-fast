@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mapa — Assistir o stint ao vivo (P1 Fast)</title>
+<style>
+  :root{
+    --bg:#0f1216; --panel:#161b22; --panel2:#1b2230; --line:#2a3340;
+    --tx:#e8edf4; --tx2:#9fb0c3; --tx3:#6b7d92;
+    --ok:#37c98a; --okbg:#10271f; --falta:#e0a13b; --faltabg:#2a2113;
+    --accent:#4ea1ff; --accentbg:#0f2740;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--tx);
+    font-family:-apple-system,"SF Pro Display","Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  .wrap{width:100%;padding:34px 40px 60px;}
+  h1{font-size:30px;font-weight:700;margin:0 0 6px;letter-spacing:-.4px}
+  .sub{color:var(--tx2);font-size:16px;margin:0 0 8px;max-width:1100px;line-height:1.45}
+  .meta{color:var(--tx3);font-size:13px;margin:0 0 28px}
+
+  .flow{display:grid;grid-template-columns:1fr 44px 1fr 44px 1fr;gap:0;align-items:stretch;width:100%}
+  .arrow{display:flex;align-items:center;justify-content:center;color:var(--tx3)}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:0;overflow:hidden;display:flex;flex-direction:column}
+  .card .top{padding:20px 22px 16px;border-bottom:1px solid var(--line);background:var(--panel2)}
+  .step{font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);font-weight:700;margin-bottom:8px}
+  .card h2{font-size:21px;margin:0 0 8px;font-weight:700;letter-spacing:-.2px}
+  .card .desc{color:var(--tx2);font-size:14.5px;line-height:1.5;margin:0}
+
+  /* maquete da tela */
+  .mock{margin:16px 22px 4px;border:1px solid var(--line);border-radius:11px;overflow:hidden;background:#0b0e12}
+  .mock .bar{height:26px;background:#0e1319;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:6px;padding:0 10px}
+  .dot{width:8px;height:8px;border-radius:50%}
+  .mb{padding:12px;display:flex;flex-direction:column;gap:9px}
+  .row{height:13px;border-radius:4px;background:#1d2632}
+  .row.s{width:55%} .row.m{width:78%}
+  .livecard{border:1.5px solid var(--ok);background:var(--okbg);border-radius:9px;padding:11px 12px;display:flex;align-items:center;gap:10px}
+  .pulse{width:11px;height:11px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 0 rgba(55,201,138,.6);animation:p 1.6s infinite}
+  @keyframes p{0%{box-shadow:0 0 0 0 rgba(55,201,138,.55)}70%{box-shadow:0 0 0 9px rgba(55,201,138,0)}100%{box-shadow:0 0 0 0 rgba(55,201,138,0)}}
+  .livetx{font-size:12.5px;line-height:1.3}.livetx b{color:var(--ok)}
+  .videobox{height:78px;border-radius:8px;background:linear-gradient(135deg,#16202c,#0c1117);border:1px solid var(--line);position:relative;display:flex;align-items:center;justify-content:center;color:var(--tx3);font-size:11px;letter-spacing:1px}
+  .rec{position:absolute;top:7px;left:8px;display:flex;align-items:center;gap:5px;font-size:10px;color:#ff6b6b}
+  .recdot{width:7px;height:7px;border-radius:50%;background:#ff6b6b}
+  .mapbox{height:70px;border-radius:8px;border:1px solid var(--line);background:#0c1117;position:relative}
+  .track{position:absolute;inset:10px;border:2px solid #36506e;border-radius:40% 44% 38% 46%/46% 40% 46% 38%}
+  .ball{position:absolute;width:9px;height:9px;border-radius:50%;background:var(--accent);top:14px;left:30%;box-shadow:0 0 8px var(--accent)}
+
+  /* listas pronto/falta */
+  .lists{padding:14px 22px 20px;display:flex;flex-direction:column;gap:14px;margin-top:auto}
+  .lbl{font-size:11.5px;letter-spacing:1px;text-transform:uppercase;font-weight:700;margin-bottom:7px;display:flex;align-items:center;gap:7px}
+  .lbl.ok{color:var(--ok)} .lbl.fl{color:var(--falta)}
+  ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+  li{font-size:13.5px;line-height:1.4;color:var(--tx);padding-left:24px;position:relative}
+  li .ic{position:absolute;left:0;top:1px}
+  .pill{display:inline-block;font-size:11px;color:var(--tx3);border:1px solid var(--line);border-radius:20px;padding:2px 9px;margin-top:2px}
+
+  .foot{margin-top:30px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px 26px}
+  .foot h3{margin:0 0 12px;font-size:18px}
+  .foot p{margin:0 0 14px;color:var(--tx2);font-size:15px;line-height:1.55;max-width:1150px}
+  .opts{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:6px}
+  .opt{border:1px solid var(--line);border-radius:12px;padding:16px 18px;background:var(--panel2)}
+  .opt .n{font-size:12px;color:var(--accent);font-weight:700;letter-spacing:1px;text-transform:uppercase}
+  .opt h4{margin:7px 0 6px;font-size:16px}
+  .opt p{font-size:13.5px;color:var(--tx2);margin:0;line-height:1.45}
+  .rec-tag{display:inline-block;margin-top:9px;font-size:11px;font-weight:700;color:var(--ok);border:1px solid var(--ok);border-radius:20px;padding:2px 10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Assistir o stint ao vivo — o caminho do usuário</h1>
+  <p class="sub">A tela que estou cuidando (vídeo em cima, mapa embaixo) é o que o torcedor / usuário comum abre pra ver o stint rodando ao vivo. Este mapa mostra o caminho dele e, em cada parte, o que <b style="color:var(--ok)">já está pronto</b> e o que <b style="color:var(--falta)">falta construir</b>.</p>
+  <p class="meta">P1 Fast · 25/06/2026 · baseado no código real do app · nada em produção</p>
+
+  <div class="flow">
+
+    <!-- ETAPA 1 -->
+    <div class="card">
+      <div class="top">
+        <div class="step">Etapa 1 · Primeira tela</div>
+        <h2>Abre o app e vê o que está ao vivo</h2>
+        <p class="desc">Logo na entrada, o usuário vê o stint que está acontecendo agora. Quando o piloto inicia o stint, ele aparece sozinho aqui como “ao vivo”.</p>
+      </div>
+      <div class="mock">
+        <div class="bar"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span></div>
+        <div class="mb">
+          <div class="livecard"><span class="pulse"></span><div class="livetx"><b>STINT AO VIVO</b><br>Bubi · Brasília · volta 4</div></div>
+          <div class="row m"></div><div class="row s"></div>
+        </div>
+      </div>
+      <div class="lists">
+        <div>
+          <div class="lbl ok"><svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="6" fill="none" stroke="#37c98a" stroke-width="1.5"/><path d="M4 7.2l2 2 4-4.3" fill="none" stroke="#37c98a" stroke-width="1.6"/></svg>Já pronto</div>
+          <ul>
+            <li><span class="ic"><svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="6" fill="none" stroke="#37c98a" stroke-width="1.5"/><path d="M4 7.2l2 2 4-4.3" fill="none" stroke="#37c98a" stroke-width="1.6"/></svg></span>Existe a tela inicial do app, com evento de hoje e próximos.</li>
+            <li><span class="ic"><svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="6" fill="none" stroke="#37c98a" stroke-width="1.5"/><path d="M4 7.2l2 2 4-4.3" fill="none" stroke="#37c98a" stroke-width="1.6"/></svg></span>O stint já nasce “ativo”, com a hora em que começou.</li>
+            <li><span class="ic"><svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="6" fill="none" stroke="#37c98a" stroke-width="1.5"/><path d="M4 7.2l2 2 4-4.3" fill="none" stroke="#37c98a" stroke-width="1.6"/></svg></span>Dá pra saber, pelos dados, quando um stint está rodando agora.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="lbl fl"><svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="6" fill="none" stroke="#e0a13b" stroke-width="1.5"/></svg>Falta</div>
+          <ul>
+            <li><span class="ic"><svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="6" fill="none" stroke="#e0a13b" stroke-width="1.5"/></svg></span>O cartão “Stint ao vivo” aparecer sozinho na primeira tela.</li>
+            <li><span class="ic"><svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="6" fill="none" stroke="#e0a13b" stroke-width="1.5"/></svg></span>Clicar nele e abrir a tela do stint (Etapa 2).</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow"><svg width="30" height="30" viewBox="0 0 30 30"><path d="M5 15h18M17 9l7 6-7 6" fill="none" stroke="#6b7d92" stroke-width="2"/></svg></div>
+
+    <!-- ETAPA 2 -->
+    <div class="card">
+      <div class="top">
+        <div class="step">Etapa 2 · A tela do stint ao vivo</div>
+        <h2>Vídeo em cima, mapa e dados embaixo</h2>
+        <p class="desc">Ao clicar, abre a tela que mostra a câmera do carro ao vivo em cima e, embaixo, o mapa da pista com a bolinha e os números, tudo na mesma linha do tempo.</p>
+      </div>
+      <div class="mock">
+        <div class="bar"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span></div>
+        <div class="mb">
+          <div class="videobox"><span class="rec"><span class="recdot"></span>AO VIVO</span>CÂMERA DO CARRO</div>
+          <div class="mapbox"><div class="track"></div><div class="ball"></div></div>
+        </div>
+      </div>
+      <div class="lists">
+        <div>
+          <div class="lbl ok"><svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="6" fill="none" stroke="#37c98a" stroke-width="1.5"/><path d="M4 7.2l2 2 4-4.3" fill="none" stroke="#37c98a" stroke-width="1.6"/></svg>Já pronto</div>
+          <ul>
+            <li><span class="ic"><svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="6" fill="none" stroke="#37c98a" stroke-width="1.5"/><path d="M4 7.2l2 2 4-4.3" fill="none" stroke="#37c98a" stroke-width="1.6"/></svg></span>O vídeo ao vivo da câmera do carro já transmite quando o stint começa.</li>
+            <li><span class="ic"><svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="6" fill="none" stroke="#37c98a" stroke-width="1.5"/><path d="M4 7.2l2 2 4-4.3" fill="none" stroke="#37c98a" stroke-width="1.6"/></svg></span>Já existe uma tela de espectador (vídeo ao vivo + dados básicos).</li>
+            <li><span class="ic"><svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="6" fill="none" stroke="#37c98a" stroke-width="1.5"/><path d="M4 7.2l2 2 4-4.3" fill="none" stroke="#37c98a" stroke-width="1.6"/></svg></span>O mapa com a bolinha e os números já existe (a tela que você viu).</li>
+          </ul>
+        </div>
+        <div>
+          <div class="lbl fl"><svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="6" fill="none" stroke="#e0a13b" stroke-width="1.5"/></svg>Falta</div>
+          <ul>
+            <li><span class="ic"><svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="6" fill="none" stroke="#e0a13b" stroke-width="1.5"/></svg></span>Juntar os dois numa só tela: vídeo em cima, mapa embaixo.</li>
+            <li><span class="ic"><svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="6" fill="none" stroke="#e0a13b" stroke-width="1.5"/></svg></span>Ligar o mapa ao dado ao vivo da nuvem (que acabamos de provar guardar).</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow"><svg width="30" height="30" viewBox="0 0 30 30"><path d="M5 15h18M17 9l7 6-7 6" fill="none" stroke="#6b7d92" stroke-width="2"/></svg></div>
+
+    <!-- ETAPA 3 -->
+    <div class="card">
+      <div class="top">
+        <div class="step">Etapa 3 · Rever depois</div>
+        <h2>O vídeo guardado, junto com os dados</h2>
+        <p class="desc">Acabado o stint, dá pra rever cada volta com o vídeo e os dados na mesma linha do tempo — o “replay” da volta, pra análise.</p>
+      </div>
+      <div class="mock">
+        <div class="bar"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span></div>
+        <div class="mb">
+          <div class="videobox" style="border-color:#3a4a5e">GRAVAÇÃO · VOLTA 4</div>
+          <div class="row m"></div><div class="row s"></div>
+        </div>
+      </div>
+      <div class="lists">
+        <div>
+          <div class="lbl ok"><svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="6" fill="none" stroke="#37c98a" stroke-width="1.5"/><path d="M4 7.2l2 2 4-4.3" fill="none" stroke="#37c98a" stroke-width="1.6"/></svg>Já pronto</div>
+          <ul>
+            <li><span class="ic"><svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="6" fill="none" stroke="#37c98a" stroke-width="1.5"/><path d="M4 7.2l2 2 4-4.3" fill="none" stroke="#37c98a" stroke-width="1.6"/></svg></span>O vídeo já é gravado na nuvem ao rodar o stint.</li>
+            <li><span class="ic"><svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="6" fill="none" stroke="#37c98a" stroke-width="1.5"/><path d="M4 7.2l2 2 4-4.3" fill="none" stroke="#37c98a" stroke-width="1.6"/></svg></span>O sistema já marca em que ponto do vídeo cada volta está (sincronização por tempo).</li>
+            <li><span class="ic"><svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="6" fill="none" stroke="#37c98a" stroke-width="1.5"/><path d="M4 7.2l2 2 4-4.3" fill="none" stroke="#37c98a" stroke-width="1.6"/></svg></span>Já existe uma tela pra escolher quais voltas manter.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="lbl fl"><svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="6" fill="none" stroke="#e0a13b" stroke-width="1.5"/></svg>Falta</div>
+          <ul>
+            <li><span class="ic"><svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="6" fill="none" stroke="#e0a13b" stroke-width="1.5"/></svg></span>O tocador de vídeo dentro da tela (hoje é só um espaço reservado).</li>
+            <li><span class="ic"><svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="6" fill="none" stroke="#e0a13b" stroke-width="1.5"/></svg></span>Pular direto pro trecho da volta e ver vídeo + dados juntos.</li>
+            <li><span class="ic"><svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="6" fill="none" stroke="#e0a13b" stroke-width="1.5"/></svg></span>Guardar o dado na nuvem (em construção, provado em teste).</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="foot">
+    <h3>O que isto quer dizer</h3>
+    <p>A base já é grande: o vídeo ao vivo, a gravação do vídeo e a marcação de “em que ponto do vídeo cada volta está” <b style="color:var(--ok)">já existem</b>. O que falta é principalmente <b>costurar</b>: trazer o stint ao vivo pra primeira tela, juntar vídeo + mapa numa só tela, e o tocador de vídeo pra rever. Nada disso parte do zero.</p>
+    <p style="margin-bottom:18px">Por onde você quer começar:</p>
+    <div class="opts">
+      <div class="opt">
+        <div class="n">Opção A</div>
+        <h4>A primeira tela</h4>
+        <p>Fazer o stint ao vivo aparecer sozinho na entrada do app e abrir a tela ao clicar. É a “porta” da experiência.</p>
+        <span class="rec-tag">Recomendo começar aqui</span>
+      </div>
+      <div class="opt">
+        <div class="n">Opção B</div>
+        <h4>A tela vídeo + mapa</h4>
+        <p>Juntar a câmera do carro em cima e o mapa embaixo numa só tela, ligada ao dado ao vivo.</p>
+      </div>
+      <div class="opt">
+        <div class="n">Opção C</div>
+        <h4>Rever depois</h4>
+        <p>O tocador de vídeo pra rever a volta com os dados na mesma linha do tempo.</p>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

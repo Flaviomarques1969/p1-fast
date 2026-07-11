@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Proposta A — Dia de Pista</title>
+<style>
+  :root{
+    --bg-page:#1c1e22;
+    --bg-app:#0a0b0d;
+    --bg-card:#101216;
+    --bg-card-2:#12141a;
+    --border:rgba(255,255,255,.07);
+    --border-strong:rgba(255,255,255,.11);
+    --text:#f2f4f7;
+    --text-2:#9aa3af;
+    --text-3:#5f6773;
+    --blue:#38bdf8;
+    --blue-deep:#0ea5e9;
+    --green:#34d399;
+    --amber:#fbbf24;
+    --red:#f87171;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    background:var(--bg-page);
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",system-ui,sans-serif;
+    color:var(--text);
+    min-height:100vh;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:40px 20px;gap:28px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .device{
+    width:375px;height:812px;
+    background:var(--bg-app);
+    border-radius:40px;
+    border:1px solid rgba(255,255,255,.12);
+    box-shadow:0 30px 80px rgba(0,0,0,.55), 0 0 0 8px #0e0f12;
+    overflow:hidden;
+    position:relative;
+    display:flex;flex-direction:column;
+  }
+  .screen{
+    flex:1;overflow-y:auto;
+    padding:14px 16px 96px;
+    scrollbar-width:none;
+  }
+  .screen::-webkit-scrollbar{display:none}
+
+  /* status bar */
+  .statusbar{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:6px 8px 12px;
+    font-size:14px;font-weight:600;letter-spacing:-.01em;
+  }
+  .statusbar svg{display:block}
+
+  /* header */
+  .header{display:flex;justify-content:space-between;align-items:center;padding:2px 2px 16px}
+  .header h1{font-size:24px;font-weight:800;letter-spacing:-.03em}
+  .header h1 span{color:var(--blue)}
+  .avatar{
+    width:32px;height:32px;border-radius:50%;
+    background:linear-gradient(135deg,#1d2735,#131922);
+    border:1px solid var(--border-strong);
+    display:flex;align-items:center;justify-content:center;
+    color:var(--text-2);
+  }
+
+  .eyebrow{
+    font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--text-3);
+  }
+  .num{font-variant-numeric:tabular-nums}
+
+  /* hero */
+  .hero{
+    background:linear-gradient(160deg,#131a24 0%,#0e1319 55%,#0c0f14 100%);
+    border:1px solid var(--border-strong);
+    border-radius:20px;
+    padding:18px 18px 16px;
+    position:relative;overflow:hidden;
+  }
+  .hero::before{
+    content:"";position:absolute;top:-60px;right:-60px;width:180px;height:180px;
+    background:radial-gradient(circle,rgba(56,189,248,.10),transparent 70%);
+  }
+  .hero-top{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;position:relative}
+  .hero .eyebrow{color:var(--blue);opacity:.85}
+  .hero h2{font-size:22px;font-weight:800;letter-spacing:-.02em;margin-top:5px}
+  .hero .meta{font-size:13px;color:var(--text-2);margin-top:3px;letter-spacing:-.01em}
+  .hero .meta strong{color:var(--text);font-weight:600}
+  .countdown{
+    display:inline-flex;align-items:center;gap:6px;margin-top:10px;
+    font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--amber);
+    background:rgba(251,191,36,.08);
+    border:1px solid rgba(251,191,36,.18);
+    padding:4px 9px;border-radius:99px;
+  }
+  /* readiness ring */
+  .ring-wrap{position:relative;width:78px;height:78px;flex-shrink:0}
+  .ring-wrap svg{transform:rotate(-90deg)}
+  .ring-label{
+    position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  }
+  .ring-label .pct{font-size:18px;font-weight:800;letter-spacing:-.02em}
+  .ring-label .lbl{font-size:8px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);margin-top:1px}
+
+  .pendencia{
+    display:flex;align-items:center;gap:8px;
+    margin-top:14px;padding:9px 12px;
+    background:rgba(251,191,36,.06);
+    border:1px solid rgba(251,191,36,.14);
+    border-radius:12px;
+    font-size:12.5px;color:#e8d9ad;letter-spacing:-.005em;
+    position:relative;
+  }
+  .pendencia svg{flex-shrink:0;color:var(--amber)}
+  .pendencia .chev{margin-left:auto;color:rgba(251,191,36,.5)}
+
+  .cta{
+    display:flex;align-items:center;justify-content:center;gap:9px;
+    width:100%;margin-top:14px;
+    background:linear-gradient(180deg,var(--blue),var(--blue-deep));
+    color:#04131c;
+    border:none;border-radius:14px;
+    padding:15px 0;
+    font-size:16px;font-weight:800;letter-spacing:-.01em;
+    font-family:inherit;cursor:pointer;
+    box-shadow:0 8px 24px rgba(56,189,248,.22);
+    position:relative;
+  }
+
+  /* live */
+  .live{
+    display:flex;align-items:center;gap:11px;
+    margin-top:12px;
+    background:var(--bg-card);
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:12px 14px;
+  }
+  .live-dot{
+    width:7px;height:7px;border-radius:50%;background:var(--green);
+    box-shadow:0 0 0 4px rgba(52,211,153,.12);
+    flex-shrink:0;
+  }
+  .live .txt{flex:1;min-width:0}
+  .live .t1{font-size:13.5px;font-weight:700;letter-spacing:-.01em}
+  .live .t2{font-size:11.5px;color:var(--text-2);margin-top:1px}
+  .live .watch{
+    display:flex;align-items:center;gap:5px;
+    font-size:12px;font-weight:700;color:var(--blue);
+    letter-spacing:-.005em;white-space:nowrap;
+  }
+
+  /* section title */
+  .section{margin-top:20px;display:flex;justify-content:space-between;align-items:baseline;padding:0 2px 9px}
+  .section a{font-size:12px;color:var(--text-3);text-decoration:none;font-weight:600}
+
+  /* best lap */
+  .bestlap{
+    display:flex;align-items:center;gap:14px;
+    background:var(--bg-card);
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:14px 16px;
+  }
+  .bestlap .track{flex-shrink:0;color:var(--blue);opacity:.9}
+  .bestlap .info{flex:1}
+  .bestlap .time{font-size:26px;font-weight:800;letter-spacing:-.03em;line-height:1}
+  .bestlap .time small{font-size:15px;font-weight:700;color:var(--text-2)}
+  .bestlap .where{font-size:12px;color:var(--text-2);margin-top:4px}
+  .delta{
+    display:flex;align-items:center;gap:4px;
+    font-size:12px;font-weight:700;color:var(--green);
+    letter-spacing:-.01em;
+  }
+
+  /* cars */
+  .car{
+    display:flex;align-items:center;gap:12px;
+    background:var(--bg-card);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:12px 14px;
+  }
+  .car + .car{margin-top:8px}
+  .car-icon{
+    width:36px;height:36px;border-radius:10px;flex-shrink:0;
+    background:rgba(56,189,248,.07);
+    border:1px solid rgba(56,189,248,.12);
+    display:flex;align-items:center;justify-content:center;
+    color:var(--blue);
+  }
+  .car .name{font-size:14px;font-weight:700;letter-spacing:-.01em}
+  .car .sub{font-size:11.5px;color:var(--text-2);margin-top:1px}
+  .car .right{margin-left:auto;text-align:right}
+  .car .stints{font-size:15px;font-weight:800;letter-spacing:-.02em}
+  .car .stints-lbl{font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3)}
+
+  /* footer stats */
+  .stats{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-top:18px;padding:12px 18px;
+    border-top:1px solid var(--border);
+  }
+  .stat{text-align:center}
+  .stat .v{font-size:17px;font-weight:800;letter-spacing:-.02em}
+  .stat .l{font-size:9.5px;font-weight:700;letter-spacing:.11em;text-transform:uppercase;color:var(--text-3);margin-top:2px}
+  .stat-sep{width:1px;height:22px;background:var(--border)}
+
+  /* tab bar */
+  .tabbar{
+    position:absolute;left:0;right:0;bottom:0;
+    background:rgba(12,13,16,.92);
+    backdrop-filter:blur(20px);
+    border-top:1px solid var(--border);
+    display:flex;
+    padding:10px 8px 26px;
+  }
+  .tab{
+    flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;
+    color:var(--text-3);text-decoration:none;
+    font-size:10px;font-weight:600;letter-spacing:.02em;
+  }
+  .tab.active{color:var(--blue)}
+  .tab .badge-wrap{position:relative}
+  .tab .badge{
+    position:absolute;top:-3px;right:-6px;
+    width:14px;height:14px;border-radius:50%;
+    background:var(--amber);color:#20180a;
+    font-size:9px;font-weight:800;
+    display:flex;align-items:center;justify-content:center;
+    font-variant-numeric:tabular-nums;
+  }
+  .home-indicator{
+    position:absolute;bottom:8px;left:50%;transform:translateX(-50%);
+    width:134px;height:5px;border-radius:99px;background:rgba(255,255,255,.25);
+  }
+
+  /* page footer */
+  .page-footer{max-width:520px;color:#9aa3af}
+  .page-footer .concept{
+    font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+    color:#6b7280;margin-bottom:8px;text-align:center;
+  }
+  .page-footer .concept strong{color:#e5e7eb}
+  .page-footer ul{list-style:none;display:flex;flex-direction:column;gap:5px;font-size:13px;line-height:1.45}
+  .page-footer li{padding-left:16px;position:relative}
+  .page-footer li::before{content:"";position:absolute;left:0;top:8px;width:6px;height:2px;background:#38bdf8;border-radius:2px}
+</style>
+</head>
+<body>
+
+<div class="device">
+  <div class="screen">
+
+    <!-- Status bar -->
+    <div class="statusbar">
+      <span class="num">9:41</span>
+      <span style="display:flex;gap:6px;align-items:center">
+        <svg width="17" height="11" viewBox="0 0 17 11" fill="none"><rect x="0" y="7" width="3" height="4" rx="1" fill="#f2f4f7"/><rect x="4.5" y="5" width="3" height="6" rx="1" fill="#f2f4f7"/><rect x="9" y="2.5" width="3" height="8.5" rx="1" fill="#f2f4f7"/><rect x="13.5" y="0" width="3" height="11" rx="1" fill="#f2f4f7" opacity=".35"/></svg>
+        <svg width="24" height="12" viewBox="0 0 24 12" fill="none"><rect x=".5" y=".5" width="20" height="11" rx="3" stroke="#f2f4f7" opacity=".45"/><rect x="2" y="2" width="14" height="8" rx="1.5" fill="#f2f4f7"/><path d="M22 4v4c1-.3 1.5-1 1.5-2S23 4.3 22 4Z" fill="#f2f4f7" opacity=".45"/></svg>
+      </span>
+    </div>
+
+    <!-- Header -->
+    <div class="header">
+      <h1>P1 <span>Fast</span></h1>
+      <div class="avatar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 19.5c1.3-3 4-4.5 7-4.5s5.7 1.5 7 4.5"/></svg>
+      </div>
+    </div>
+
+    <!-- HERO: próximo evento -->
+    <div class="hero">
+      <div class="hero-top">
+        <div>
+          <div class="eyebrow">Próximo evento</div>
+          <h2>Brasília</h2>
+          <div class="meta"><strong>2 de maio</strong> · Autódromo BSB</div>
+          <div class="countdown">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6"/></svg>
+            Em 2 dias
+          </div>
+        </div>
+        <div class="ring-wrap">
+          <svg width="78" height="78" viewBox="0 0 78 78">
+            <circle cx="39" cy="39" r="33" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="6"/>
+            <circle cx="39" cy="39" r="33" fill="none" stroke="#fbbf24" stroke-width="6" stroke-linecap="round"
+              stroke-dasharray="207.3" stroke-dashoffset="74.6"/>
+          </svg>
+          <div class="ring-label">
+            <div class="pct num">64%</div>
+            <div class="lbl">Pronto</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pendencia">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2.5 20h19L12 3Z"/><path d="M12 10v4M12 17.2v.1"/></svg>
+        <span><strong>3 pendências</strong> antes da pista — pneus, inscrição, checklist</span>
+        <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+      </div>
+
+      <button class="cta">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4.5v15l13-7.5-13-7.5Z"/></svg>
+        Iniciar Stint
+      </button>
+    </div>
+
+    <!-- AO VIVO -->
+    <div class="live">
+      <span class="live-dot"></span>
+      <div class="txt">
+        <div class="t1">Ao vivo agora</div>
+        <div class="t2">Treino livre · Autódromo de Brasília</div>
+      </div>
+      <span class="watch">
+        Assistir
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+      </span>
+    </div>
+
+    <!-- Melhor volta -->
+    <div class="section">
+      <div class="eyebrow">Sua melhor volta</div>
+      <a href="#">Histórico</a>
+    </div>
+    <div class="bestlap">
+      <svg class="track" width="54" height="44" viewBox="0 0 54 44" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M8 32c-4-3-5-8-2-12 3-4 9-4 13-7 4-3 5-8 11-9 6-1 11 2 13 7 2 5-1 9-4 12-2 2-1 5 2 6 4 1 6 5 4 8-2 3-7 3-11 2-5-1-9 2-14 2-5 0-9-4-12-9Z"/>
+        <circle cx="8" cy="32" r="2.4" fill="#38bdf8" stroke="none"/>
+      </svg>
+      <div class="info">
+        <div class="time num">1:42<small>.3</small></div>
+        <div class="where">Brasília · Celta 1.4 · abr 2026</div>
+      </div>
+      <div class="delta">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg>
+        <span class="num">−0.8s</span>
+      </div>
+    </div>
+
+    <!-- Carros -->
+    <div class="section">
+      <div class="eyebrow">Seus carros</div>
+      <a href="#">Garagem</a>
+    </div>
+    <div class="car">
+      <div class="car-icon">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v-3l2-5.5A2 2 0 0 1 7.9 6h8.2a2 2 0 0 1 1.9 1.5L20 13v3"/><path d="M4 13h16"/><circle cx="7.5" cy="16.5" r="1.8"/><circle cx="16.5" cy="16.5" r="1.8"/></svg>
+      </div>
+      <div>
+        <div class="name">Celta 1.4</div>
+        <div class="sub">Ativo · último stint em Brasília</div>
+      </div>
+      <div class="right">
+        <div class="stints num">31</div>
+        <div class="stints-lbl">Stints</div>
+      </div>
+    </div>
+    <div class="car">
+      <div class="car-icon">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v-3l2-5.5A2 2 0 0 1 7.9 6h8.2a2 2 0 0 1 1.9 1.5L20 13v3"/><path d="M4 13h16"/><circle cx="7.5" cy="16.5" r="1.8"/><circle cx="16.5" cy="16.5" r="1.8"/></svg>
+      </div>
+      <div>
+        <div class="name">Honda Civic</div>
+        <div class="sub">Ativo · último stint em Goiânia</div>
+      </div>
+      <div class="right">
+        <div class="stints num">16</div>
+        <div class="stints-lbl">Stints</div>
+      </div>
+    </div>
+
+    <!-- Números secundários -->
+    <div class="stats">
+      <div class="stat"><div class="v num">12</div><div class="l">Eventos</div></div>
+      <div class="stat-sep"></div>
+      <div class="stat"><div class="v num">158</div><div class="l">Voltas</div></div>
+      <div class="stat-sep"></div>
+      <div class="stat"><div class="v num">47</div><div class="l">Stints</div></div>
+    </div>
+
+  </div>
+
+  <!-- Tab bar -->
+  <nav class="tabbar">
+    <a class="tab active" href="#">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1v-9.5Z"/></svg>
+      Home
+    </a>
+    <a class="tab" href="#">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="16" rx="2.5"/><path d="M3.5 10h17M8 2.5V6M16 2.5V6"/></svg>
+      Eventos
+    </a>
+    <a class="tab" href="#">
+      <span class="badge-wrap">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><path d="m3.5 5.5 1 1 2-2M3.5 11.5l1 1 2-2M3.5 17.5l1 1 2-2"/></svg>
+        <span class="badge num">3</span>
+      </span>
+      Pendências
+    </a>
+    <a class="tab" href="#">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 10 12 4l8.5 6V20a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1V10Z"/><path d="M8 21v-7h8v7"/></svg>
+      Garagem
+    </a>
+  </nav>
+  <div class="home-indicator"></div>
+</div>
+
+<footer class="page-footer">
+  <div class="concept">Conceito A — <strong>Dia de Pista</strong> (Home contextual)</div>
+  <ul>
+    <li>A tela responde à pergunta do gestor: "o que importa hoje?" — o próximo evento domina o topo, com prontidão e pendências visíveis antes de você chegar na pista.</li>
+    <li>Ação principal única e óbvia no primeiro toque ("Iniciar Stint"); âmbar sinaliza atenção sem alarme, vermelho fica reservado para crítico.</li>
+    <li>Números históricos (eventos, voltas, stints) viram rodapé discreto: informam sem competir com a decisão do dia.</li>
+  </ul>
+</footer>
+
+</body>
+</html>

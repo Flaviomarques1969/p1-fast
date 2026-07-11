@@ -65,6 +65,9 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 const $ = id => document.getElementById(id);
 function pill(el,t,c){ el.textContent=t; el.className='pill '+c; }
 let call=null, entrou=false, videoRetryMs=3000;
+// Gravação na nuvem (conserto 2026-06-30): o Box é OWNER da sala, então é
+// ele quem INICIA a gravação quando a câmera (Osmo) entra. 'parada'|'iniciando'|'gravando'.
+let recState='parada';
 
 // ── Vídeo (com religação automática) ──
 async function getRoom(){
@@ -85,6 +88,11 @@ async function conectarVideo(){
     call.on('joined-meeting', () => { pill($('vPill'),'vídeo ✓','ok'); videoRetryMs=3000; });
     call.on('left-meeting', videoCaiu);
     call.on('error', videoCaiu);
+    // Eventos da gravação (confirmam o estado real, não confiar no retorno).
+    call.on('recording-started', () => { recState='gravando'; pill($('vPill'),'vídeo ● REC','ok'); console.log('[rec] gravação INICIADA na nuvem'); });
+    call.on('recording-stopped', () => { recState='parada'; console.log('[rec] gravação parada'); });
+    call.on('recording-error',  e => { recState='parada'; console.log('[rec] erro de gravação:', e && (e.errorMsg||e.error||'desconhecido')); });
+    call.on('participant-left', reavaliarGravacao);
     await call.join({ url: room.roomUrl, token: room.tokenBox });
   } catch(e){ videoCaiu(); }
 }
@@ -101,9 +109,37 @@ function attach(){
   for(const id in ps){
     if(id==='local') continue;
     const tr = ps[id].tracks && ps[id].tracks.video && ps[id].tracks.video.persistentTrack;
-    if(tr){ $('remote').srcObject = new MediaStream([tr]); return; }
+    if(tr){ $('remote').srcObject = new MediaStream([tr]); garantirGravacao(); return; }
   }
 }
+
+// ── Gravação na nuvem: o Box (owner) LIGA quando a câmera entra, DESLIGA quando sai ──
+function temVideoRemoto(){
+  if(!call) return false;
+  const ps = call.participants();
+  for(const id in ps){
+    if(id==='local') continue;
+    const v = ps[id].tracks && ps[id].tracks.video;
+    if(v && (v.persistentTrack || v.state==='playable' || v.state==='sendable' || v.state==='loading')) return true;
+  }
+  return false;
+}
+async function garantirGravacao(){
+  if(!call || recState!=='parada' || !temVideoRemoto()) return;
+  recState='iniciando';
+  try {
+    await call.startRecording({ type:'cloud', width:1280, height:720, fps:25 });
+  } catch(e){
+    const m = String(e && (e.errorMsg||e.message||e));
+    if(/already|in.?progress|recording/i.test(m)){ recState='gravando'; }       // já gravando: ok
+    else { recState='parada'; console.log('[rec] falha ao iniciar gravação:', m); }
+  }
+}
+async function reavaliarGravacao(){
+  if(!call || recState!=='gravando') return;
+  if(!temVideoRemoto()){ try { await call.stopRecording(); } catch{} recState='parada'; }
+}
+window.addEventListener('beforeunload', () => { if(call && recState==='gravando'){ try { call.stopRecording(); } catch{} } });
 
 // ── GPS: chega pelo vídeo (principal) e pela nuvem (reserva) ──
 const gpsState = { lastTs:0, lastFonte:null };

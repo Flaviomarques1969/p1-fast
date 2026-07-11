@@ -23,6 +23,7 @@
 import SwiftUI
 import UIKit
 import Daily
+import os
 
 // MARK: - Modelos
 
@@ -70,6 +71,8 @@ private final class TesteAoVivoModel: NSObject, ObservableObject {
 
     private let callClient = CallClient()
     private var iniciou = false
+    private var encerrado = false
+    private let log = Logger(subsystem: "com.flaviomarques.p1fast", category: "teste-aovivo")
 
     /// URL do endpoint que cria/retorna a sala.
     private let roomEndpoint = URL(string: "https://p1tv.vercel.app/api/room")!
@@ -125,8 +128,25 @@ private final class TesteAoVivoModel: NSObject, ObservableObject {
             // Pega quem já estava na sala (notebook pode ter entrado antes).
             atualizarTrackRemoto()
         } catch {
+            // Flávio 11/07 (mesmo tratamento da tela ASSISTIR): erro técnico só no
+            // log; a tela mostra o aviso calmo de "sem transmissão".
             detalheErro = error.localizedDescription
             status = .falhou(error.localizedDescription)
+            log.error("P1TESTEAOVIVO falha ao conectar: \(String(describing: error), privacy: .public)")
+            agendarNovaTentativa()
+        }
+    }
+
+    /// Tenta de novo sozinho a cada 20s, em silêncio — quando o notebook
+    /// transmitir, o vídeo entra sem toque do usuário.
+    private func agendarNovaTentativa() {
+        Task { [weak self] in
+            try? await Task.sleep(nanoseconds: 20_000_000_000)
+            guard let self, !self.encerrado else { return }
+            if case .falhou = self.status {
+                self.iniciou = false
+                self.iniciarSeNecessario()
+            }
         }
     }
 
@@ -143,6 +163,7 @@ private final class TesteAoVivoModel: NSObject, ObservableObject {
     }
 
     func sair() {
+        encerrado = true
         Task { try? await callClient.leave() }
     }
 }
@@ -182,7 +203,9 @@ extension TesteAoVivoModel: CallClientDelegate {
         Task { @MainActor in
             let msg = String(describing: error)
             self.detalheErro = msg
-            self.status = .falhou(msg)
+            self.status = .falhou(error.localizedDescription)
+            self.log.error("P1TESTEAOVIVO erro da sala: \(msg, privacy: .public)")
+            self.agendarNovaTentativa()
         }
     }
 
@@ -265,19 +288,20 @@ struct TesteAoVivoView: View {
                 Text("Conectando ao espelhamento…")
                     .foregroundStyle(.white.opacity(0.7))
                     .font(.system(size: 15, weight: .medium))
-            case .aoVivo:
-                Text("Esperando o vídeo do notebook…")
-                    .foregroundStyle(.white.opacity(0.7))
-                    .font(.system(size: 15, weight: .medium))
-            case .falhou(let msg):
-                Text("Não consegui conectar")
-                    .foregroundStyle(.white)
-                    .font(.system(size: 17, weight: .semibold))
-                Text(msg)
-                    .foregroundStyle(.white.opacity(0.6))
+            default:
+                // Flávio 11/07: sem vídeo (sala vazia OU conexão que falhou) = um
+                // único aviso elegante; erro técnico nunca aparece na tela.
+                Image(systemName: "antenna.radiowaves.left.and.right.slash")
+                    .font(.system(size: 27, weight: .light))
+                    .foregroundStyle(.white.opacity(0.4))
+                Text("Sem transmissão no momento")
+                    .foregroundStyle(.white.opacity(0.9))
+                    .font(.system(size: 16, weight: .semibold))
+                Text("Quando o notebook transmitir, o vídeo aparece aqui sozinho.")
+                    .foregroundStyle(.white.opacity(0.5))
                     .font(.system(size: 13))
                     .multilineTextAlignment(.center)
-                    .padding(.horizontal, 24)
+                    .padding(.horizontal, 28)
             }
         }
     }
@@ -305,7 +329,7 @@ struct TesteAoVivoView: View {
             Circle()
                 .fill(statusColor)
                 .frame(width: 9, height: 9)
-            Text(model.status.label.uppercased())
+            Text(statusRotulo)
                 .font(.system(size: 12, weight: .bold, design: .monospaced))
                 .foregroundStyle(.white)
         }
@@ -314,11 +338,21 @@ struct TesteAoVivoView: View {
         .background(Capsule().fill(Color.black.opacity(0.55)))
     }
 
+    /// Selo (Flávio 11/07): "AO VIVO" verde só com vídeo chegando de verdade;
+    /// sem vídeo = "SEM TRANSMISSÃO" neutro (vermelho fica pro crítico).
+    private var statusRotulo: String {
+        if model.remoteTrack != nil { return "AO VIVO" }
+        switch model.status {
+        case .conectando: return "CONECTANDO…"
+        default: return "SEM TRANSMISSÃO"
+        }
+    }
+
     private var statusColor: Color {
+        if model.remoteTrack != nil { return .green }
         switch model.status {
         case .conectando: return .yellow
-        case .aoVivo: return .green
-        case .falhou: return .red
+        default: return Color(white: 0.6)
         }
     }
 

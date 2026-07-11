@@ -41,15 +41,12 @@ export const TIPOS = {
   ND: { rotulo: 'INDETERMINADO', formato: 'O dado atual não permite afirmar o tipo com segurança — ver ressalvas.' },
 };
 
-const R_TERRA = 6378137, D2R = Math.PI / 180;
+// Constantes de geometria vêm da casa única (geo.js); paraXY usa R_TERRA/D2R abaixo.
+import { distanciaPontos, R_TERRA_M as R_TERRA, D2R } from './geo.js';
+import { kmhParaMs } from './velocidade.js';
 
-// distância em metros entre dois pontos {lat,lng} (equirretangular local — exato o
-// bastante na escala de uma curva; mesmo método do replay e do freio-trecho).
-export function distM(a, b) {
-  const x = (b.lng - a.lng) * D2R * Math.cos(((a.lat + b.lat) / 2) * D2R);
-  const y = (b.lat - a.lat) * D2R;
-  return Math.hypot(x, y) * R_TERRA;
-}
+// distância em metros entre dois pontos {lat,lng} — atalho pra casa única.
+export const distM = distanciaPontos;
 
 // projeta os pontos {lat,lng} para um plano local x,y (metros) relativo ao 1º ponto.
 export function paraXY(pts) {
@@ -97,7 +94,7 @@ export function desacelPicoMs2(pts) {
     if (!Number.isFinite(pts[i].kmh) || !Number.isFinite(pts[i - 1].kmh)) continue;
     const dt = (pts[i].t - pts[i - 1].t) / 1000;
     if (!(dt > 0)) continue;
-    const a = ((pts[i - 1].kmh - pts[i].kmh) / 3.6) / dt;
+    const a = kmhParaMs(pts[i - 1].kmh - pts[i].kmh) / dt;
     if (a > pico) pico = a;
   }
   return pico;
@@ -177,7 +174,7 @@ export function classificarTrecho({ geo, pts, distProximaM = null, limiares = LI
   // g lateral no Vmin (Vmin²/R_min) — só se o raio for plausível; senão o raio a 1 Hz mente.
   let gLateral = null, rminPlausivel = geom.rminM, raioMotivo = null;
   if (Number.isFinite(geom.rminM) && geom.rminM > 0) {
-    const g = Math.pow(v.vmin / 3.6, 2) / geom.rminM / 9.81;
+    const g = Math.pow(kmhParaMs(v.vmin), 2) / geom.rminM / 9.81;
     if (g <= L.gLateralMaxPlausivel) gLateral = g; else { rminPlausivel = null; raioMotivo = 'implausivel'; }
   }
   // recorte quase reto: o "raio" mínimo não representa uma curva (ângulo varrido pequeno)

@@ -20,6 +20,7 @@
 import SwiftUI
 import UIKit
 import Daily
+import os
 
 // MARK: - Modelos
 
@@ -52,17 +53,29 @@ private struct LiveMsg: Decodable {
     let trecho: String?
     let deltaS: Double?
     let sim: Bool?
+
+    /// Construtor enxuto usado SÓ pelo modo de demonstração (posição + velocidade
+    /// vindas da volta gravada). Decodificação da sala segue pelo init sintetizado.
+    init(spd: Double? = nil, lat: Double? = nil, lon: Double? = nil) {
+        self.t = "gps"; self.spd = spd; self.lat = lat; self.lon = lon
+        self.numSV = nil; self.ver = nil
+        self.rpm = nil; self.kmh = nil; self.agua = nil; self.lam = nil; self.bat = nil
+        self.voltaN = nil; self.voltaS = nil; self.ultimaS = nil; self.melhorS = nil
+        self.trecho = nil; self.deltaS = nil; self.sim = nil
+    }
 }
 
 private enum AssistirStatus: Equatable {
     case conectando
     case aoVivo
+    case demonstracao
     case falhou(String)
 
     var label: String {
         switch self {
         case .conectando: return "conectando…"
         case .aoVivo: return "ao vivo"
+        case .demonstracao: return "demonstração"
         case .falhou: return "falhou"
         }
     }
@@ -82,9 +95,16 @@ private final class AssistirModel: NSObject, ObservableObject {
 
     private let callClient = CallClient()
     private var iniciou = false
+    private var encerrado = false
     private let roomEndpoint = URL(string: "https://p1tv.vercel.app/api/room")!
+    private let log = Logger(subsystem: "com.flaviomarques.p1fast", category: "assistir")
 
-    override init() {
+    /// Demonstração: toca a volta gravada do Bubi em vez de conectar na sala.
+    let demo: Bool
+    private var demoTask: Task<Void, Never>?
+
+    init(demo: Bool = false) {
+        self.demo = demo
         super.init()
         callClient.delegate = self
     }
@@ -92,7 +112,47 @@ private final class AssistirModel: NSObject, ObservableObject {
     func iniciarSeNecessario() {
         guard !iniciou else { return }
         iniciou = true
+        if demo { iniciarDemo(); return }
         Task { await conectar() }
+    }
+
+    /// Modo demonstração: sem sala de vídeo, sem rede. Anda a bolinha pela volta
+    /// REAL gravada (881 amostras) e mostra a velocidade derivada do movimento.
+    /// Uma amostra a cada 50 ms → volta visível e contínua; ao fim, repete.
+    private func iniciarDemo() {
+        status = .demonstracao
+        demoTask = Task { @MainActor in
+            let am = AssistirDemoVolta.amostras
+            guard am.count > 1 else { return }
+            while !Task.isCancelled {
+                for i in am.indices {
+                    if Task.isCancelled { return }
+                    let cur = am[i]
+                    var spd = 0.0
+                    if i > 0 {
+                        let prev = am[i - 1]
+                        let dt = (cur.t - prev.t) / 1000.0
+                        if dt > 0 {
+                            let metros = Self.distanciaMetros(prev.lat, prev.lng, cur.lat, cur.lng)
+                            spd = (metros / dt) * 3.6
+                        }
+                    }
+                    self.gps = LiveMsg(spd: spd, lat: cur.lat, lon: cur.lng)
+                    try? await Task.sleep(nanoseconds: 50_000_000)
+                }
+            }
+        }
+    }
+
+    /// Distância em metros entre dois pontos GPS (haversine).
+    private static func distanciaMetros(_ lat1: Double, _ lng1: Double,
+                                        _ lat2: Double, _ lng2: Double) -> Double {
+        let r = 6_371_000.0
+        let dLat = (lat2 - lat1) * .pi / 180
+        let dLng = (lng2 - lng1) * .pi / 180
+        let a = sin(dLat / 2) * sin(dLat / 2)
+            + cos(lat1 * .pi / 180) * cos(lat2 * .pi / 180) * sin(dLng / 2) * sin(dLng / 2)
+        return r * 2 * atan2(sqrt(a), sqrt(1 - a))
     }
 
     private func conectar() async {
@@ -130,7 +190,24 @@ private final class AssistirModel: NSObject, ObservableObject {
             try? await callClient.setInputsEnabled([.camera: false, .microphone: false])
             atualizarTrackRemoto()
         } catch {
+            // Flávio 11/07: nada de erro técnico na tela do espectador — o detalhe
+            // vai pro log e a tela mostra só o aviso calmo de "sem transmissão".
             status = .falhou(error.localizedDescription)
+            log.error("P1ASSISTIR falha ao conectar: \(String(describing: error), privacy: .public)")
+            agendarNovaTentativa()
+        }
+    }
+
+    /// Sem transmissão não é beco sem saída: tenta de novo sozinho a cada 20s,
+    /// em silêncio — quando houver transmissão, o vídeo entra sem toque do usuário.
+    private func agendarNovaTentativa() {
+        Task { [weak self] in
+            try? await Task.sleep(nanoseconds: 20_000_000_000)
+            guard let self, !self.encerrado else { return }
+            if case .falhou = self.status {
+                self.iniciou = false
+                self.iniciarSeNecessario()
+            }
         }
     }
 
@@ -146,6 +223,9 @@ private final class AssistirModel: NSObject, ObservableObject {
     }
 
     func sair() {
+        demoTask?.cancel()
+        demoTask = nil
+        encerrado = true
         Task { try? await callClient.leave() }
     }
 }
@@ -179,7 +259,9 @@ extension AssistirModel: CallClientDelegate {
 
     nonisolated func callClient(_ callClient: CallClient, error: CallClientError) {
         Task { @MainActor in
-            self.status = .falhou(String(describing: error))
+            self.status = .falhou(error.localizedDescription)
+            self.log.error("P1ASSISTIR erro da sala: \(String(describing: error), privacy: .public)")
+            self.agendarNovaTentativa()
         }
     }
 
@@ -221,7 +303,15 @@ private struct AssistirVideoView: UIViewRepresentable {
 
 struct AssistirView: View {
     var onClose: (() -> Void)? = nil
-    @StateObject private var model = AssistirModel()
+    /// Demonstração com a volta gravada (sem carro na pista / sem sala de vídeo).
+    var demo: Bool = false
+    @StateObject private var model: AssistirModel
+
+    init(onClose: (() -> Void)? = nil, demo: Bool = false) {
+        self.onClose = onClose
+        self.demo = demo
+        _model = StateObject(wrappedValue: AssistirModel(demo: demo))
+    }
 
     var body: some View {
         GeometryReader { geo in
@@ -247,7 +337,12 @@ struct AssistirView: View {
                 // ── MEIO: velocidade + a linha da volta ──
                 VStack(spacing: 12) {
                     linhaVelocidadeEVolta
-                    if ehSimulado {
+                    if model.demo {
+                        Text("DEMONSTRAÇÃO — volta gravada do Bubi (não é o carro ao vivo)")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundStyle(.orange.opacity(0.95))
+                            .frame(maxWidth: .infinity)
+                    } else if ehSimulado {
                         Text("DADOS DO SIMULADOR (não é o carro real)")
                             .font(.system(size: 11, weight: .bold))
                             .foregroundStyle(.yellow.opacity(0.9))
@@ -305,20 +400,33 @@ struct AssistirView: View {
                 Text("Conectando…")
                     .foregroundStyle(.white.opacity(0.7))
                     .font(.system(size: 14, weight: .medium))
-            case .aoVivo:
-                Text("Esperando o vídeo da pista…")
+            case .demonstracao:
+                Text("Demonstração — aqui entra o vídeo da câmera do carro")
                     .foregroundStyle(.white.opacity(0.7))
                     .font(.system(size: 14, weight: .medium))
-            case .falhou(let msg):
-                Text("Não consegui conectar")
-                    .foregroundStyle(.white)
-                    .font(.system(size: 16, weight: .semibold))
-                Text(msg)
-                    .foregroundStyle(.white.opacity(0.6))
-                    .font(.system(size: 12))
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 20)
+            default:
+                // Flávio 11/07: sem transmissão (sala vazia OU conexão que falhou)
+                // = um único aviso elegante. Erro técnico nunca aparece na tela.
+                avisoSemTransmissao
             }
+        }
+    }
+
+    private var avisoSemTransmissao: some View {
+        VStack(spacing: 9) {
+            Image(systemName: "antenna.radiowaves.left.and.right.slash")
+                .font(.system(size: 27, weight: .light))
+                .foregroundStyle(.white.opacity(0.4))
+            Text("Sem transmissão no momento")
+                .foregroundStyle(.white.opacity(0.9))
+                .font(.system(size: 16, weight: .semibold))
+            Text("Quando o carro entrar na pista, o vídeo aparece aqui sozinho.")
+                .foregroundStyle(.white.opacity(0.5))
+                .font(.system(size: 13))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 28)
         }
     }
 
@@ -326,7 +434,7 @@ struct AssistirView: View {
         HStack(spacing: 10) {
             HStack(spacing: 7) {
                 Circle().fill(statusColor).frame(width: 9, height: 9)
-                Text(model.status.label.uppercased())
+                Text(statusRotulo)
                     .font(.system(size: 12, weight: .bold, design: .monospaced))
                     .foregroundStyle(.white)
             }
@@ -348,11 +456,22 @@ struct AssistirView: View {
         }
     }
 
+    /// Selo do topo (Flávio 11/07): "AO VIVO" verde só quando o vídeo realmente
+    /// chega; sem vídeo = "SEM TRANSMISSÃO" neutro (vermelho fica pro crítico).
+    private var statusRotulo: String {
+        if model.remoteTrack != nil { return "AO VIVO" }
+        switch model.status {
+        case .conectando: return "CONECTANDO…"
+        default: return "SEM TRANSMISSÃO"
+        }
+    }
+
     private var statusColor: Color {
+        if model.remoteTrack != nil { return .green }
         switch model.status {
         case .conectando: return .yellow
-        case .aoVivo: return .green
-        case .falhou: return .red
+        case .demonstracao: return .orange
+        default: return Color(white: 0.6)
         }
     }
 

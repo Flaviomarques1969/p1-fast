@@ -104,6 +104,10 @@ export default async function handler(req, res) {
         eject_at_room_exp: true,
         start_audio_off: true,
         start_video_off: false,
+        // Gravação na nuvem HABILITADA (Osmo). Só habilita — quem INICIA a
+        // gravação é o Box (owner) ao detectar a câmera entrar (painel.html).
+        // Sem isto, call.startRecording() falha. (conserto 2026-06-30)
+        enable_recording: 'cloud',
       },
     };
     let room;

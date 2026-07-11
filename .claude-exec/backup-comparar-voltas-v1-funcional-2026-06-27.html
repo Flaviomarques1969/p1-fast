@@ -1,0 +1,496 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Command Box · Comparar voltas — frenagem e aceleração</title>
+<!--
+  Tela de ANÁLISE (Command Box): gráfico horizontal da volta inteira mostrando
+  FRENAGEM e ACELERAÇÃO, com a melhor volta como GHOST de referência, e voltas
+  empilhadas/sobrepostas pra comparar.
+
+  REGRA DURA respeitada:
+   - Tela só EXIBE: não abre conexão própria ao canal e não usa dado de demonstração.
+     Consome a ponte/casa única e a VOLTA REAL gravada.
+   - O número vem do MOTOR de produção: web/cockpit/freio-trecho.js
+     (comDistanciaAcumulada + simularFreioPelaFisica), alimentado por VOLTA REAL gravada.
+   - Frenagem/aceleração hoje = efeito físico medido pelo GPS (rótulo 'simulado-fisica').
+     Vira sensor de pedal/pressão quando instalado, sem mudar a tela.
+  Sem emojis (só traço SVG). Tratamento "você".
+-->
+<style>
+  :root{
+    --bg:#0a0d12; --bg2:#11151c; --linha:#1e2530; --linha2:#2a3340;
+    --tx:#e8edf4; --tx2:#9aa7b8; --tx3:#647288;
+    --acel:#37d67a; --acel-soft:rgba(55,214,122,.16);
+    --freio:#ff5d5d; --freio-soft:rgba(255,93,93,.16);
+    --ghost:#c9a227; --ghost-soft:rgba(201,162,39,.14);
+    --azul:#4aa8ff; --roxo:#a07bff; --laranja:#ff9f43; --ciano:#34d9d2; --rosa:#ff6fb3;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:radial-gradient(1200px 600px at 70% -10%, #131a24 0%, var(--bg) 60%);
+    color:var(--tx); font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased; padding:18px 22px 28px;
+  }
+  .topo{display:flex; align-items:flex-end; justify-content:space-between; gap:18px; margin-bottom:14px}
+  h1{font-size:19px; font-weight:650; margin:0; letter-spacing:.2px}
+  .sub{color:var(--tx2); font-size:12.5px; margin-top:3px}
+  .selos{display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end}
+  .selo{font-size:11px; color:var(--tx2); border:1px solid var(--linha2); border-radius:999px;
+        padding:4px 10px; background:var(--bg2); display:inline-flex; align-items:center; gap:6px; white-space:nowrap}
+  .selo b{color:var(--tx); font-weight:600}
+  .dot{width:7px;height:7px;border-radius:50%}
+  .prov{border-color:rgba(201,162,39,.4); color:var(--ghost)}
+
+  .grade{display:grid; grid-template-columns:1fr 320px; gap:16px; align-items:start}
+  @media (max-width:1100px){ .grade{grid-template-columns:1fr} }
+
+  .card{background:linear-gradient(180deg,var(--bg2),#0d1117); border:1px solid var(--linha);
+        border-radius:14px; padding:14px 16px}
+  .card h2{font-size:13px; font-weight:600; color:var(--tx); margin:0 0 2px; letter-spacing:.3px; text-transform:uppercase}
+  .card h2 .leve{color:var(--tx3); font-weight:500; text-transform:none; letter-spacing:0}
+
+  .barraferr{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:2px 0 12px}
+  .seg{display:inline-flex; background:#0c1118; border:1px solid var(--linha2); border-radius:10px; padding:3px; gap:3px}
+  .seg button{appearance:none; border:0; background:transparent; color:var(--tx2); font:inherit; font-size:12.5px;
+    padding:6px 12px; border-radius:7px; cursor:pointer; display:inline-flex; gap:6px; align-items:center}
+  .seg button.on{background:var(--azul); color:#04101f; font-weight:600}
+  .leg{display:flex; gap:14px; align-items:center; margin-left:auto; color:var(--tx2); font-size:12px}
+  .leg span{display:inline-flex; gap:6px; align-items:center}
+  .swatch{width:14px;height:8px;border-radius:3px}
+
+  .graf{position:relative; width:100%}
+  svg{display:block; width:100%; height:auto; overflow:visible}
+  .axis-tx{fill:var(--tx3); font-size:11px}
+  .zero{stroke:var(--linha2); stroke-width:1}
+  .gridv{stroke:var(--linha); stroke-width:1; stroke-dasharray:3 5}
+  .rotulo-lado{fill:var(--tx3); font-size:11px; letter-spacing:.4px; text-transform:uppercase}
+  .cursor-line{stroke:rgba(255,255,255,.18); stroke-width:1}
+  .lapline{fill:none; stroke-width:2; stroke-linejoin:round; stroke-linecap:round}
+  .ghost-area{stroke:none}
+  .ghost-line{fill:none; stroke:var(--ghost); stroke-width:2; stroke-dasharray:6 4; opacity:.85}
+
+  .empilhado{display:flex; flex-direction:column; gap:10px}
+  .faixa{border:1px solid var(--linha); border-radius:10px; padding:8px 10px; background:#0c1117}
+  .faixa .fh{display:flex; align-items:center; gap:8px; margin-bottom:2px; font-size:12px; color:var(--tx2)}
+  .faixa .fh b{color:var(--tx); font-weight:600}
+  .tempo{margin-left:auto; font-variant-numeric:tabular-nums; color:var(--tx)}
+
+  .lista{display:flex; flex-direction:column; gap:8px; max-height:560px; overflow:auto; padding-right:4px}
+  .volta{display:flex; align-items:center; gap:10px; border:1px solid var(--linha); border-radius:11px;
+         padding:9px 11px; background:#0c1118; cursor:pointer; transition:border-color .12s, background .12s}
+  .volta:hover{border-color:var(--linha2)}
+  .volta.sel{border-color:var(--azul); background:#0e1722}
+  .volta.melhor{border-color:rgba(201,162,39,.55)}
+  .chip{width:12px;height:12px;border-radius:4px; flex:none}
+  .vmeta{display:flex; flex-direction:column; min-width:0}
+  .vmeta .vn{font-weight:600; font-size:13px; display:flex; gap:7px; align-items:center}
+  .vmeta .vt{color:var(--tx2); font-size:12px; font-variant-numeric:tabular-nums}
+  .badge{font-size:10px; font-weight:700; letter-spacing:.4px; color:#04101f; background:var(--ghost);
+         border-radius:5px; padding:1px 6px; text-transform:uppercase}
+  .delta{margin-left:auto; font-size:12px; font-variant-numeric:tabular-nums; text-align:right}
+  .delta.pos{color:var(--freio)} .delta.neg{color:var(--acel)}
+  .spark{flex:none}
+  .olho{flex:none; width:26px;height:26px;border-radius:7px;border:1px solid var(--linha2);
+        display:flex;align-items:center;justify-content:center; color:var(--tx3); background:#0a0e14}
+  .volta.sel .olho{color:var(--azul); border-color:var(--azul)}
+
+  .btn{appearance:none; border:1px solid var(--linha2); background:#0c1118; color:var(--tx); font:inherit;
+       font-size:13px; padding:9px 12px; border-radius:10px; cursor:pointer; display:flex; gap:8px; align-items:center; justify-content:center; width:100%}
+  .btn:hover{border-color:var(--azul)}
+  .btn[disabled]{opacity:.4; cursor:default; border-color:var(--linha)}
+  .btn b{font-weight:600}
+
+  .leitura{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px}
+  .kv{border:1px solid var(--linha); border-radius:9px; padding:7px 10px; background:#0c1117}
+  .kv .k{color:var(--tx3); font-size:11px; text-transform:uppercase; letter-spacing:.3px}
+  .kv .v{font-size:15px; font-weight:650; font-variant-numeric:tabular-nums}
+  .vazio{color:var(--tx2); padding:30px 10px; text-align:center; line-height:1.6}
+  .nota{color:var(--tx3); font-size:11.5px; margin-top:10px; line-height:1.5}
+  svg .ico{stroke:currentColor; stroke-width:1.8; fill:none; stroke-linecap:round; stroke-linejoin:round}
+</style>
+</head>
+<body>
+  <div class="topo">
+    <div>
+      <h1>Comparar voltas — frenagem e aceleração</h1>
+      <div class="sub">A volta inteira numa horizontal. Acima do meio = <b style="color:var(--acel)">acelerando</b>,
+        abaixo = <b style="color:var(--freio)">freando</b>. A melhor volta fica de <b style="color:var(--ghost)">ghost</b> pra comparar.</div>
+    </div>
+    <div class="selos">
+      <span class="selo"><span class="dot" style="background:var(--acel)"></span> Volta <b id="selo-pista">real gravada</b></span>
+      <span class="selo prov" id="selo-fonte"><span class="dot" style="background:var(--ghost)"></span> efeito físico do GPS · provisório</span>
+    </div>
+  </div>
+
+  <div class="grade">
+    <!-- GRÁFICO -->
+    <div class="card">
+      <div class="barraferr">
+        <div class="seg" id="modo">
+          <button data-modo="sobrepor" class="on"><svg width="14" height="14" viewBox="0 0 24 24" class="ico"><path d="M3 17h18M3 12h18M3 7h18"/></svg> Sobrepor</button>
+          <button data-modo="empilhar"><svg width="14" height="14" viewBox="0 0 24 24" class="ico"><rect x="3" y="4" width="18" height="5" rx="1"/><rect x="3" y="14" width="18" height="5" rx="1"/></svg> Empilhar</button>
+        </div>
+        <div class="leg">
+          <span><span class="swatch" style="background:var(--ghost)"></span> melhor (ghost)</span>
+          <span><span class="swatch" style="background:var(--acel)"></span> acelera</span>
+          <span><span class="swatch" style="background:var(--freio)"></span> freia</span>
+        </div>
+      </div>
+      <div class="graf" id="graf"></div>
+      <div class="leitura" id="leitura"></div>
+      <div class="nota" id="nota"></div>
+    </div>
+
+    <!-- VOLTAS -->
+    <div class="card">
+      <h2>Voltas do stint <span class="leve" id="cont-voltas"></span></h2>
+      <div class="sub" style="margin:2px 0 12px">Clique pra mostrar/esconder no gráfico. A mais rápida vira o ghost.</div>
+      <div class="lista" id="lista"></div>
+      <div style="margin-top:12px">
+        <button class="btn" id="add"><svg width="16" height="16" viewBox="0 0 24 24" class="ico"><path d="M12 5v14M5 12h14"/></svg> <b>Adicionar próxima volta</b></button>
+      </div>
+    </div>
+  </div>
+
+<script type="module">
+import { comDistanciaAcumulada, simularFreioPelaFisica } from '/web/cockpit/freio-trecho.js';
+import { distanciaPontos } from '/web/cockpit/geo.js';
+
+const CORES = ['#4aa8ff','#a07bff','#ff9f43','#34d9d2','#ff6fb3','#9acd32','#ff7a7a','#7ad1ff'];
+const N = 220;                 // amostras na grade comum (0..1 da volta)
+const $ = (s)=>document.querySelector(s);
+
+const estado = { voltas:[], visiveis:new Set(), revelados:new Set(), melhorId:null, modo:'sobrepor', hover:null };
+
+// ---------- carregar VOLTA REAL gravada + fatiar volta a volta ----------
+async function carregar(){
+  let mapa, sessao;
+  try{
+    mapa   = await (await fetch('/web/command-box/fixtures/replay-hoje-mapa.json')).json();
+    sessao = await (await fetch('/web/command-box/fixtures/volta-real-gps-23-05.json')).json();
+  }catch(e){ return mostrarVazio('Não consegui carregar a sessão real gravada (fixture do Command Box).'); }
+
+  const marco = mapa && mapa.marco;
+  // sessão de 23/05: amostras [ms, lat, lng] — várias voltas do mesmo stint
+  let pts = (sessao.amostras||[]).map(a=>({ t:a[0], lat:a[1], lng:a[2] }));
+  if(pts.length < 50){ pts = (mapa.pts||[]).map(p=>({ t:p[0], lat:p[1], lng:p[2] })); }
+  if(pts.length < 50) return mostrarVazio('A sessão gravada veio sem pontos suficientes.');
+
+  // corta a sessão volta a volta no cruzamento da linha de chegada (marco)
+  let cortes = marco ? detectarCruzamentos(pts, marco) : [];
+  if(cortes.length < 2 && mapa.cruzamentos) cortes = mapa.cruzamentos.slice();   // fallback
+  // fatiar em voltas COMPLETAS entre cortes consecutivos
+  const cruas = [];
+  for(let i=0;i<cortes.length-1;i++){
+    const a=cortes[i], b=cortes[i+1];
+    const seg = pts.filter(p=>p.t>=a && p.t<=b);
+    const dur = (b-a)/1000;
+    if(seg.length>=30 && dur>40 && dur<360) cruas.push({ seg, durSec:dur });
+  }
+  if(!cruas.length) return mostrarVazio('Não achei voltas completas nesta gravação (sem cruzamento da linha de chegada).');
+
+  estado.voltas = cruas.map((v,i)=>processarVolta(v.seg, v.durSec, i));
+  // melhor = menor tempo
+  estado.melhorId = estado.voltas.reduce((m,v)=> v.durSec<m.durSec?v:m, estado.voltas[0]).id;
+  // a melhor volta (ghost) fica sempre na tela; começa com ela + a 1ª volta, e o resto entra com "adicionar"
+  const inicio = new Set([estado.melhorId, estado.voltas[0].id]);
+  estado.revelados = new Set(inicio);
+  estado.visiveis  = new Set(inicio);
+
+  $('#selo-pista').textContent = 'real gravada · Brasília · Bubi · 23/05';
+  desenharTudo();
+}
+
+// Cada volta: deriva velocidade do GPS -> motor de produção -> frenagem/aceleração por distância
+function processarVolta(seg, durSec, ordem){
+  // velocidade (km/h) derivada da posição+tempo do GPS (casa: geo.distanciaPontos)
+  const comV = seg.map((p,i)=>{
+    let kmh = 0;
+    if(i>0){
+      const dm = distanciaPontos(seg[i-1], p);
+      const dt = (p.t - seg[i-1].t)/1000;
+      if(dt>0) kmh = (dm/dt)*3.6;
+    }
+    return { ...p, kmh };
+  });
+  comV[0].kmh = comV[1] ? comV[1].kmh : 0;
+  // mediana de 3 mata picos isolados de GPS (ex.: salto que vira "318 km/h")
+  const kk = comV.map(p=>p.kmh);
+  for(let i=0;i<comV.length;i++){
+    const tri=[kk[Math.max(0,i-1)], kk[i], kk[Math.min(kk.length-1,i+1)]].sort((a,b)=>a-b);
+    comV[i].kmh = tri[1];
+  }
+  // suavização leve da velocidade (GPS ~1 Hz)
+  for(let k=0;k<2;k++){
+    for(let i=1;i<comV.length-1;i++) comV[i].kmh = (comV[i-1].kmh + comV[i].kmh*2 + comV[i+1].kmh)/4;
+  }
+  const comDist = comDistanciaAcumulada(comV);
+  const { pontos, fonteFreio } = simularFreioPelaFisica(comDist);
+  const distTotal = pontos[pontos.length-1].distM || 1;
+
+  // reamostra na grade comum 0..1 (alinha as voltas pra comparar/ghost)
+  const grade = new Array(N);
+  for(let i=0;i<N;i++){
+    const alvo = (i/(N-1))*distTotal;
+    const p = amostraEm(pontos, alvo);
+    grade[i] = (p.aceleradorPct||0) - (p.freioPct||0);   // assinado: + acelera, - freia
+  }
+  const vmax = Math.max(...pontos.map(p=>p.kmh||0));
+  return {
+    id:'v'+ordem, ordem, durSec, distTotal, fonteFreio,
+    cor: CORES[ordem % CORES.length],
+    serie: grade,                       // [-100..100] por fração da volta
+    vmaxKmh: vmax,
+  };
+}
+
+function amostraEm(pontos, distAlvo){
+  // interpola linear pela distância acumulada
+  let lo=0, hi=pontos.length-1;
+  if(distAlvo<=pontos[0].distM) return pontos[0];
+  if(distAlvo>=pontos[hi].distM) return pontos[hi];
+  for(let i=1;i<pontos.length;i++){
+    if(pontos[i].distM>=distAlvo){ lo=i-1; hi=i; break; }
+  }
+  const a=pontos[lo], b=pontos[hi];
+  const f = (distAlvo-a.distM)/((b.distM-a.distM)||1);
+  return {
+    distM:distAlvo,
+    kmh:(a.kmh||0)+((b.kmh||0)-(a.kmh||0))*f,
+    freioPct:(a.freioPct||0)+((b.freioPct||0)-(a.freioPct||0))*f,
+    aceleradorPct:(a.aceleradorPct||0)+((b.aceleradorPct||0)-(a.aceleradorPct||0))*f,
+  };
+}
+
+// detector simples de cruzamento da linha de chegada (segmento marco.a–marco.b)
+function detectarCruzamentos(pts, marco){
+  const A=marco.a, B=marco.b, cortes=[]; let ultimo=-1e9;
+  for(let i=1;i<pts.length;i++){
+    if(segCruza(pts[i-1],pts[i],A,B) && (pts[i].t-ultimo)>40000){ cortes.push(pts[i].t); ultimo=pts[i].t; }
+  }
+  return cortes;
+}
+function segCruza(p1,p2,a,b){
+  const d=(x1,y1,x2,y2,x3,y3)=>(x3-x1)*(y2-y1)-(y3-y1)*(x2-x1);
+  const d1=d(a.lng,a.lat,b.lng,b.lat,p1.lng,p1.lat);
+  const d2=d(a.lng,a.lat,b.lng,b.lat,p2.lng,p2.lat);
+  const d3=d(p1.lng,p1.lat,p2.lng,p2.lat,a.lng,a.lat);
+  const d4=d(p1.lng,p1.lat,p2.lng,p2.lat,b.lng,b.lat);
+  return ((d1>0)!==(d2>0)) && ((d3>0)!==(d4>0));
+}
+
+// ---------- desenho ----------
+const W=1280, H=360, ML=64, MR=18, MT=18, MB=34;
+const PW=W-ML-MR, PH=H-MT-MB, midY=MT+PH/2;
+const xAt = (f)=> ML + f*PW;                 // f em 0..1
+const yAt = (s)=> midY - (s/100)*(PH/2*0.92); // s em -100..100
+
+function pathDe(serie){
+  let d='';
+  for(let i=0;i<serie.length;i++){
+    const x=xAt(i/(serie.length-1)), y=yAt(serie[i]);
+    d += (i? 'L':'M')+x.toFixed(1)+' '+y.toFixed(1);
+  }
+  return d;
+}
+function areaDe(serie){
+  let d='M'+xAt(0).toFixed(1)+' '+midY.toFixed(1);
+  for(let i=0;i<serie.length;i++) d+='L'+xAt(i/(serie.length-1)).toFixed(1)+' '+yAt(serie[i]).toFixed(1);
+  d+='L'+xAt(1).toFixed(1)+' '+midY.toFixed(1)+'Z';
+  return d;
+}
+
+function fundoSVG(distTotal){
+  let g='';
+  // grade vertical por fração + metros
+  for(let k=0;k<=10;k++){
+    const f=k/10, x=xAt(f);
+    g+=`<line class="gridv" x1="${x}" y1="${MT}" x2="${x}" y2="${MT+PH}"/>`;
+    const m = Math.round((distTotal||0)*f);
+    g+=`<text class="axis-tx" x="${x}" y="${H-12}" text-anchor="middle">${k===0?'início':k===10?'fim':m+'m'}</text>`;
+  }
+  g+=`<line class="zero" x1="${ML}" y1="${midY}" x2="${ML+PW}" y2="${midY}"/>`;
+  g+=`<text class="rotulo-lado" x="6" y="${MT+12}">acelera</text>`;
+  g+=`<text class="rotulo-lado" x="6" y="${MT+PH}">freia</text>`;
+  g+=`<text class="axis-tx" x="${ML-10}" y="${midY+4}" text-anchor="end">0</text>`;
+  return g;
+}
+
+function desenharTudo(){
+  if(!estado.voltas.length) return;
+  estado.modo==='empilhar' ? desenharEmpilhado() : desenharSobreposto();
+  desenharLista();
+  desenharLeitura();
+  $('#cont-voltas').textContent = `· ${estado.revelados.size} de ${estado.voltas.length}`;
+  $('#add').disabled = estado.revelados.size >= estado.voltas.length;
+  const fonte = estado.voltas[0]?.fonteFreio;
+  $('#nota').innerHTML = `Eixo de baixo = a volta do começo ao fim (distância). A intensidade é o efeito físico real medido pelo GPS `+
+    `(<b>${fonte||'simulado-fisica'}</b>): quando o sensor de pedal/pressão entrar na T4000, o mesmo gráfico passa a mostrar a pressão real, sem mudar a tela.`;
+}
+
+function ghost(){ return estado.voltas.find(v=>v.id===estado.melhorId); }
+
+function desenharSobreposto(){
+  const g=ghost();
+  const sel = estado.voltas.filter(v=> estado.visiveis.has(v.id) && v.id!==g.id && estado.revelados.has(v.id));
+  let s=`<svg viewBox="0 0 ${W} ${H}" id="svgmain">`;
+  s+=fundoSVG(g.distTotal);
+  // ghost (melhor): área suave + linha tracejada dourada
+  s+=`<path class="ghost-area" d="${areaDe(g.serie)}" fill="url(#gg)"/>`;
+  s+=`<path class="ghost-line" d="${pathDe(g.serie)}"/>`;
+  // demais voltas selecionadas
+  for(const v of sel) s+=`<path class="lapline" stroke="${v.cor}" d="${pathDe(v.serie)}"/>`;
+  // cursor
+  if(estado.hover!=null){
+    const x=xAt(estado.hover);
+    s+=`<line class="cursor-line" x1="${x}" y1="${MT}" x2="${x}" y2="${MT+PH}"/>`;
+  }
+  s+=defs();
+  s+=`</svg>`;
+  $('#graf').innerHTML=s;
+  ligarHover($('#svgmain'));
+}
+
+function desenharEmpilhado(){
+  const g=ghost();
+  const vis = estado.voltas.filter(v=> estado.visiveis.has(v.id) && estado.revelados.has(v.id));
+  const h=92, gap=10;
+  let html=`<div class="empilhado">`;
+  for(const v of vis){
+    const isG = v.id===g.id;
+    html+=`<div class="faixa"><div class="fh"><span class="chip" style="background:${isG?'var(--ghost)':v.cor}"></span>`+
+      `<b>Volta ${v.ordem+1}</b>${isG?' <span class="badge">melhor</span>':''}<span class="tempo">${fmtT(v.durSec)}</span></div>`+
+      `<svg viewBox="0 0 ${W} ${h}" preserveAspectRatio="none" style="height:${h*0.42}px">`+
+        faixaFundo(h)+
+        // ghost de referência em cada faixa (pra comparar cada volta com a melhor)
+        (isG?'':`<path fill="none" stroke="var(--ghost)" stroke-width="1.5" stroke-dasharray="5 4" opacity=".7" d="${pathDeH(g.serie,h)}"/>`)+
+        `<path fill="none" stroke="${isG?'var(--ghost)':v.cor}" stroke-width="2" d="${pathDeH(v.serie,h)}"/>`+
+      `</svg></div>`;
+  }
+  html+=`</div>`;
+  $('#graf').innerHTML=html;
+}
+function faixaFundo(h){
+  return `<line x1="${ML}" y1="${h/2}" x2="${W-MR}" y2="${h/2}" class="zero"/>`+
+         `<text class="rotulo-lado" x="6" y="14">acel</text><text class="rotulo-lado" x="6" y="${h-6}">freia</text>`;
+}
+function pathDeH(serie,h){
+  const mid=h/2; let d='';
+  for(let i=0;i<serie.length;i++){
+    const x=ML+(i/(serie.length-1))*(W-ML-MR);
+    const y=mid-(serie[i]/100)*(mid*0.82);
+    d+=(i?'L':'M')+x.toFixed(1)+' '+y.toFixed(1);
+  }
+  return d;
+}
+function defs(){
+  return `<defs><linearGradient id="gg" x1="0" y1="0" x2="0" y2="1">`+
+    `<stop offset="0%" stop-color="var(--ghost)" stop-opacity=".22"/>`+
+    `<stop offset="50%" stop-color="var(--ghost)" stop-opacity=".05"/>`+
+    `<stop offset="100%" stop-color="var(--ghost)" stop-opacity=".22"/></linearGradient></defs>`;
+}
+
+function ligarHover(svg){
+  if(!svg) return;
+  svg.style.cursor='crosshair';
+  svg.addEventListener('mousemove',(e)=>{
+    const r=svg.getBoundingClientRect();
+    const f=((e.clientX-r.left)/r.width*W - ML)/PW;
+    estado.hover=Math.max(0,Math.min(1,f)); desenharSobreposto(); desenharLeitura();
+  });
+  svg.addEventListener('mouseleave',()=>{ estado.hover=null; desenharSobreposto(); desenharLeitura(); });
+}
+
+function desenharLeitura(){
+  const g=ghost(); if(!g) return $('#leitura').innerHTML='';
+  if(estado.hover==null){
+    $('#leitura').innerHTML =
+      kv('Voltas no gráfico', String([...estado.visiveis].filter(id=>estado.revelados.has(id)).length))+
+      kv('Melhor volta', fmtT(g.durSec))+
+      kv('Vel. máx (melhor)', Math.round(g.vmaxKmh)+' km/h')+
+      kv('Ponto do eixo', 'passe o mouse no gráfico');
+    return;
+  }
+  const idx=Math.round(estado.hover*(N-1));
+  const sG=g.serie[idx];
+  const linhas = estado.voltas.filter(v=>estado.visiveis.has(v.id)&&estado.revelados.has(v.id)&&v.id!==g.id);
+  const v1 = linhas[0];
+  $('#leitura').innerHTML =
+    kv('Posição na volta', Math.round(estado.hover*100)+'%')+
+    kv('Melhor ('+'ghost'+')', rotImg(sG))+
+    (v1? kv('Volta '+(v1.ordem+1), rotImg(v1.serie[idx])) : kv('Compare', 'ligue outra volta'))+
+    (v1? kv('Diferença', rotDelta(v1.serie[idx]-sG)) : kv('','—'));
+}
+function rotImg(s){ return s>=0 ? `<span style="color:var(--acel)">acelera ${Math.round(s)}%</span>` : `<span style="color:var(--freio)">freia ${Math.round(-s)}%</span>`; }
+function rotDelta(d){ const c=d>=0?'var(--acel)':'var(--freio)'; return `<span style="color:${c}">${d>=0?'+':''}${Math.round(d)}</span>`; }
+function kv(k,v){ return `<div class="kv"><div class="k">${k}</div><div class="v">${v}</div></div>`; }
+
+function desenharLista(){
+  const g=ghost();
+  let html='';
+  estado.voltas.forEach(v=>{
+    if(!estado.revelados.has(v.id)) return;
+    const isG=v.id===g.id, sel=estado.visiveis.has(v.id);
+    const dl = v.durSec-g.durSec;
+    html+=`<div class="volta ${sel?'sel':''} ${isG?'melhor':''}" data-id="${v.id}">`+
+      `<span class="chip" style="background:${isG?'var(--ghost)':v.cor}"></span>`+
+      `<div class="vmeta"><div class="vn">Volta ${v.ordem+1}${isG?' <span class="badge">melhor · ghost</span>':''}</div>`+
+        `<div class="vt">${fmtT(v.durSec)} · ${Math.round(v.vmaxKmh)} km/h máx</div></div>`+
+      sparkSVG(v, isG)+
+      (isG?`<span class="delta">—</span>`:`<span class="delta ${dl>=0?'pos':'neg'}">${dl>=0?'+':''}${dl.toFixed(1)}s</span>`)+
+      `<span class="olho">${sel?olhoAberto:olhoFechado}</span>`+
+    `</div>`;
+  });
+  $('#lista').innerHTML=html;
+  $('#lista').querySelectorAll('.volta').forEach(el=>{
+    el.addEventListener('click',()=>{
+      const id=el.dataset.id;
+      if(id===estado.melhorId) return;             // ghost fica sempre
+      estado.visiveis.has(id)?estado.visiveis.delete(id):estado.visiveis.add(id);
+      desenharTudo();
+    });
+  });
+}
+function sparkSVG(v,isG){
+  const w=64,h=26,mid=h/2; let d='';
+  for(let i=0;i<v.serie.length;i+=4){
+    const x=(i/(v.serie.length-1))*w, y=mid-(v.serie[i]/100)*(mid*0.85);
+    d+=(d?'L':'M')+x.toFixed(1)+' '+y.toFixed(1);
+  }
+  return `<svg class="spark" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">`+
+    `<line x1="0" y1="${mid}" x2="${w}" y2="${mid}" stroke="var(--linha2)" stroke-width="1"/>`+
+    `<path d="${d}" fill="none" stroke="${isG?'var(--ghost)':v.cor}" stroke-width="1.5"/></svg>`;
+}
+const olhoAberto=`<svg width="15" height="15" viewBox="0 0 24 24" class="ico"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>`;
+const olhoFechado=`<svg width="15" height="15" viewBox="0 0 24 24" class="ico"><path d="M3 3l18 18M10.6 10.6a3 3 0 004.2 4.2M9.9 5.1A9.8 9.8 0 0112 5c6.5 0 10 7 10 7a16 16 0 01-3 3.6M6.1 6.6A16 16 0 002 12s3.5 7 10 7a9.8 9.8 0 002.1-.2"/></svg>`;
+
+function fmtT(s){ const m=Math.floor(s/60), r=(s-m*60); return `${m}:${r.toFixed(1).padStart(4,'0')}`; }
+
+function mostrarVazio(msg){
+  $('#graf').innerHTML=`<div class="vazio">${msg}<br><span style="color:var(--tx3)">Sem dado real, a tela não inventa volta.</span></div>`;
+  $('#lista').innerHTML=''; $('#add').disabled=true;
+}
+
+// modo sobrepor/empilhar
+$('#modo').addEventListener('click',(e)=>{
+  const b=e.target.closest('button'); if(!b) return;
+  estado.modo=b.dataset.modo;
+  $('#modo').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));
+  desenharTudo();
+});
+// adicionar próxima volta (revela uma a uma)
+$('#add').addEventListener('click',()=>{
+  const prox=estado.voltas.find(v=>!estado.revelados.has(v.id));
+  if(!prox) return;
+  estado.revelados.add(prox.id);
+  estado.visiveis.add(prox.id);
+  desenharTudo();
+});
+
+carregar();
+</script>
+</body>
+</html>

@@ -303,6 +303,13 @@ struct LoginView: View {
                 .font(.system(size: 11, weight: .regular))
                 .foregroundStyle(Color.textFaint)
         }
+        .task {
+            // Bancada de testes (11/07): --p1-login-dev aperta este botão sozinho,
+            // pra validação automatizada de telas logadas no simulador. Só Debug.
+            if ProcessInfo.processInfo.arguments.contains("--p1-login-dev"), !session.isWorking {
+                devBypassTap()
+            }
+        }
     }
 
     private func devBypassTap() {

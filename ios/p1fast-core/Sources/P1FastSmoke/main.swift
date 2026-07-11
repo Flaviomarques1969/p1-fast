@@ -3639,7 +3639,7 @@ func makeTestDB() throws -> DatabaseQueue {
     return q
 }
 
-step("PERSIST-01: makeMemoryQueue + migrations v1..v35 cria 41 tabelas") {
+step("PERSIST-01: makeMemoryQueue + migrations v1..v38 cria 44 tabelas") {
     let q = try DB.makeMemoryQueue()
     let names = try q.read { db in
         try String.fetchAll(db, sql:
@@ -3650,12 +3650,13 @@ step("PERSIST-01: makeMemoryQueue + migrations v1..v35 cria 41 tabelas") {
     // + telemetry_samples_enriched (v7) + video_streams (v15) + volta_video (v16)
     // + pessoas (v17) + pessoa_papeis (v18) + manutencoes (v19) = 31
     // + pecas + pecas_locais + pecas_movimentacoes (v26) = 34
-    try assertEq(names.count, 41, "esperava 41 tabelas (39 anteriores + checklist_item + checklist_tique)")
+    // + ... + equipe_membros (v36) + stint_check (v37) + dia_check (v38) = 44
+    try assertEq(names.count, 44, "esperava 44 tabelas (+ equipe_membros + stint_check + dia_check)")
     for expected in ["times", "carros", "configuracoes", "sessoes", "voltas",
                      "marcos", "retas_especiais", "telemetry_samples",
                      "telemetry_samples_enriched", "sync_queue", "sync_meta",
                      "video_streams", "volta_video", "pessoas", "pessoa_papeis",
-                     "checklist_item", "checklist_tique"] {
+                     "checklist_item", "checklist_tique", "equipe_membros", "stint_check", "dia_check"] {
         try assertTrue(names.contains(expected), "tabela \(expected) ausente")
     }
 }
@@ -8350,6 +8351,192 @@ step("CHECKLIST-02: pendentes (obrigatório em cima) + desativar + ticar saem da
         let pendOutro = try ChecklistCatalogo.pendentes(db, timeId: "team-1", eventoId: "ev-2", momento: "saida")
         try assertEq(pendOutro.count, 10, "tique é por evento (ev-2 vê os 10 ativos)")
     }
+}
+
+// ── ProntidaoPendencia (Fase 0 padrão premium) ──────────────
+step("PRONT-01: prontidão real = conferidos ÷ total, arredondado") {
+    try assertEq(ProntidaoPendencia.pct(checados: 0, total: 45),  0,   "nada conferido = 0%")
+    try assertEq(ProntidaoPendencia.pct(checados: 45, total: 45), 100, "tudo conferido = 100%")
+    try assertEq(ProntidaoPendencia.pct(checados: 23, total: 45), 51,  "23/45 = 51% (arredonda)")
+    try assertEq(ProntidaoPendencia.pct(checados: 1,  total: 3),  33,  "1/3 = 33%")
+    try assertEq(ProntidaoPendencia.pct(checados: 2,  total: 3),  67,  "2/3 = 67% (arredonda p/ cima)")
+}
+step("PRONT-02: sem itens (checklist nunca aberto) = 0%, sem dividir por zero") {
+    try assertEq(ProntidaoPendencia.pct(checados: 0, total: 0), 0, "0/0 = 0%")
+    try assertEq(ProntidaoPendencia.pct(checados: 5, total: 0), 0, "total 0 = 0% mesmo com checados")
+}
+step("PRONT-03: trava no intervalo 0…100, nunca estoura") {
+    try assertEq(ProntidaoPendencia.pct(checados: 50, total: 45), 100, "checados > total nunca passa de 100%")
+    try assertEq(ProntidaoPendencia.pct(checados: -3, total: 45), 0,   "negativo nunca fica abaixo de 0%")
+}
+
+// ── Equipe do box (login por PIN) ────────────────────────────
+step("EQUIPE-01: PIN válido = 4 dígitos numéricos") {
+    try assertTrue(PinSeguranca.pinValido("1313"),  "1313 é válido")
+    try assertTrue(PinSeguranca.pinValido("0000"),  "0000 é válido")
+    try assertTrue(!PinSeguranca.pinValido("131"),  "3 dígitos não vale")
+    try assertTrue(!PinSeguranca.pinValido("13133"),"5 dígitos não vale")
+    try assertTrue(!PinSeguranca.pinValido("13a3"), "letra não vale")
+    try assertTrue(!PinSeguranca.pinValido(""),     "vazio não vale")
+}
+step("EQUIPE-02: PIN guardado como HASH (nunca em texto) + confere certo/errado") {
+    let salt = "membro-A"
+    let h = PinSeguranca.hash(pin: "1313", salt: salt)
+    try assertTrue(h != "1313",   "o hash não é o PIN em texto")
+    try assertEq(h.count, 64,     "SHA-256 em hex tem 64 caracteres")
+    try assertTrue(PinSeguranca.confere(pin: "1313", hash: h, salt: salt),  "PIN certo confere")
+    try assertTrue(!PinSeguranca.confere(pin: "0000", hash: h, salt: salt), "PIN errado não confere")
+}
+step("EQUIPE-03: mesmo PIN, pessoas diferentes = hashes diferentes (sal por pessoa)") {
+    let a = PinSeguranca.hash(pin: "1313", salt: "membro-A")
+    let b = PinSeguranca.hash(pin: "1313", salt: "membro-B")
+    try assertTrue(a != b, "sal por pessoa evita hash igual entre membros")
+}
+step("EQUIPE-04: grava e lê um membro da equipe (round-trip no banco)") {
+    let q = try DB.makeMemoryQueue()
+    let timeId = "00000000-0000-0000-0000-0000000000AA"
+    try q.write { db in
+        try db.execute(sql: "INSERT INTO times (id, nome, created_at, updated_at) VALUES (?,?,?,?)",
+                       arguments: [timeId, "Equipe teste", DB.nowMs(), DB.nowMs()])
+        var m = EquipeMembro(timeId: timeId, nome: "Marcos", papel: .mecanico)
+        m.pinHash = PinSeguranca.hash(pin: "4242", salt: m.id)
+        m.pinSetEm = DB.nowMs()
+        try m.insert(db)
+    }
+    let lidos = try q.read { db in try EquipeMembro.fetchAll(db) }
+    try assertEq(lidos.count, 1,                 "1 membro gravado")
+    try assertEq(lidos.first?.nome, "Marcos",    "nome volta certo")
+    try assertEq(lidos.first?.papelEnum, .mecanico, "papel volta certo (enum)")
+    try assertTrue(lidos.first?.temPin == true,  "PIN guardado")
+    try assertTrue(PinSeguranca.confere(pin: "4242", hash: lidos.first!.pinHash!, salt: lidos.first!.id),
+                   "PIN confere depois de ler do banco")
+}
+
+// ── Distribuição do checklist do stint por papel ─────────────
+step("DIST-01: catálogo final = 17 pré + 8 pós (25 itens)") {
+    let pre = CatalogoChecklistStint.padrao.filter { $0.momento == .pre }
+    let pos = CatalogoChecklistStint.padrao.filter { $0.momento == .pos }
+    try assertEq(pre.count, 17, "17 itens pré-stint")
+    try assertEq(pos.count, 8,  "8 itens pós-stint")
+}
+step("DIST-02: chefe de equipe pega TODOS (está em todo faz)") {
+    // sem carona: 16 pré ativos (o condicional fica de fora)
+    try assertEq(DistribuicaoStint.itensDaPessoa(papel: .chefeEquipe, momento: .pre).count, 16, "chefe pré sem carona = todos os 16")
+    try assertEq(DistribuicaoStint.itensDaPessoa(papel: .chefeEquipe, momento: .pre, temCarona: true).count, 17, "com carona = 17")
+    try assertEq(DistribuicaoStint.itensDaPessoa(papel: .chefeEquipe, momento: .pos).count, 8, "chefe pós = todos os 8")
+}
+step("DIST-03: visitante (convidado) NÃO recebe item") {
+    try assertEq(DistribuicaoStint.itensDaPessoa(papel: .convidado, momento: .pre).count, 0, "visitante pré = 0")
+    try assertEq(DistribuicaoStint.itensDaPessoa(papel: .convidado, momento: .pos).count, 0, "visitante pós = 0")
+}
+step("DIST-04: distribuição por papel no pré (números reais da lista do Flávio)") {
+    try assertEq(DistribuicaoStint.itensDaPessoa(papel: .piloto,     momento: .pre).count, 13, "piloto pré = 13")
+    try assertEq(DistribuicaoStint.itensDaPessoa(papel: .mecanico,   momento: .pre).count, 8,  "mecânico pré = 8")
+    try assertEq(DistribuicaoStint.itensDaPessoa(papel: .engenheiro, momento: .pre).count, 9,  "engenheiro pré = 9")
+}
+step("DIST-05: 'se tiver carona' soma 1 item pra piloto/mecânico/engenheiro/chefe") {
+    try assertEq(DistribuicaoStint.itensDaPessoa(papel: .piloto,     momento: .pre, temCarona: true).count, 14, "piloto +carona = 14")
+    try assertEq(DistribuicaoStint.itensDaPessoa(papel: .mecanico,   momento: .pre, temCarona: true).count, 9,  "mecânico +carona = 9")
+    try assertEq(DistribuicaoStint.itensDaPessoa(papel: .engenheiro, momento: .pre, temCarona: true).count, 10, "engenheiro +carona = 10")
+    // visitante segue 0 mesmo com carona
+    try assertEq(DistribuicaoStint.itensDaPessoa(papel: .convidado,  momento: .pre, temCarona: true).count, 0,  "visitante +carona = 0")
+}
+step("DIST-06: resumo por papel (pré, sem carona) bate com o esperado") {
+    let r = DistribuicaoStint.resumoPorPapel(momento: .pre)
+    let dic = Dictionary(uniqueKeysWithValues: r.map { ($0.papel, $0.qtd) })
+    try assertEq(dic[.piloto],     13, "piloto 13")
+    try assertEq(dic[.mecanico],   8,  "mecânico 8")
+    try assertEq(dic[.engenheiro], 9,  "engenheiro 9")
+    try assertEq(dic[.chefeEquipe],16, "chefe 16")
+    try assertEq(dic[.convidado],  0,  "visitante 0")
+}
+
+// ── Pendência (obrigatório não feito) + marcação gravada ─────
+step("PEND-01: pendências = obrigatórios não marcados (pré, sem carona)") {
+    // pré tem 10 obrigatórios; o condicional (carona) fica de fora sem carona = 9
+    try assertEq(DistribuicaoStint.pendenciasObrigatorias(momento: .pre, marcados: []).count, 9, "nada feito = 9 pendências")
+    try assertEq(DistribuicaoStint.pendenciasObrigatorias(momento: .pre, marcados: []).count, 9, "estável")
+    let dois: Set<String> = ["pre-01", "pre-02"]
+    try assertEq(DistribuicaoStint.pendenciasObrigatorias(momento: .pre, marcados: dois).count, 7, "2 feitos = 7 pendências")
+    try assertEq(DistribuicaoStint.pendenciasObrigatorias(momento: .pre, marcados: [], temCarona: true).count, 10, "com carona = 10 obrigatórios")
+}
+step("PEND-02: desejável NÃO vira pendência (mesmo não feito)") {
+    // marca TODOS os obrigatórios do pré (sem carona) e nenhum desejável
+    let obrigIds = Set(CatalogoChecklistStint.padrao.filter { $0.momento == .pre && $0.obrigatorio && !$0.condicional }.map { $0.id })
+    try assertEq(DistribuicaoStint.pendenciasObrigatorias(momento: .pre, marcados: obrigIds).count, 0, "obrigatórios feitos = 0 pendência (desejável não conta)")
+}
+step("MARCA-01: grava e lê uma marcação do stint (round-trip)") {
+    let q = try DB.makeMemoryQueue()
+    let timeId = "00000000-0000-0000-0000-0000000000AA"
+    try q.write { db in
+        try db.execute(sql: "INSERT INTO times (id, nome, created_at, updated_at) VALUES (?,?,?,?)",
+                       arguments: [timeId, "Equipe teste", DB.nowMs(), DB.nowMs()])
+        let marca = MarcaChecklistStint(timeId: timeId, stintId: "stint-3", itemId: "pre-01",
+                                        feito: true, feitoPor: "membro-X", feitoPapel: "piloto", feitoEm: DB.nowMs())
+        try marca.insert(db)
+    }
+    let lidos = try q.read { db in try MarcaChecklistStint.fetchAll(db) }
+    try assertEq(lidos.count, 1, "1 marca gravada")
+    try assertEq(lidos.first?.itemId, "pre-01", "item volta certo")
+    try assertTrue(lidos.first?.feito == true, "feito = true")
+    try assertEq(lidos.first?.feitoPor, "membro-X", "registra quem fez")
+}
+
+// ── Checklist do DIA do evento (contrato Flávio 24/06) ────────
+step("DIA-DIST-01: catálogo do dia = 20 início + 3 fim (23 itens)") {
+    let ini = CatalogoChecklistDia.padrao.filter { $0.momento == .inicio }
+    let fim = CatalogoChecklistDia.padrao.filter { $0.momento == .fim }
+    try assertEq(ini.count, 20, "início do dia = 20 itens")
+    try assertEq(fim.count, 3, "fim do dia = 3 itens")
+    try assertEq(CatalogoChecklistDia.padrao.count, 23, "total = 23 itens")
+}
+step("DIA-DIST-02: níveis — início 18 obrigatórios + 2 desejáveis; fim 3 obrigatórios") {
+    let iniObr = CatalogoChecklistDia.padrao.filter { $0.momento == .inicio && $0.obrigatorio }.count
+    let iniDes = CatalogoChecklistDia.padrao.filter { $0.momento == .inicio && !$0.obrigatorio }.count
+    let fimObr = CatalogoChecklistDia.padrao.filter { $0.momento == .fim && $0.obrigatorio }.count
+    try assertEq(iniObr, 18, "início = 18 obrigatórios")
+    try assertEq(iniDes, 2,  "início = 2 desejáveis (segurança do box, parafusos suspensão)")
+    try assertEq(fimObr, 3,  "fim = 3 obrigatórios")
+}
+step("DIA-DIST-03: distribuição por papel no INÍCIO (números reais da lista do Flávio)") {
+    try assertEq(DistribuicaoDia.itensDaPessoa(papel: .piloto,     momento: .inicio).count, 7,  "piloto início = 7")
+    try assertEq(DistribuicaoDia.itensDaPessoa(papel: .mecanico,   momento: .inicio).count, 0,  "mecânico início = 0 (Flávio não pôs mecânico no início)")
+    try assertEq(DistribuicaoDia.itensDaPessoa(papel: .engenheiro, momento: .inicio).count, 13, "engenheiro início = 13")
+    try assertEq(DistribuicaoDia.itensDaPessoa(papel: .chefeEquipe, momento: .inicio).count, 20, "chefe início = todos os 20")
+    try assertEq(DistribuicaoDia.itensDaPessoa(papel: .convidado,  momento: .inicio).count, 0,  "visitante início = 0")
+}
+step("DIA-DIST-04: distribuição por papel no FIM (Engenheiro 3, Chefe 3, resto 0)") {
+    try assertEq(DistribuicaoDia.itensDaPessoa(papel: .engenheiro, momento: .fim).count, 3, "engenheiro fim = 3")
+    try assertEq(DistribuicaoDia.itensDaPessoa(papel: .chefeEquipe, momento: .fim).count, 3, "chefe fim = 3")
+    try assertEq(DistribuicaoDia.itensDaPessoa(papel: .piloto,     momento: .fim).count, 0, "piloto fim = 0")
+    try assertEq(DistribuicaoDia.itensDaPessoa(papel: .mecanico,   momento: .fim).count, 0, "mecânico fim = 0")
+}
+step("DIA-PEND-01: pendências = obrigatórios não marcados (início 18, fim 3)") {
+    try assertEq(DistribuicaoDia.pendenciasObrigatorias(momento: .inicio, marcados: []).count, 18, "início nada feito = 18 pendências")
+    try assertEq(DistribuicaoDia.pendenciasObrigatorias(momento: .fim, marcados: []).count, 3, "fim nada feito = 3 pendências")
+    let tres: Set<String> = ["ini-01", "ini-02", "ini-03"]
+    try assertEq(DistribuicaoDia.pendenciasObrigatorias(momento: .inicio, marcados: tres).count, 15, "3 obrigatórios feitos = 15 pendências")
+}
+step("DIA-PEND-02: desejável NÃO vira pendência (mesmo não feito)") {
+    let obrigIni = Set(CatalogoChecklistDia.padrao.filter { $0.momento == .inicio && $0.obrigatorio }.map { $0.id })
+    try assertEq(DistribuicaoDia.pendenciasObrigatorias(momento: .inicio, marcados: obrigIni).count, 0, "obrigatórios feitos = 0 pendência (desejável não conta)")
+}
+step("DIA-MARCA-01: grava e lê uma marcação do dia (round-trip, âncora evento+dia)") {
+    let q = try DB.makeMemoryQueue()
+    let timeId = "00000000-0000-0000-0000-0000000000BB"
+    try q.write { db in
+        try db.execute(sql: "INSERT INTO times (id, nome, created_at, updated_at) VALUES (?,?,?,?)",
+                       arguments: [timeId, "Equipe teste dia", DB.nowMs(), DB.nowMs()])
+        let marca = MarcaChecklistDia(timeId: timeId, eventoId: "evento-7", dia: "2026-06-24", itemId: "ini-01",
+                                      feito: true, feitoPor: "membro-Y", feitoPapel: "chefe_equipe", feitoEm: DB.nowMs())
+        try marca.insert(db)
+    }
+    let lidos = try q.read { db in try MarcaChecklistDia.fetchAll(db) }
+    try assertEq(lidos.count, 1, "1 marca do dia gravada")
+    try assertEq(lidos.first?.itemId, "ini-01", "item volta certo")
+    try assertEq(lidos.first?.dia, "2026-06-24", "dia volta certo")
+    try assertEq(lidos.first?.eventoId, "evento-7", "evento volta certo")
+    try assertTrue(lidos.first?.feito == true, "feito = true")
 }
 
 // ── relatório ────────────────────────────────────────────────

@@ -20,6 +20,7 @@
 //     (evita falso disparo se carro fica em pé sobre a linha).
 
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './supabase-config.js';
+import { sideOfLine, caminhoCruzaLinha } from './geo.js';
 
 const SUPABASE_ANON = SUPABASE_ANON_KEY;
 
@@ -27,27 +28,8 @@ const DEBOUNCE_MS = 5000;
 // Cruzamento só vale se o CAMINHO entre 2 amostras corta a linha DE VERDADE
 // (segmento a–b com folga). Sem isso, o prolongamento infinito da linha corta a
 // pista inteira e fecha "volta" em qualquer canto (achado no replay real, 10/06).
-
-function sideOfLine(p, a, b) {
-  return (b.lng - a.lng) * (p.lat - a.lat) - (b.lat - a.lat) * (p.lng - a.lng);
-}
-
-/** O caminho p0→p1 cruza a LINHA DE VERDADE a–b? (interseção de segmentos
- *  em projeção local; folga de 50% em cada ponta da linha pela largura real). */
-function caminhoCruzaLinha(p0, p1, a, b) {
-  const kLat = 110540;
-  const kLng = 111320 * Math.cos((a.lat * Math.PI) / 180);
-  const X = q => (q.lng - a.lng) * kLng;
-  const Y = q => (q.lat - a.lat) * kLat;
-  const r = { x: X(p1) - X(p0), y: Y(p1) - Y(p0) };
-  const d = { x: X(b), y: Y(b) };
-  const den = r.x * d.y - r.y * d.x;
-  if (Math.abs(den) < 1e-9) return false; // paralelos
-  const qp = { x: -X(p0), y: -Y(p0) };
-  const v = (qp.x * d.y - qp.y * d.x) / den;  // posição ao longo do caminho
-  const u = (qp.x * r.y - qp.y * r.x) / den; // posição ao longo da linha
-  return v >= 0 && v <= 1 && u >= -0.5 && u <= 1.5;
-}
+// A geometria (sideOfLine / caminhoCruzaLinha) mora na casa única src/domain/geo.js —
+// a mesma usada pelo cérebro (chegada-gps.js). Acabou a cópia espelho.
 
 export class ChegadaDetector {
   /**

@@ -54,14 +54,9 @@ export const TRAIL_DEFAULTS = Object.freeze({
 const LS_REACAO = 'p1fast-trail-reacao-v1';
 const AMOSTRAS_FREIO_JANELA_MS = 60000; // buffer rolante das amostras do sensor de freio (A2)
 
-// ── Geometria (mesma régua dos módulos vizinhos) ───────────────
-const R_TERRA = 6378137;
-const D2R = Math.PI / 180;
-function distM(a, b) {
-  const x = (b.lng - a.lng) * D2R * Math.cos(((a.lat + b.lat) / 2) * D2R);
-  const y = (b.lat - a.lat) * D2R;
-  return Math.hypot(x, y) * R_TERRA;
-}
+// ── Geometria (casa única em geo.js) ───────────────
+import { distanciaPontos as distM } from './geo.js';
+import { kmhParaMs } from './velocidade.js';
 function centroLinha(l) { return { lat: (l.a.lat + l.b.lat) / 2, lng: (l.a.lng + l.b.lng) / 2 }; }
 
 // ── Alvo por trecho ────────────────────────────────────────────
@@ -609,7 +604,7 @@ export class TrailCockpitMotor {
       }
     }
     this._gpsAnt = { lat: p.lat, lng: p.lng };
-    if (kmh != null) this._velMsUlt = kmh / 3.6;
+    if (kmh != null) this._velMsUlt = kmhParaMs(kmh);
     if (kmh != null && t != null) {
       this._bufFis.push({ distAccM: this._distAccM, kmh, t });
       while (this._bufFis.length > 5) this._bufFis.shift();
@@ -644,7 +639,7 @@ export class TrailCockpitMotor {
     // previsão do adianto pro desenho da linha tracejada do zero (reação ×
     // velocidade da melhor chegando na freada) — o disparo real usa a vel atual
     const kmhRef = this._alvo?.curva?.find(p => p.distM >= this._alvo.metricas.freadaM)?.kmh;
-    this._adiantoPrevM = this.reacaoS(prox.id) * ((Number.isFinite(kmhRef) ? kmhRef : 100) / 3.6);
+    this._adiantoPrevM = this.reacaoS(prox.id) * kmhParaMs(Number.isFinite(kmhRef) ? kmhRef : 100);
     this._efeito({ tipo: 'aproximacao', segmentId: prox.id, adiantoPrevM: this._adiantoPrevM });
   }
 
@@ -662,7 +657,7 @@ export class TrailCockpitMotor {
     this._distAoPontoM = distAoPonto;
 
     // amostra sem velocidade não zera o adianto: usa a última válida
-    const velMs = kmh != null ? kmh / 3.6 : (this._velMsUlt ?? 0);
+    const velMs = kmh != null ? kmhParaMs(kmh) : (this._velMsUlt ?? 0);
     const adiantoM = this.reacaoS(this._alvoSeg.id) * velMs;
     const distZ = distAoPonto - adiantoM;
     this._nivelLuz = this._pisou ? 0 : nivelLuzFreio(distZ, this.o.thrLuzM);
@@ -767,7 +762,7 @@ export class TrailCockpitMotor {
     const p0 = b[b.length - 3], pc = b[b.length - 2], p1 = b[b.length - 1];
     const ds = p1.distAccM - p0.distAccM;
     if (ds > 0.5) {
-      const v1 = p0.kmh / 3.6, v2 = p1.kmh / 3.6;
+      const v1 = kmhParaMs(p0.kmh), v2 = kmhParaMs(p1.kmh);
       const a = (v2 * v2 - v1 * v1) / (2 * ds);
       const ult = this._aRaw[this._aRaw.length - 1];
       if (!ult || ult.distAccM !== pc.distAccM) {

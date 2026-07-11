@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=956, initial-scale=1">
 <title>P1 Fast — Cockpit do Piloto · SUA VOLTA REAL (Brasília)</title>
 <link rel="stylesheet" href="cockpit.css">
+<link rel="stylesheet" href="coach-card.css"><!-- COACH: cartão do coach (soma por cima; não altera o painel aprovado) -->
 <style>
   body { margin: 0; background: #050a14; }
   .topo {
@@ -161,6 +162,7 @@
   .device[data-ultima="on"] .ultima-volta { display: block; }
   .device[data-ultima="on"] .brake-result { opacity: 0; visibility: hidden; }
 </style>
+<link rel="stylesheet" href="coach-miolo.css"><!-- MIOLO v2 (Flávio 10/07): DEPOIS do estilo interno pra vencer a cascata (achado da auditoria) -->
 </head>
 <body>
 
@@ -284,7 +286,7 @@ const bridge = new LiveDataBridge({
 });
 
 const $ = id => document.getElementById(id);
-const FATOR = 8;
+const FATOR = Number(new URLSearchParams(location.search).get('vel')) || 8;   // andaime: ?vel=1 = tempo REAL (padrão segue 8×, aprovado)
 const RAIO = 40, SAIR = 60;
 
 function metros(a, b) {
@@ -479,10 +481,14 @@ function aplicarGps(p) {
   $('hVel').textContent = Math.round(ultKmh);
   const pos = { lat: p.lat, lng: p.lon };
   atualizarFreio(pos);
+  // MIOLO v2: posição ao vivo pro zoom central (aditivo; a curva é a ativa ou a mais próxima;
+  // t/tEnt/ativa alimentam a bolinha do ghost e o acumulado da volta)
+  device.dispatchEvent(new CustomEvent('coach:gps', { detail: { lat: pos.lat, lng: pos.lng, kmh: ultKmh, t: p.t, ativa: !!curvaAtiva, tEnt: curvaAtiva ? curvaAtiva.tEnt : null, curva: curvaAtiva ? curvaAtiva.c : curvaMaisProxima(pos).best } }));
   if (!curvaAtiva) {
     const { best, bd } = curvaMaisProxima(pos);
     if (best && bd <= RAIO) {
       curvaAtiva = { c: best, tEnt: p.t, vmin: ultKmh, distMin: bd };
+      device.dispatchEvent(new CustomEvent('coach:curva'));   // COACH: entrou em curva → cartão sai (segurança)
       $('hCurva').textContent = best.nome;
       $('hVmin').textContent = '—'; $('hApice').textContent = Math.round(bd) + ' m';
       cockpitState.setApexPonto('entrada', { estado: ApexEstado.OK_MELHOR, valorKmh: Math.round(ultKmh), nomeCurva: best.nome });
@@ -534,7 +540,7 @@ function frame(now) {
   passo(td);
   const seg = Math.floor(td / 1000);
   $('tempo').textContent = String(Math.floor(seg / 60)).padStart(2, '0') + ':' + String(seg % 60).padStart(2, '0');
-  if (iP >= pista.length && iM >= motor.length) { iP = 0; iM = 0; start = now; resetVolta(); }
+  if (iP >= pista.length && iM >= motor.length) { iP = 0; iM = 0; start = now; resetVolta(); device.dispatchEvent(new CustomEvent('coach:volta-fim')); }   // COACH: cruzou a linha → portão fim-de-volta (N2)
   requestAnimationFrame(frame);
 }
 
@@ -561,6 +567,55 @@ function frame(now) {
     requestAnimationFrame(frame);
   }
 })();
+</script>
+
+<!-- ═══ COACH: driver do CARTÃO do coach (soma por cima; andaime de demo como as teclas C/U) ═══
+     Consome o pacote pronto (janela-4 §2) e SÓ EXIBE. O timing/portão é da J1; aqui a demo
+     usa o portão real do replay (fim-de-volta) + a tecla K pra inspecionar os 3 estados. -->
+<script type="module">
+import { montarCoachCard, renderCoach } from './coach-card.js';
+import { montarZoomLive } from './coach-zoom-live.js';   // MIOLO v2: zoom permanente com ghost
+import { COACH_PACOTES_EXEMPLO } from './coach-pacote-exemplo.js';
+
+const device = document.getElementById('device');
+const card = montarCoachCard(device);
+montarZoomLive(device);   // MIOLO v2: o zoom permanente entra no centro
+device.setAttribute('data-coach', 'oculto');
+
+let dwellTimer = null;
+const emCritico = () => device.getAttribute('data-modo') === 'critico' || device.getAttribute('data-alerta-critico') === 'ativo';
+const estadoDe = (p) => p == null ? 'oculto' : (p.tipo === 'silencio' ? 'silencio' : 'oportunidade');
+
+function esconder() { device.setAttribute('data-coach', 'oculto'); if (dwellTimer) { clearTimeout(dwellTimer); dwellTimer = null; } }
+function mostrar(p, dwellMs) {
+  if (emCritico()) return;                    // crítico/GRAVE vence: nem sobe
+  renderCoach(card, p);
+  device.setAttribute('data-coach', estadoDe(p));
+  if (dwellTimer) { clearTimeout(dwellTimer); dwellTimer = null; }
+  if (dwellMs) dwellTimer = setTimeout(esconder, dwellMs);
+}
+
+// PORTÃO REAL do replay: a cada fim-de-volta, a próxima oportunidade em N2, por um dwell.
+const OPORTS = COACH_PACOTES_EXEMPLO.filter(p => p && p.tipo === 'oportunidade');
+let autoIdx = 0;
+device.addEventListener('coach:volta-fim', () => { const p = OPORTS[autoIdx++ % OPORTS.length]; mostrar(p, p.timing?.duracaoMs ?? 4200); });
+device.addEventListener('coach:curva', esconder);   // segurança: em curva o cartão sai
+
+// INSPEÇÃO manual: tecla K cicla TODOS os estados (fica até a próxima tecla/curva/crítico).
+let kIdx = -1;
+window.addEventListener('keydown', (e) => {
+  if (e.key.toLowerCase() !== 'k') return;
+  kIdx = (kIdx + 1) % COACH_PACOTES_EXEMPLO.length;
+  const p = COACH_PACOTES_EXEMPLO[kIdx];
+  mostrar(p, null);
+  console.log('[COACH] estado', kIdx, p == null ? 'null (miolo limpo)' : (p.tipo === 'silencio' ? 'silencio' : p.id + (p.oportunidade?._ilustrativo ? ' (ILUSTRATIVO)' : '')));
+});
+
+// crítico/escandaloso subiu com o cartão no ar → derruba já (a CSS também garante).
+new MutationObserver(() => { if (emCritico()) esconder(); })
+  .observe(device, { attributes: true, attributeFilter: ['data-modo', 'data-alerta-critico'] });
+
+console.log('[COACH] cartão montado. Teclas: K cicla os estados do coach · C crítico (derruba o cartão) · U última volta.');
 </script>
 
 </body>

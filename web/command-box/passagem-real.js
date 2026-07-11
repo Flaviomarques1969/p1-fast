@@ -49,15 +49,8 @@ function fmtSeg(delta) {
   return s + Math.abs(delta).toFixed(2) + 's';
 }
 
-// metros entre dois pontos (lat/lng) — equirretangular, suficiente nesta escala.
-function metros(a, b) {
-  const RAD = Math.PI / 180, Rt = 6371000;
-  const dLat = (b.lat - a.lat) * RAD;
-  const dLng = (b.lng - a.lng) * RAD;
-  const latm = (a.lat + b.lat) / 2 * RAD;
-  const x = dLng * Math.cos(latm);
-  return Math.hypot(dLat, x) * Rt;
-}
+// metros entre dois pontos (lat/lng) — casa única (geo.js).
+import { distanciaPontos as metros } from '../cockpit/geo.js';
 
 // distância acumulada ao longo da passagem até o índice idx (m).
 function distAcumAte(pts, idx) {

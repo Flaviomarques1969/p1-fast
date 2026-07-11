@@ -1,0 +1,48 @@
+REF   : 23/05 v4 — 9.999s (11 pts)
+ATUAL : 24/05 v3 — 10.484s (12 pts)
+gapMedido (relógio) = 0.485 s
+subs ATUAL: entrada,apice,pace,pace,saida,saida,saida,saida,saida,saida,saida,saida
+kmh  ATUAL: 119,119,123,128,131,131,132,136,139,139,141,145
+kmh  REF  : 116,116,124,127,130,130,133,138,142,142,144
+
+=== saída REAL do calcularDelta ===
+{
+  "segmentId": "3a4a6027-55d7-50b8-b338-72c4e556afdd",
+  "deltaTotalS": 0.0251,
+  "porSubTrecho": {
+    "entrada": {
+      "deltaS": 0,
+      "distM": 0,
+      "amostras": 0
+    },
+    "freio": {
+      "deltaS": 0,
+      "distM": 0,
+      "amostras": 0
+    },
+    "apice": {
+      "deltaS": -0.0287,
+      "distM": 35.9355,
+      "amostras": 1
+    },
+    "pace": {
+      "deltaS": 0.0304,
+      "distM": 74.2412,
+      "amostras": 2
+    },
+    "saida": {
+      "deltaS": 0.0234,
+      "distM": 313.163,
+      "amostras": 8
+    }
+  },
+  "piorSubTrecho": "pace",
+  "piorDeltaS": 0.0304
+}
+
+reconciliação (J2 §3.3): deltaTotalIntegrado=0.025 · gapMedido=0.485 · escala=1.000
+ganhoSub[entrada] = 0.000 s (amostras=0)
+ganhoSub[freio] = 0.000 s (amostras=0)
+ganhoSub[apice] = 0.000 s (amostras=1)
+ganhoSub[pace] = 0.030 s (amostras=2)
+ganhoSub[saida] = 0.023 s (amostras=8)

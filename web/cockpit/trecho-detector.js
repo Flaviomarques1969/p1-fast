@@ -34,23 +34,14 @@
 
 // ── Geometria — utilitárias puras (testáveis isoladamente) ──
 
+import { distanciaPontos, M_POR_GRAU_LAT, mPorGrauLng } from './geo.js';
+import { kmhParaMs } from './velocidade.js';
+
 const DEG2RAD = Math.PI / 180;
 const RAD2DEG = 180 / Math.PI;
-const EARTH_R_M = 6_378_137;
 
-/**
- * Distância aproximada em metros entre dois pontos GPS (equirectangular).
- * Boa pra <2 km. Para distâncias maiores, trocar pra haversine.
- */
-export function distMeters(a, b) {
-  const lat1 = a.lat * DEG2RAD;
-  const lat2 = b.lat * DEG2RAD;
-  const dLat = lat2 - lat1;
-  const dLng = (b.lng - a.lng) * DEG2RAD;
-  const x = dLng * Math.cos((lat1 + lat2) / 2);
-  const y = dLat;
-  return Math.sqrt(x * x + y * y) * EARTH_R_M;
-}
+/** Distância em metros entre dois pontos GPS — atalho pra casa única (geo.js). */
+export const distMeters = distanciaPontos;
 
 /**
  * Lado da linha em que o ponto p está, em relação à linha definida pelos
@@ -69,8 +60,8 @@ export function distMeters(a, b) {
 const APICE_DIST_MAX_M = 60;
 
 export function caminhoCruzaLinha(p0, p1, a, b) {
-  const kLat = 110540;
-  const kLng = 111320 * Math.cos((a.lat * Math.PI) / 180);
+  const kLat = M_POR_GRAU_LAT;
+  const kLng = mPorGrauLng(a.lat);
   const X = q => (q.lng - a.lng) * kLng;
   const Y = q => (q.lat - a.lat) * kLat;
   const r = { x: X(p1) - X(p0), y: Y(p1) - Y(p0) };
@@ -245,7 +236,7 @@ export class TrechoDetector {
     // calcula deceleração desde a última amostra (g)
     if (this._last && this._last.t != null) {
       const dt = Math.max(0.001, (t - this._last.t) / 1000);
-      const dv = (kmh - (this._last.kmh || 0)) / 3.6; // m/s
+      const dv = kmhParaMs(kmh - (this._last.kmh || 0)); // m/s
       const a_g = (dv / dt) / 9.80665;
       this._decelWindow.push(a_g);
       if (this._decelWindow.length > FREADA_JANELA) this._decelWindow.shift();

@@ -131,6 +131,7 @@ const CASAS = [
   'web/cockpit/cloud-bridge.js',
   'web/command-box/cerebro/cerebro-painel.js',
   'web/command-box/cerebro/cerebro-vivo.js',
+  'web/command-box/cerebro/cerebro-coach-stint.js', // Coach de IA de stint (segundos) — casa própria, conta nova
   'web/command-box/frenagem-real.js',
   'web/command-box/passagem-real.js',
   'web/command-box/vmin-curvas-reais.js',
@@ -139,6 +140,133 @@ for (const casa of CASAS) {
   const c = await ler(casa);
   t(`casa única existe — ${casa}`, () => { if (c == null) throw new Error('módulo-casa ausente'); });
 }
+
+// ── 6) Conta de DISTÂNCIA/PROJEÇÃO de GPS só pode morar em geo.js ──
+//      Cobrança Flávio 2026-06-23 ("uma conta, uma casa"). A fórmula da distância
+//      entre pontos / projeção lat-lng→metros estava copiada em ~16 arquivos.
+//      Agora a casa é src/domain/geo.js (web/cockpit/geo.js reexporta dela). Esta regra REPROVA qualquer arquivo NOVO
+//      que volte a escrever a fórmula (raio da Terra ou metro-por-grau). O
+//      GEO_BASELINE é a dívida legada conhecida hoje — SÓ PODE ENCOLHER.
+const GEO_HOME = 'src/domain/geo.js';
+const GEO_RE = /\b(6_?378_?137|6_?371_?000|6371e3|110_?540|111_?320|111_?000)\b/;
+const GEO_EXCLUI = new Set([
+  // constante de calibração do DESENHO (K_LNG é valor fixo ajustado), não é a fórmula de distância:
+  'web/cockpit/pista-oficial-brasilia.js',
+  // gêmeo do iPhone do arquivo acima — MESMA calibração do DESENHO (K_LAT=110540), não é a conta de distância:
+  'ios/p1fast-ios/Resources/Cockpit/pista-oficial-brasilia.js',
+  // gerador de dado de teste (graus a partir de metros, o INVERSO da distância) — não é a conta:
+  'src/telemetry/mock-provider.js',
+]);
+const GEO_BASELINE = new Set([
+  // iPhone = cópias do bundle (espelho mecânico do web/cockpit) — migrar na sincronia do app:
+  'ios/p1fast-ios/Resources/Cockpit/apice-calculator.js',
+  'ios/p1fast-ios/Resources/Cockpit/live-data-bridge.js',
+  'ios/p1fast-ios/Resources/Cockpit/trecho-detector.js',
+  // ferramenta de conferência (usa campo {lon}, não {lng}) — migrar com adaptação depois:
+  'src/telemetry/cross-validation.js',
+  // curvatura do ápice — projeção APROVADA e sensível (constante própria calibrada); não mexer sem necessidade:
+  'web/cockpit/apice-calculator.js',
+  // (QUITADOS 23/06, usam src/domain/geo.js: cerebro-velocidade, chegada-gps, trajectory-monitor, projector)
+]);
+
+async function listarJs(dir) {
+  const out = [];
+  let ents = [];
+  try { ents = await readdir(dir, { withFileTypes: true }); } catch { return out; }
+  for (const e of ents) {
+    const p = `${dir}/${e.name}`;
+    if (e.isDirectory()) {
+      if (/node_modules|\.git|_design-reference|\.claude/.test(p)) continue;
+      out.push(...await listarJs(p));
+    } else if (e.name.endsWith('.js') && !/\.smoke\.|\.test\./.test(e.name) && !p.includes('/tests/')) {
+      out.push(p);
+    }
+  }
+  return out;
+}
+
+const jsTodos = [...await listarJs('web'), ...await listarJs('src'), ...await listarJs('ios')];
+for (const f of jsTodos) {
+  if (f === GEO_HOME || GEO_EXCLUI.has(f)) continue;
+  const txt = await ler(f);
+  if (txt == null) continue;
+  if (GEO_RE.test(txt) && !GEO_BASELINE.has(f)) {
+    t(`distância/projeção GPS só em geo.js — ${f}`, () => {
+      throw new Error('fórmula de distância/projeção GPS fora de geo.js — importe de web/cockpit/geo.js (distanciaPontos / M_POR_GRAU_LAT / mPorGrauLng). Ver docs/CONTRATO_DADOS.md');
+    });
+  }
+}
+// baseline-geo pode ENCOLHER: avisa se um legado já não tem mais a fórmula
+for (const f of GEO_BASELINE) {
+  const txt = await ler(f);
+  if (txt != null && !GEO_RE.test(txt)) {
+    console.log('  ↳ aviso: baseline-geo pode ENCOLHER — ' + f + ' já está limpo. Remova de GEO_BASELINE.');
+    avisos++;
+  }
+}
+// a casa única existe e exporta a conta
+const geoTxt = await ler(GEO_HOME);
+t('casa única da distância existe e exporta a conta — src/domain/geo.js', () => {
+  if (geoTxt == null) throw new Error('geo.js ausente');
+  if (!/export function distanciaPontos/.test(geoTxt)) throw new Error('geo.js não exporta distanciaPontos');
+  if (!/export const M_POR_GRAU_LAT/.test(geoTxt)) throw new Error('geo.js não exporta M_POR_GRAU_LAT');
+});
+
+// ── 7) Conversão de VELOCIDADE (m/s ↔ km/h, fator 3,6) só pode morar em velocidade.js ──
+//      "Velocidade numa casa só" (Flávio 24/06). O fator 3,6 estava solto em ~15 arquivos.
+//      Agora a casa é src/domain/velocidade.js (web/cockpit/velocidade.js e o cérebro reexportam).
+//      Esta regra REPROVA qualquer arquivo que multiplique/divida por 3.6 fora da casa.
+//      VEL_BASELINE = dívida do iPhone (espelhos do bundle em JS) — migra na sincronia do app, SÓ ENCOLHE.
+const VEL_HOME = 'src/domain/velocidade.js';
+const VEL_RE = /(\*|\/)\s*3\.6\b/;   // multiplicar/dividir por 3.6 = a conversão de velocidade
+const VEL_BASELINE = new Set([
+  'ios/p1fast-ios/Resources/Cockpit/live-data-bridge.js',
+  'ios/p1fast-ios/Resources/Cockpit/trecho-detector.js',
+]);
+for (const f of jsTodos) {
+  if (f === VEL_HOME) continue;
+  const txt = await ler(f);
+  if (txt == null) continue;
+  if (VEL_RE.test(txt) && !VEL_BASELINE.has(f)) {
+    t(`conversão de velocidade (3.6) só em velocidade.js — ${f}`, () => {
+      throw new Error('multiplicação/divisão por 3.6 (m/s↔km/h) fora de velocidade.js — importe msParaKmh / kmhParaMs de web/cockpit/velocidade.js (ou src/domain/velocidade.js). Ver docs/CONTRATO_DADOS.md');
+    });
+  }
+}
+// baseline-velocidade pode ENCOLHER: avisa se um espelho do iPhone já não tem mais o fator
+for (const f of VEL_BASELINE) {
+  const txt = await ler(f);
+  if (txt != null && !VEL_RE.test(txt)) {
+    console.log('  ↳ aviso: baseline-velocidade pode ENCOLHER — ' + f + ' já está limpo. Remova de VEL_BASELINE.');
+    avisos++;
+  }
+}
+const velTxt = await ler(VEL_HOME);
+t('casa única da velocidade existe e exporta a conta — src/domain/velocidade.js', () => {
+  if (velTxt == null) throw new Error('velocidade.js ausente');
+  if (!/export function msParaKmh/.test(velTxt)) throw new Error('velocidade.js não exporta msParaKmh');
+  if (!/export function kmhParaMs/.test(velTxt)) throw new Error('velocidade.js não exporta kmhParaMs');
+});
+
+// ── 8) Conta de DELTA por trecho (tempo perdido) só pode morar em delta-calculator.js neutro ──
+//      Condição da junta (24/06) + ADR-023 amendment 6: a conta do delta tem de morar na casa
+//      NEUTRA (src/domain) pra o cockpit do piloto (notebook) E o cérebro da nuvem (Command Box)
+//      consumirem a MESMA — sem o cérebro depender da pasta da tela. web/cockpit/delta-calculator.js
+//      reexporta daqui. Esta regra garante que a casa neutra existe e exporta a conta.
+const DELTA_HOME = 'src/domain/delta-calculator.js';
+const deltaTxt = await ler(DELTA_HOME);
+t('casa única do delta por trecho existe e exporta a conta — src/domain/delta-calculator.js', () => {
+  if (deltaTxt == null) throw new Error('delta-calculator.js ausente');
+  if (!/export function calcularDelta/.test(deltaTxt)) throw new Error('delta-calculator.js não exporta calcularDelta');
+});
+// a tela só reexporta (não recria a conta)
+const deltaCockpitTxt = await ler('web/cockpit/delta-calculator.js');
+t('cockpit só reexporta o delta da casa neutra — web/cockpit/delta-calculator.js', () => {
+  if (deltaCockpitTxt == null) throw new Error('web/cockpit/delta-calculator.js ausente');
+  if (!/export \* from '\.\.\/\.\.\/src\/domain\/delta-calculator\.js'/.test(deltaCockpitTxt)) {
+    throw new Error('web/cockpit/delta-calculator.js deve reexportar de src/domain/delta-calculator.js (não recriar a conta)');
+  }
+});
 
 console.log(`\n${ok} ok / ${fail} fail` + (avisos ? ` / ${avisos} aviso(s) de baseline a encolher` : ''));
 process.exit(fail === 0 ? 0 : 1);

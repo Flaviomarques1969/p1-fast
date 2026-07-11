@@ -1,0 +1,11 @@
+{
+  "pergunta_id": "20260627-110638-p1-fast",
+  "pergunta": "A função Vmin do Command Box hoje usa um gráfico de curva. O estudo confirma: para uma velocidade de um ponto, a curva é a forma errada e ainda repete o que FRENAGEM e PASSAGEM já mostram ao lado. Qual forma adotar para o bloco VMIN? (O Vmin da melhor passagem do trecho já é calculado — entra como referência em qualquer opção.)",
+  "escolha": "A — Número herói + melhor do trecho + barrinha fina (sem curva)",
+  "outra_opcao_usada": false,
+  "comentario": "",
+  "respondido_em": "2026-06-27T14:08:06.225Z",
+  "projeto": "p1-fast",
+  "tipo": "ux",
+  "registrado_em": "2026-06-27T11:09:39.650463"
+}

@@ -23,6 +23,7 @@ import {
 } from './cockpit-state.js';
 import { acharApice } from './apice-calculator.js';
 import { bearingDeg, distMeters, apexErrorAngleDeg } from './trecho-detector.js';
+import { msParaKmh } from './velocidade.js';
 
 // ── Limites default (calibrar por carro com Flávio) ──────────
 //
@@ -279,7 +280,7 @@ export class LiveDataBridge {
       this._trechoDetector.ingestGps({
         lat: payload.lat,
         lng: payload.lng,
-        kmh: payload.kmh ?? (payload.speed * 3.6),
+        kmh: payload.kmh ?? msParaKmh(payload.speed),
         t:   payload.tMono ?? payload.t ?? Date.now(),
         headingDeg: payload.course,
       });
@@ -295,7 +296,7 @@ export class LiveDataBridge {
       this._passagemBuffer.push({
         lat: payload.lat,
         lng: payload.lng,
-        kmh: payload.kmh ?? (payload.speed * 3.6),
+        kmh: payload.kmh ?? msParaKmh(payload.speed),
         t:   payload.tMono ?? payload.t ?? Date.now(),
         sub: this._subTrechoAtual(),
       });
@@ -554,14 +555,7 @@ export class LiveDataBridge {
     const dists = [0];
     for (let i = 1; i < buffer.length; i++) {
       const a = buffer[i - 1], b = buffer[i];
-      const DEG2RAD = Math.PI / 180;
-      const EARTH_R_M = 6_378_137;
-      const lat1 = a.lat * DEG2RAD, lat2 = b.lat * DEG2RAD;
-      const dLat = lat2 - lat1;
-      const dLng = (b.lng - a.lng) * DEG2RAD;
-      const x = dLng * Math.cos((lat1 + lat2) / 2);
-      const y = dLat;
-      const d = Math.sqrt(x * x + y * y) * EARTH_R_M;
+      const d = distMeters(a, b); // casa única (geo.js), via trecho-detector
       ds += d;
       dists.push(ds);
     }

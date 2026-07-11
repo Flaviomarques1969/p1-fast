@@ -1,0 +1,11 @@
+{
+  "pergunta_id": "20260625-095259-cb-calculo-sempre-ligado",
+  "pergunta": "Durante a corrida, a conta do Command Box (onde o carro está na pista, voltas, ritmo e combustível) precisa ficar sendo feita o tempo todo, sozinha, sem ninguém ligar na mão. Hoje ela só roda quando eu mando. Onde essa conta deve \"morar\" e ficar ligada o tempo todo?",
+  "escolha": "O notebook do carro manda a conta pronta",
+  "outra_opcao_usada": false,
+  "comentario": "se o notebook travar, já não vai ter o dado mesmo para ser enviado então vamos optar pelo notebook agora os dados que já foram enviados são guardados na nuvem e podem ser processados por exemplo travo o notebook, ai você quer olhar, fazer replay, ver outras fazer uma revisão do que já foi feito e tal, do que já apareceu olhar outro distinto, outras voltas fazer anagis na gameplay ai você usa a nuvem para fazer isso que já está com o dado, ou seja, a nuvem precisa guardar o dado lá",
+  "respondido_em": "2026-06-25T12:56:51.555Z",
+  "projeto": "p1-fast",
+  "tipo": "arquitetura",
+  "registrado_em": "2026-06-25T13:12:31Z"
+}

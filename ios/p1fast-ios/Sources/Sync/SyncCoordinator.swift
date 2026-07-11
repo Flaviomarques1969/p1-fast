@@ -201,6 +201,9 @@ public final class SyncCoordinator: ObservableObject {
         "licoes", "pendencias_template", "evento_pendencias",
         "mensagens", "trofeus_ganhos",
         "estoque_item",
+        // Fase 1 multi-aparelho: equipe + checklist passam a vir da nuvem, pra
+        // todos os celulares verem a mesma equipe e as mesmas marcações.
+        "equipe_membros", "stint_check", "dia_check",
     ]
 
     private func drainSync() async {

@@ -38,6 +38,12 @@ final class StintRepository: ObservableObject {
     /// a cada chamada — é "scoped state" do detalhe de um evento.
     @Published private(set) var stintsPorEvento: [Stint] = []
 
+    /// Stint que está ACONTECENDO AGORA (status='ativa', sem data_fim, não
+    /// cancelado), o mais recente. Alimenta o card "Stint ao vivo" na primeira
+    /// tela (Etapa 1, decisão Flávio 25/06). nil = nenhum stint rodando.
+    /// Recarregado por `carregarStintAtivo()`.
+    @Published private(set) var stintAtivo: Stint?
+
     private let queue: DatabaseQueue
 
     init(queue: DatabaseQueue) {
@@ -183,6 +189,56 @@ final class StintRepository: ObservableObject {
         }
     }
 
+    /// Carrega o stint que está ATIVO agora (status='ativa', sem data_fim e
+    /// não cancelado, o mais recente) e publica em `stintAtivo`. É o que faz o
+    /// card "Stint ao vivo" aparecer sozinho na primeira tela assim que o piloto
+    /// inicia (decisão Flávio 25/06). Sem equipe ou sem ativo → nil. Mesma forma
+    /// de consulta de `loadTodosStints`, com filtro de ativo e LIMIT 1.
+    func carregarStintAtivo() async {
+        guard let teamId = TeamContext.currentTeamId else { stintAtivo = nil; return }
+        let achado: Stint? = (try? await queue.read { db -> Stint? in
+            let sql = """
+                SELECT s.*,
+                       COUNT(v.id)                                AS voltas_count,
+                       MIN(CASE WHEN v.valida = 1 THEN v.tempo_ms END) AS melhor_ms,
+                       p.nome                                     AS piloto_nome
+                FROM sessoes s
+                LEFT JOIN voltas v ON v.sessao_id = s.id
+                LEFT JOIN pilotos p ON p.id = s.piloto_id
+                WHERE s.time_id = ? AND s.status = 'ativa'
+                  AND s.data_fim IS NULL AND s.cancelado_em IS NULL
+                GROUP BY s.id
+                ORDER BY s.data_inicio DESC, s.created_at DESC
+                LIMIT 1
+            """
+            guard let row = try Row.fetchOne(db, sql: sql, arguments: [teamId]) else { return nil }
+            let sessao = Sessao(
+                id: row["id"],
+                timeId: row["time_id"],
+                eventoId: row["evento_id"],
+                carroId: row["carro_id"],
+                pilotoId: row["piloto_id"],
+                configuracaoId: row["configuracao_id"],
+                status: row["status"],
+                dataInicio: row["data_inicio"],
+                dataFim: row["data_fim"],
+                voltasPlanejadas: row["voltas_planejadas"],
+                objetivo: row["objetivo"],
+                canceladoEm: row["cancelado_em"],
+                createdAt: row["created_at"],
+                updatedAt: row["updated_at"],
+                syncedAt: row["synced_at"]
+            )
+            return Stint(
+                sessao: sessao,
+                voltasCount: row["voltas_count"] ?? 0,
+                melhorVoltaMs: row["melhor_ms"],
+                pilotoNome: row["piloto_nome"]
+            )
+        }) ?? nil
+        stintAtivo = achado
+    }
+
     /// Cria um stint (sessao) novo no estado "ativa". Retorna o ID.
     /// `objetivo` no schema canônico SEED_OBJETIVO_TIPOS (Aquecimento,
     /// Ataque, Consistência, Teste, Livre). `licaoFocada` é texto livre
@@ -222,6 +278,8 @@ final class StintRepository: ObservableObject {
             try sessao.insert(db)
             try SyncQueue.enqueueRecord(db, tableName: "sessoes", rowId: stintId, op: .insert, record: sessao)
         }
+        // Acende o card "Stint ao vivo" na primeira tela assim que o piloto inicia.
+        await carregarStintAtivo()
         return stintId
     }
 
@@ -302,6 +360,8 @@ final class StintRepository: ObservableObject {
             try await incrementarCiclos(pneuId: pneuIdMontado, by: voltasGeradas)
         }
 
+        // O stint terminou → apaga o card "Stint ao vivo" da primeira tela.
+        await carregarStintAtivo()
         // Recarrega o stint pra UI receber tudo composto.
         return try await fetchStint(id: stintId)
     }

@@ -20,6 +20,7 @@
 // rastreia se o carro está NO BOX ou NA PISTA, sem reagir a falsos cruzamentos.
 
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './supabase-config.js';
+import { M_POR_GRAU_LAT, mPorGrauLng } from './geo.js';
 
 const DEBOUNCE_MS = 5000;
 // Cruzamento só vale se o CAMINHO entre 2 amostras corta a linha DE VERDADE
@@ -41,8 +42,8 @@ function sideOfLine(p, a, b) {
 /** O caminho p0→p1 cruza a LINHA DE VERDADE a–b? (interseção de segmentos
  *  em projeção local; folga absoluta FOLGA_PONTA_M em cada ponta da linha). */
 function caminhoCruzaLinha(p0, p1, a, b) {
-  const kLat = 110540;
-  const kLng = 111320 * Math.cos((a.lat * Math.PI) / 180);
+  const kLat = M_POR_GRAU_LAT;
+  const kLng = mPorGrauLng(a.lat);
   const X = q => (q.lng - a.lng) * kLng;
   const Y = q => (q.lat - a.lat) * kLat;
   const r = { x: X(p1) - X(p0), y: Y(p1) - Y(p0) };

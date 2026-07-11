@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Proposta C — Essencial Ultra</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background:#26282c;
+    font-family:-apple-system, BlinkMacSystemFont, system-ui, "SF Pro Display", sans-serif;
+    color:#e8eaed;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:48px 24px 64px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .page-title {
+    font-size:13px;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+    color:#9aa0a6;
+    margin-bottom:32px;
+    font-weight:600;
+  }
+
+  /* ===== DEVICE ===== */
+  .device {
+    width:375px;
+    height:812px;
+    background:#0a0b0d;
+    border-radius:40px;
+    border:1px solid rgba(255,255,255,.12);
+    box-shadow:0 30px 80px rgba(0,0,0,.55);
+    overflow:hidden;
+    position:relative;
+    display:flex;
+    flex-direction:column;
+    flex-shrink:0;
+  }
+
+  /* status bar */
+  .statusbar {
+    height:44px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 28px;
+    font-size:13px;
+    font-weight:600;
+    color:#e8eaed;
+    font-variant-numeric:tabular-nums;
+    flex-shrink:0;
+  }
+  .statusbar svg { display:block; }
+
+  /* content */
+  .content {
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    padding:8px 24px 0;
+    overflow:hidden;
+  }
+
+  .eyebrow {
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:.28em;
+    text-transform:uppercase;
+    color:#38bdf8;
+  }
+  .greeting {
+    margin-top:10px;
+    font-size:26px;
+    font-weight:700;
+    letter-spacing:-.02em;
+    color:#f2f4f6;
+    line-height:1.15;
+  }
+  .greeting span { color:#7d848c; font-weight:500; }
+
+  /* ===== HERO CARD ===== */
+  .hero {
+    margin-top:28px;
+    background:linear-gradient(160deg,#14161a 0%,#101216 60%,#0d0f12 100%);
+    border:1px solid rgba(255,255,255,.07);
+    border-radius:24px;
+    padding:26px 24px 22px;
+  }
+  .hero-head {
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+  }
+  .hero-label {
+    font-size:10px;
+    font-weight:700;
+    letter-spacing:.24em;
+    text-transform:uppercase;
+    color:#7d848c;
+  }
+  .hero-event {
+    margin-top:8px;
+    font-size:20px;
+    font-weight:700;
+    letter-spacing:-.01em;
+    color:#f2f4f6;
+  }
+  .hero-when {
+    margin-top:4px;
+    font-size:13px;
+    color:#9aa0a6;
+    font-variant-numeric:tabular-nums;
+  }
+
+  .hero-core {
+    margin-top:22px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+  }
+  .countdown { text-align:left; }
+  .countdown .num {
+    font-size:88px;
+    font-weight:800;
+    letter-spacing:-.05em;
+    line-height:.9;
+    color:#f2f4f6;
+    font-variant-numeric:tabular-nums;
+  }
+  .countdown .unit {
+    margin-top:8px;
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:.32em;
+    text-transform:uppercase;
+    color:#7d848c;
+  }
+
+  .ring-wrap {
+    position:relative;
+    width:108px;
+    height:108px;
+    flex-shrink:0;
+  }
+  .ring-wrap svg { transform:rotate(-90deg); display:block; }
+  .ring-center {
+    position:absolute;
+    inset:0;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+  }
+  .ring-center .pct {
+    font-size:22px;
+    font-weight:700;
+    letter-spacing:-.02em;
+    color:#f5b544;
+    font-variant-numeric:tabular-nums;
+  }
+  .ring-center .cap {
+    font-size:9px;
+    font-weight:700;
+    letter-spacing:.2em;
+    text-transform:uppercase;
+    color:#7d848c;
+    margin-top:2px;
+  }
+
+  .cta {
+    margin-top:24px;
+    width:100%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    background:#38bdf8;
+    color:#06131b;
+    border:none;
+    border-radius:16px;
+    padding:17px 0;
+    font-size:16px;
+    font-weight:700;
+    letter-spacing:-.01em;
+    font-family:inherit;
+    cursor:pointer;
+  }
+  .cta svg { display:block; }
+
+  /* ===== LIST LINES ===== */
+  .lines { margin-top:26px; }
+  .line {
+    display:flex;
+    align-items:center;
+    gap:14px;
+    padding:17px 2px;
+    border-top:1px solid rgba(255,255,255,.07);
+  }
+  .line:last-child { border-bottom:1px solid rgba(255,255,255,.07); }
+  .line .ic { flex-shrink:0; color:#7d848c; display:flex; }
+  .line .txt { flex:1; font-size:15px; color:#cfd3d8; letter-spacing:-.01em; }
+  .line .val {
+    font-size:15px;
+    font-weight:600;
+    color:#f2f4f6;
+    font-variant-numeric:tabular-nums;
+  }
+  .line .val.live { color:#4ade80; font-weight:600; font-size:13px; letter-spacing:.06em; text-transform:uppercase; display:flex; align-items:center; gap:7px; }
+  .live-dot { width:6px; height:6px; border-radius:50%; background:#4ade80; }
+  .line .chev { flex-shrink:0; color:#5d636b; display:flex; }
+
+  /* footer stats */
+  .totals {
+    margin-top:auto;
+    padding:18px 0 16px;
+    text-align:center;
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:#5d636b;
+    font-variant-numeric:tabular-nums;
+  }
+  .totals b { color:#9aa0a6; font-weight:600; }
+
+  /* ===== TAB BAR ===== */
+  .tabbar {
+    flex-shrink:0;
+    display:flex;
+    border-top:1px solid rgba(255,255,255,.07);
+    background:rgba(13,15,18,.98);
+    padding:10px 8px 26px;
+  }
+  .tab {
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:5px;
+    color:#5d636b;
+    text-decoration:none;
+  }
+  .tab.active { color:#38bdf8; }
+  .tab .lbl {
+    font-size:10px;
+    font-weight:600;
+    letter-spacing:.04em;
+  }
+
+  /* ===== RATIONALE FOOTER ===== */
+  .rationale {
+    margin-top:36px;
+    max-width:520px;
+    text-align:left;
+  }
+  .rationale h2 {
+    font-size:13px;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+    color:#cfd3d8;
+    font-weight:700;
+    margin-bottom:12px;
+  }
+  .rationale ul { list-style:none; }
+  .rationale li {
+    font-size:13px;
+    color:#9aa0a6;
+    line-height:1.55;
+    padding-left:16px;
+    position:relative;
+    margin-bottom:8px;
+  }
+  .rationale li::before {
+    content:"";
+    position:absolute;
+    left:0; top:8px;
+    width:6px; height:6px;
+    border-radius:50%;
+    background:#38bdf8;
+  }
+</style>
+</head>
+<body>
+
+<div class="page-title">Proposta C — Essencial Ultra</div>
+
+<div class="device">
+
+  <!-- Status bar -->
+  <div class="statusbar">
+    <span>09:41</span>
+    <span style="display:flex;gap:6px;align-items:center;">
+      <svg width="18" height="12" viewBox="0 0 18 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 8.5v2M5 6.5v4M9 4.5v6M13 2.5v8"/></svg>
+      <svg width="24" height="12" viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1.5" width="19" height="9" rx="2.5"/><path d="M22 4.5v3" stroke-linecap="round"/><rect x="3" y="3.5" width="13" height="5" rx="1" fill="currentColor" stroke="none"/></svg>
+    </span>
+  </div>
+
+  <div class="content">
+
+    <!-- Top -->
+    <div class="eyebrow">P1 Fast</div>
+    <h1 class="greeting">Próximo evento<br><span>em 2 dias</span></h1>
+
+    <!-- Hero card -->
+    <section class="hero">
+      <div class="hero-head">
+        <div>
+          <div class="hero-label">Próximo evento</div>
+          <div class="hero-event">Brasília</div>
+          <div class="hero-when">2 de maio · Sábado 09:00</div>
+        </div>
+      </div>
+
+      <div class="hero-core">
+        <div class="countdown">
+          <div class="num">2</div>
+          <div class="unit">Dias</div>
+        </div>
+
+        <div class="ring-wrap">
+          <svg width="108" height="108" viewBox="0 0 108 108">
+            <circle cx="54" cy="54" r="49" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="3"/>
+            <circle cx="54" cy="54" r="49" fill="none" stroke="#f5b544" stroke-width="3"
+                    stroke-linecap="round"
+                    stroke-dasharray="307.9" stroke-dashoffset="110.8"/>
+          </svg>
+          <div class="ring-center">
+            <div class="pct">64%</div>
+            <div class="cap">Pronto</div>
+          </div>
+        </div>
+      </div>
+
+      <button class="cta">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6"/></svg>
+        Iniciar Stint
+      </button>
+    </section>
+
+    <!-- Thin list lines -->
+    <div class="lines">
+      <div class="line">
+        <span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4.5 13.5H11L9.5 22 19 10h-6.5L13 2z"/></svg></span>
+        <span class="txt">Melhor volta</span>
+        <span class="val">1:42.3</span>
+        <span class="chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>
+      </div>
+      <div class="line">
+        <span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2"/><path d="M7.8 7.8a6 6 0 0 0 0 8.4M16.2 7.8a6 6 0 0 1 0 8.4M4.9 4.9a10 10 0 0 0 0 14.2M19.1 4.9a10 10 0 0 1 0 14.2"/></svg></span>
+        <span class="txt">Ao vivo</span>
+        <span class="val live"><span class="live-dot"></span>Assistir</span>
+        <span class="chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>
+      </div>
+      <div class="line">
+        <span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17h14M6.5 17l1-4.5a2 2 0 0 1 2-1.5h5a2 2 0 0 1 2 1.5l1 4.5M7 17v2M17 17v2M8.5 11l1.2-2.6A1.5 1.5 0 0 1 11 7.5h2a1.5 1.5 0 0 1 1.3.9L15.5 11"/></svg></span>
+        <span class="txt">Garagem</span>
+        <span class="val">2 carros</span>
+        <span class="chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>
+      </div>
+    </div>
+
+    <!-- Totals -->
+    <div class="totals"><b>12</b> eventos · <b>47</b> stints · <b>158</b> voltas</div>
+
+  </div>
+
+  <!-- Tab bar -->
+  <nav class="tabbar">
+    <a class="tab active" href="#">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h5v-6h4v6h5V9.5"/></svg>
+      <span class="lbl">Home</span>
+    </a>
+    <a class="tab" href="#">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+      <span class="lbl">Eventos</span>
+    </a>
+    <a class="tab" href="#">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><path d="m4 5.5 1 1L7 4.5"/><circle cx="5" cy="12" r="1.2"/><circle cx="5" cy="18" r="1.2"/></svg>
+      <span class="lbl">Pendências</span>
+    </a>
+    <a class="tab" href="#">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20V9l9-5 9 5v11"/><path d="M7 20v-7h10v7M7 16.5h10"/></svg>
+      <span class="lbl">Garagem</span>
+    </a>
+  </nav>
+
+</div>
+
+<!-- Rationale -->
+<div class="rationale">
+  <h2>Conceito C — Essencial Ultra</h2>
+  <ul>
+    <li>Uma decisão por tela: o piloto abre o app e em um segundo sabe quando corre, se está pronto e o que fazer — um único botão de ação.</li>
+    <li>Menos elementos, mais percepção de valor: o respiro e a hierarquia forte transmitem produto premium sem custo extra de desenvolvimento.</li>
+    <li>Números secundários viram linha de rodapé: informam sem competir com a decisão principal, reduzindo abandono por poluição visual.</li>
+  </ul>
+</div>
+
+</body>
+</html>

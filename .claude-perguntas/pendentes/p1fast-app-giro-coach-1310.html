@@ -1,0 +1,689 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Decisões — Flávio</title>
+<style>
+  :root{
+    --bg:#0A0D13; --bg2:#0F141C; --panel:#151B26; --panel2:#1B2331;
+    --line:#263042; --line2:#33405a; --tx:#EAF0F8; --mut:#93A2B8; --mut2:#6B7B92;
+    --green:#34D399; --greenD:#0f3d31; --amber:#FBBF24; --amberD:#3d3312;
+    --red:#F87171; --redD:#3d1a1a; --blue:#60A5FA; --violet:#A78BFA;
+    --r:20px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--tx);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;line-height:1.5}
+  body{padding:0 0 150px}
+  .wrap{max-width:900px;margin:0 auto;padding:32px 22px 0}
+
+  .kicker{display:inline-flex;align-items:center;gap:9px;font-size:12.5px;font-weight:700;
+    letter-spacing:.14em;text-transform:uppercase;color:var(--mut);
+    background:var(--panel);border:1px solid var(--line);padding:8px 14px;border-radius:999px}
+  h1{font-size:clamp(28px,4.6vw,44px);line-height:1.1;margin:18px 0 10px;font-weight:800;letter-spacing:-.02em}
+  h1 .hl{color:var(--green)}
+  .sub{font-size:clamp(15px,2vw,19px);color:var(--mut);max-width:760px;margin:0}
+  .origem{display:inline-flex;align-items:center;gap:8px;margin:16px 0 0;font-size:13px;color:var(--green);font-weight:700;
+    border:1px solid var(--greenD);background:#0d1f19;border-radius:999px;padding:7px 14px}
+  .resumo{margin:18px 0 0;color:var(--mut);font-size:14px}
+  .resumo b{color:var(--tx);font-weight:700}
+  .resumo .sep{color:var(--line2);margin:0 9px}
+  .resumo .u-trava{color:var(--red);font-weight:700}
+  .resumo .u-espera{color:var(--amber);font-weight:700}
+  .resumo .u-refino{color:var(--green);font-weight:700}
+
+  .ic{width:24px;height:24px;stroke:currentColor;stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round}
+  .ic-sm{width:18px;height:18px}
+
+  .grid{display:grid;gap:20px;margin-top:26px}
+  .panel{background:linear-gradient(180deg,var(--panel),var(--bg2));border:1px solid var(--line);
+    border-radius:var(--r);padding:24px}
+  .panel.excluido{opacity:.5}
+  .panel.irrev{border-color:#4b2230}
+  .qnav{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--mut2);font-weight:700;margin:0 0 12px}
+  .sec-h{display:flex;align-items:center;gap:14px;margin:0 0 6px}
+  .sec-h .num{flex:0 0 auto;width:40px;height:40px;border-radius:12px;display:grid;place-items:center;
+    font-weight:800;font-size:18px;background:var(--panel2);border:1px solid var(--line);color:var(--green)}
+  .sec-h h2{font-size:22px;margin:0;font-weight:800;letter-spacing:-.01em;flex:1}
+  .urg{font-size:12px;font-weight:700;padding:5px 11px;border-radius:999px;border:1px solid var(--line);white-space:nowrap}
+  .urg.trava{color:var(--red);background:var(--redD);border-color:#5b2b2b}
+  .urg.espera{color:var(--amber);background:var(--amberD);border-color:#5b4a1c}
+  .urg.refino{color:var(--green);background:var(--greenD);border-color:#1f6b55}
+  .lead{font-size:16.5px;color:var(--tx);margin:14px 0 0}
+  .qctx{font-size:15.5px;color:var(--mut);margin:12px 0 0;white-space:pre-wrap}
+
+  .histnote{color:#bff3e0;background:#0d1f19;border:1px solid var(--greenD);border-radius:12px;padding:10px 14px;margin:14px 0 0;font-size:14px}
+  .evid{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin:14px 0 0}
+  .evid .el{font-size:10.5px;text-transform:uppercase;letter-spacing:.14em;color:var(--mut2);margin-bottom:6px;font-weight:700}
+  .evid pre{margin:0;white-space:pre-wrap;font:13px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--mut)}
+  .avisoirrev{color:#ffb4b4;background:linear-gradient(180deg,#1c1013,#140b0d);border:1px solid #4b2230;border-radius:14px;padding:14px 16px;margin:14px 0 0;font-size:14.5px}
+  .avisoirrev b{color:var(--red)}
+
+  /* opções como cartões */
+  .opts{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:18px}
+  @media (max-width:640px){ .opts{grid-template-columns:1fr} }
+  .opt{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:20px;cursor:pointer;transition:border-color .15s,box-shadow .15s,background .15s}
+  .opt:hover{border-color:var(--line2)}
+  .opt.reco{border-color:var(--greenD)}
+  .opt.sel{border-color:var(--green);box-shadow:0 0 0 1px var(--green),0 18px 40px -22px rgba(52,211,153,.5);background:#0e1a17}
+  .opt .ribbon{position:absolute;top:-12px;right:16px;background:var(--green);color:#04160f;font-weight:800;
+    font-size:11.5px;letter-spacing:.05em;padding:5px 11px;border-radius:999px}
+  .opt .tag{display:inline-flex;align-items:center;gap:8px;font-weight:800;font-size:13px;
+    padding:5px 11px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);color:var(--mut)}
+  .opt.sel .tag{background:var(--greenD);border-color:var(--green);color:#bff3e0}
+  .opt h3{font-size:18px;margin:13px 0 6px;font-weight:800;letter-spacing:-.01em}
+  .opt p{margin:0;color:var(--mut);font-size:15px}
+  .opt .porque{margin:9px 0 0;color:#9be9cf;font-size:14px}
+  .opt .selbadge{display:none;margin:11px 0 0;color:var(--green);font-weight:800;font-size:13.5px}
+  .opt.sel .selbadge{display:block}
+  .opt .foot{display:flex;gap:8px;flex-wrap:wrap;margin-top:13px}
+  .chip{font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;border:1px solid var(--line);color:var(--mut)}
+  .chip.ok{background:var(--greenD);border-color:#1f6b55;color:#a7f0d6}
+  .chip.warn{background:var(--amberD);border-color:#6b551f;color:#f6dfa0}
+  .chip.bad{background:var(--redD);border-color:#6b2b2b;color:#f4b4b4}
+  .opt input.rd{position:absolute;opacity:0;pointer-events:none}
+  /* tipo "ordenar" — monte o plano na ordem */
+  .planobox{margin:16px 0 2px;padding:14px 16px;background:#0d1f19;border:1px solid var(--greenD);border-radius:14px}
+  .planobox .plabel{font-size:10.5px;text-transform:uppercase;letter-spacing:.14em;color:#8fd7bf;margin-bottom:8px;font-weight:700}
+  .plano-empty{color:var(--mut);font-size:14px}
+  .plano-row{color:var(--tx);font-weight:700;font-size:15.5px;padding:3px 0}
+  .opt.ordenavel{padding-top:22px}
+  .opt .planbadge{position:absolute;top:-13px;left:16px;min-width:30px;height:27px;padding:0 9px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;background:var(--panel2);border:1px solid var(--line);color:var(--mut)}
+  .opt.plan-sel{border-color:var(--green);box-shadow:0 0 0 1px var(--green);background:#0e1a17}
+  .opt.plan-sel .planbadge{background:var(--green);color:#04160f;border-color:var(--green)}
+
+  .cmpbtn{margin:16px 0 0;background:none;border:1px solid var(--line);color:var(--green);font-size:13.5px;font-weight:700;cursor:pointer;padding:9px 14px;border-radius:10px}
+  .cmptable{width:100%;border-collapse:collapse;margin:14px 0 0;font-size:13.5px;display:none}
+  .cmptable th,.cmptable td{border-bottom:1px solid var(--line);padding:9px 11px;text-align:left}
+  .cmptable th{color:var(--mut2);font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:700}
+  .cmptable td.rec{color:var(--green);font-weight:700}
+
+  .altbox textarea{width:100%;min-height:46px;background:var(--panel);border:1px solid var(--line);color:var(--tx);
+    border-radius:12px;padding:11px 13px;font-size:14.5px;margin-top:16px;resize:vertical;font-family:inherit}
+  .altbox textarea::placeholder{color:var(--mut2)}
+  .altbox textarea:focus{outline:none;border-color:var(--green)}
+
+  .params{margin-top:18px;padding-top:16px;border-top:1px dashed var(--line2)}
+  .params .plabel{font-size:10.5px;text-transform:uppercase;letter-spacing:.14em;color:var(--mut2);margin-bottom:10px;font-weight:700}
+  .prow{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:11px}
+  .prow .pname{min-width:150px;font-weight:700;font-size:14px}
+  .prow input.pval{flex:1;min-width:150px;background:var(--panel);border:1px solid var(--line);color:var(--tx);border-radius:10px;padding:9px 12px;font-size:14px}
+  .prow input.pval:focus{outline:none;border-color:var(--green)}
+  .prow .pwhy{width:100%;font-size:12.5px;color:var(--mut2);margin-left:2px}
+
+  .statusdec{margin:18px 0 12px;font-size:15px;font-weight:700}
+  .statusdec.st-ok{color:var(--green)} .statusdec.st-alt{color:var(--amber)} .statusdec.st-excl{color:var(--red)}
+  .decis button{background:none;border:1px solid var(--line2);color:var(--mut);border-radius:10px;padding:9px 16px;font-size:13.5px;font-weight:700;cursor:pointer;transition:.15s}
+  .decis button:hover{border-color:var(--red);color:var(--red)}
+  .decis button.on{background:var(--redD);border-color:var(--red);color:var(--red)}
+
+  .confirm{display:flex;align-items:flex-start;gap:9px;margin:14px 0 0;font-size:14.5px;color:#ffb4b4}
+  .confirm input{margin-top:3px;accent-color:var(--red);transform:scale(1.15)}
+
+  .orient{display:block;margin-top:16px}
+  .orient label{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.14em;color:var(--mut2);margin-bottom:8px;font-weight:700}
+  .orient textarea{width:100%;min-height:58px;background:var(--panel);border:1px solid var(--line);color:var(--tx);border-radius:12px;padding:11px 13px;font-size:14.5px;resize:vertical;font-family:inherit}
+  .orient textarea:focus{outline:none;border-color:var(--green)}
+
+  .detbtn{background:none;border:none;color:var(--mut);font-size:13px;font-weight:700;cursor:pointer;padding:12px 0 0}
+  .card.enxuto .evid,.card.enxuto .params,.card.enxuto .cmpbtn,.card.enxuto .cmptable{display:none}
+  /* "Sua vez": bloco sempre visível pra Flávio acrescentar/argumentar/propor o próprio caminho */
+  .suavez{margin-top:20px;padding:16px 18px;background:var(--panel);border:1px dashed var(--line2);border-radius:16px}
+  .suavez .sv-h{display:flex;align-items:center;gap:9px;font-weight:800;font-size:15px;margin-bottom:4px}
+  .suavez .sv-h svg{stroke:var(--green)}
+  .suavez .sv-sub{color:var(--mut);font-size:13.5px;margin:0 0 6px}
+
+  .actionbar{position:fixed;left:0;right:0;bottom:0;background:rgba(10,13,19,.92);border-top:1px solid var(--line);padding:14px 22px;backdrop-filter:saturate(160%) blur(12px)}
+  .actionbar .inner{max-width:900px;margin:0 auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .actionbar button{border:none;border-radius:12px;padding:12px 20px;font-size:14.5px;font-weight:800;cursor:pointer}
+  .btn-all{background:none;color:var(--green);border:1px solid var(--greenD)}
+  .btn-gen{background:var(--green);color:#04160f}
+  .btn-save{background:var(--tx);color:#0b0c0e;display:none}
+  .btn-copy{background:none;color:var(--mut);border:1px solid var(--line2);display:none}
+  .actionbar .hint{color:var(--mut);font-size:13px;flex:1;min-width:180px}
+
+  #saida{max-width:900px;margin:26px auto 0;padding:0 22px;display:none}
+  #saida h2{font-size:11px;text-transform:uppercase;letter-spacing:.16em;color:var(--mut2);font-weight:700}
+  #saidaTxt{width:100%;min-height:280px;background:var(--panel);border:1px solid var(--line);color:var(--mut);border-radius:14px;padding:16px;font:13.5px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre}
+  .footn{max-width:900px;margin:28px auto 0;padding:0 22px;color:var(--mut2);font-size:12.5px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <span class="kicker">
+    <svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M12 3l2.7 5.5 6 .9-4.35 4.2 1 6L12 17.8 6.65 19.6l1-6L3.3 9.4l6-.9z"/></svg>
+    Preciso da sua decisão
+  </span>
+  <h1 id="tituloGeral">Decisões do projeto</h1>
+  <p class="sub" id="subtituloGeral"></p>
+  <div id="origemGeral" class="origem" style="display:none"></div>
+  <div class="resumo" id="resumo"></div>
+
+  <div class="grid" id="topo">
+    <section class="panel" id="ctxPanel">
+      <div class="sec-h">
+        <span class="num"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg></span>
+        <h2>Por que estou te trazendo isto</h2>
+      </div>
+      <p class="lead" id="contextoGeral" style="white-space:pre-wrap"></p>
+    </section>
+  </div>
+
+  <div class="grid" id="cards"></div>
+</div>
+
+<div id="saida">
+  <h2>Resposta gerada</h2>
+  <textarea id="saidaTxt" readonly></textarea>
+</div>
+
+<div class="footn">Feito para você entender e decidir em 2 minutos. Marque, oriente e clique em Concluir — a sessão continua sozinha.</div>
+
+<div class="actionbar">
+  <div class="inner">
+    <button class="btn-all" onclick="aceitarTudo()">Aceitar tudo que eu recomendo</button>
+    <button class="btn-gen" onclick="concluir()">✓ Concluir e enviar</button>
+    <button class="btn-copy" id="btnCopy" onclick="copiar()">Copiar (alternativa)</button>
+    <span class="hint" id="hint">Marque suas escolhas e clique em “✓ Concluir e enviar”. A sessão continua sozinha.</span>
+  </div>
+</div>
+
+<script>
+/* ===== DADOS — o Claude preenche este bloco a cada uso ===== */
+const DADOS = {
+ "titulo": "Coach no celular — o que o giro mostra enquanto não há carro ao vivo?",
+ "subtitulo": "A tela do giro é AO VIVO; o coach que você viu roda no replay",
+ "origem": "p1fast-app-giro-coach-1310",
+ "tempoEstimado": "1 min",
+ "contexto": "Conferi no código do app: girar o celular abre a tela AO VIVO (escuta o canal do carro; sem carro = \"aguardando o carro\") — o replay com o coach existe no pacote do app como arquivo separado, sem botão que o abra. Para o coach falar AO VIVO no celular falta um encanamento (o celular receber o pacote pronto do cérebro da nuvem) — isso é trabalho da próxima fase, registrado. A decisão AGORA: o que o giro mostra enquanto esse encanamento não existe. Mexe no comportamento de uma tela aprovada sua (só no estado sem-carro), por isso a decisão é sua.",
+ "perguntas": [
+  {
+   "id": 1,
+   "titulo": "Enquanto o coach ao vivo não existe, o giro do celular mostra o quê?",
+   "urgencia": "trava",
+   "irreversivel": false,
+   "avisoIrreversivel": "",
+   "historico": "",
+   "dependeDe": null,
+   "evidencia": "cockpit-app.html (a tela do giro) = só AO VIVO, overlay \"aguardando o carro\" sem dado (l.532-561, conferido). cockpit-app-replay.html (replay) existe no pacote mas nenhuma tela o abre (busca no app: 0 referências).",
+   "contexto": "Você pediu: \"girar o celular já mostra o zoom, igual ao navegador\". O que você viu no navegador era o replay da volta real com o coach.",
+   "alternativas": [
+    {
+     "rotulo": "A",
+     "texto": "AO VIVO primeiro; SEM carro transmitindo, entra o replay demonstrativo com o coach (e volta pro vivo assim que chegar dado do carro)",
+     "consequencia": "Girando o celular em casa você VÊ o coach com o zoom hoje mesmo; na pista, com o carro ligado, a tela é ao vivo como sempre. O estado \"aguardando\" (tela parada) vira demonstração viva.",
+     "recomendada": true,
+     "porque": "Atende o que você pediu sem sacrificar o uso real de pista; o \"aguardando\" de hoje é uma tela morta — virar demo é melhor uso do mesmo momento.",
+     "risco": "baixo",
+     "reversivel": true
+    },
+    {
+     "rotulo": "B",
+     "texto": "Manter o giro SÓ ao vivo (fiel ao aprovado); o coach fica nos arquivos, adormecido, até o encanamento da próxima fase",
+     "consequencia": "Nada muda de comportamento; girando o celular hoje você segue vendo \"aguardando o carro\" — o zoom só no navegador do iMac por enquanto.",
+     "risco": "baixo",
+     "reversivel": true
+    },
+    {
+     "rotulo": "C",
+     "texto": "Giro abre o REPLAY com o coach (demonstração) por enquanto",
+     "consequencia": "Você vê o coach já, mas a tela do giro DEIXA de ser ao vivo — na pista mostraria o replay, não o carro. Precisaria trocar de novo depois.",
+     "risco": "médio",
+     "reversivel": true
+    }
+   ]
+  }
+ ]
+};
+/* ========================================================== */
+
+const estado = {};
+const URG = {
+  trava:  {label:"Trava o projeto", cls:"trava"},
+  espera: {label:"Pode esperar",    cls:"espera"},
+  refino: {label:"Só refino",       cls:"refino"}
+};
+
+function el(t,c,txt){const e=document.createElement(t);if(c)e.className=c;if(txt!=null)e.textContent=txt;return e;}
+function escapeHtml(s){return String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+function riscoCls(r){const v=(r||'').toLowerCase();if(v.startsWith('baix'))return'ok';if(v.startsWith('méd')||v.startsWith('med'))return'warn';if(v.startsWith('alt'))return'bad';return'';}
+function temImpacto(a){return a.custo!=null||a.prazo!=null||a.risco!=null||a.reversivel!=null;}
+// Só vale mostrar a comparação quando há DIFERENÇA real entre as opções (custo/prazo/risco/voltar atrás
+// com 2+ valores distintos). Se for tudo igual (ex: custo R$0 em todas), não há o que comparar.
+function valeComparar(alts){
+  const campos=['custo','prazo','risco','reversivel'];
+  return campos.some(c=>{
+    const vals=(alts||[]).map(a=>a[c]).filter(v=>v!=null)
+      .map(v=>(''+v).trim().toLowerCase());
+    return new Set(vals).size>=2;
+  });
+}
+
+function chip(txt,cls){const c=el('span','chip'+(cls?' '+cls:''));c.textContent=txt;return c;}
+function chipsImpacto(a){
+  const box=el('div','foot');
+  if(a.custo!=null) box.appendChild(chip('Custo: '+a.custo));
+  if(a.prazo!=null) box.appendChild(chip('Prazo: '+a.prazo));
+  if(a.risco!=null) box.appendChild(chip('Risco: '+a.risco, riscoCls(a.risco)));
+  if(a.reversivel!=null) box.appendChild(chip(a.reversivel?'Dá pra voltar atrás':'Não dá pra voltar atrás', a.reversivel?'ok':'bad'));
+  return box;
+}
+
+function render(){
+  document.getElementById('tituloGeral').textContent = DADOS.titulo || 'Decisões do projeto';
+  document.getElementById('subtituloGeral').textContent = DADOS.subtitulo || '';
+  const og=document.getElementById('origemGeral');
+  if(DADOS.origem){ og.textContent='📄 Janela: '+DADOS.origem; og.style.display='inline-flex'; try{ document.title = DADOS.origem; }catch(e){} }
+  document.getElementById('contextoGeral').textContent = DADOS.contexto || '';
+  renderResumo();
+  const cont = document.getElementById('cards');
+  // ID ÚNICO por pergunta: se vier id repetido ou vazio, as decisões colidiriam.
+  const _idSeen={};
+  (DADOS.perguntas||[]).forEach((q,i)=>{
+    if(q.id===undefined||q.id===null||_idSeen[q.id]!==undefined) q.id=i+1;
+    if(_idSeen[q.id]!==undefined) q.id='p'+(i+1);
+    _idSeen[q.id]=true;
+  });
+  // PRÉ-INICIALIZAÇÃO: todo estado[q.id] antes de montar qualquer cartão.
+  (DADOS.perguntas||[]).forEach(q=>{
+    estado[q.id] = {decisao:'aceitar', alt:null, recAlt:null, params:{}, altTexto:'', orient:'', confirmaIrrev:false, visivel:true, ordem:[]};
+    const rec0 = (q.alternativas||[]).find(a=>a.recomendada);
+    if(rec0){ estado[q.id].alt = rec0.rotulo; estado[q.id].recAlt = rec0.rotulo; }
+    (q.parametros||[]).forEach(p=>{ if(p&&p.nome) estado[q.id].params[p.nome]=p.valorSugerido; });
+  });
+  const TOTAL=(DADOS.perguntas||[]).length;
+  (DADOS.perguntas||[]).forEach((q,idx)=>{
+    const rec = (q.alternativas||[]).find(a=>a.recomendada);
+    if(rec) estado[q.id].alt = rec.rotulo;
+
+    const irrev = !!q.irreversivel;
+    const card = el('section','panel card enxuto'+(irrev?' irrev':'')); card.id='card-'+q.id;
+
+    card.appendChild(el('div','qnav','Pergunta '+(idx+1)+' de '+TOTAL));
+    const head = el('div','sec-h');
+    head.appendChild(el('span','num',String(idx+1)));
+    head.appendChild(el('h2',null,q.titulo||''));
+    const u = URG[q.urgencia||'espera'] || URG.espera;
+    head.appendChild(el('span','urg '+u.cls,u.label));
+    card.appendChild(head);
+
+    if(q.historico && q.historico.trim())
+      card.appendChild(el('div','histnote','🕘 '+q.historico.trim()));
+    if(q.contexto) card.appendChild(el('div','qctx',q.contexto));
+
+    if(q.evidencia && q.evidencia.trim()){
+      const ev=el('div','evid'); ev.appendChild(el('div','el','Evidência — o que embasa esta pergunta'));
+      const pre=document.createElement('pre'); pre.textContent=q.evidencia.trim(); ev.appendChild(pre); card.appendChild(ev);
+    }
+
+    if(irrev){
+      const a=el('div','avisoirrev');
+      a.innerHTML='<b>⚠ Decisão sem volta.</b> '+escapeHtml(q.avisoIrreversivel||'Esta escolha não pode ser desfeita facilmente. Confirme com atenção abaixo.');
+      card.appendChild(a);
+    }
+
+    // Tipo da pergunta: "ordenar" (monte o plano, clicando na ordem) ou escolha normal (opção única).
+    const isOrd = (q.tipo==='ordenar' || q.tipo==='plano' || q.ordenar===true);
+    const optEls=[];
+    let renderPlano=null;
+
+    if(isOrd){
+      // PLANO: clicar nos itens na ordem que quer fazer. Vira uma sequência numerada.
+      estado[q.id].ordem = (q.alternativas||[]).map(a=>a.rotulo); // padrão = todos, na ordem que sugeri
+      const planoBox=el('div','planobox');
+      const opts=el('div','opts');
+      const ordCards=[];
+      renderPlano=function(){
+        const ord=estado[q.id].ordem||[];
+        ordCards.forEach(c=>{ const i=ord.indexOf(c._rot); c.classList.toggle('plan-sel',i>=0); c._badge.textContent = i>=0 ? ((i+1)+'º') : '＋'; });
+        planoBox.innerHTML='';
+        planoBox.appendChild(el('div','plabel','Seu plano — clique nos itens na ordem que quer fazer (clique de novo pra tirar)'));
+        if(!ord.length){ planoBox.appendChild(el('div','plano-empty','Nenhum item no plano ainda.')); }
+        else ord.forEach((rot,i)=>{ const a=(q.alternativas||[]).find(x=>x.rotulo===rot); planoBox.appendChild(el('div','plano-row',(i+1)+'.  '+((a&&a.texto)||rot))); });
+        if(estado[q.id]._refresh) estado[q.id]._refresh();
+      };
+      (q.alternativas||[]).forEach(a=>{
+        const oc=el('div','opt ordenavel'); oc._rot=a.rotulo||'';
+        const badge=el('span','planbadge','＋'); oc._badge=badge; oc.appendChild(badge);
+        oc.appendChild(el('span','tag','Item '+(a.rotulo||'')));
+        oc.appendChild(el('h3',null,a.texto||''));
+        if(a.consequencia){ const p=el('p',null,'');p.innerHTML='<b style="color:var(--tx);font-weight:700">O que muda:</b> '+escapeHtml(a.consequencia);oc.appendChild(p); }
+        if(a.porque) oc.appendChild(el('div','porque','★ Por que sugiro: '+a.porque));
+        if(temImpacto(a)) oc.appendChild(chipsImpacto(a));
+        oc.onclick=()=>{ const ord=estado[q.id].ordem; const i=ord.indexOf(a.rotulo); if(i>=0) ord.splice(i,1); else ord.push(a.rotulo); renderPlano(); };
+        ordCards.push(oc); opts.appendChild(oc);
+      });
+      card.appendChild(planoBox); card.appendChild(opts);
+    } else {
+      // OPÇÕES como cartões (escolha uma)
+      const opts = el('div','opts');
+      (q.alternativas||[]).forEach(a=>{
+        const oc = el('div','opt'+(a.recomendada?' reco':''));
+        oc._rot=a.rotulo||'';
+        const rd=document.createElement('input'); rd.type='radio'; rd.className='rd'; rd.name='q'+q.id; rd.value=a.rotulo;
+        if(a.recomendada) rd.checked=true;
+        oc.appendChild(rd);
+        if(a.recomendada){ const rb=el('span','ribbon','EU RECOMENDO'); oc.appendChild(rb); }
+        oc.appendChild(el('span','tag',(a.rotulo?'Opção '+a.rotulo:'Opção')));
+        oc.appendChild(el('h3',null,a.texto||''));
+        if(a.consequencia){ const p=el('p',null,'');p.innerHTML='<b style="color:var(--tx);font-weight:700">O que muda:</b> '+escapeHtml(a.consequencia);oc.appendChild(p); }
+        if(a.porque) oc.appendChild(el('div','porque','★ Por que recomendo: '+a.porque));
+        oc.appendChild(el('div','selbadge','✓ Sua escolha'));
+        if(temImpacto(a)) oc.appendChild(chipsImpacto(a));
+        const escolher=()=>{ rd.checked=true; estado[q.id].alt=a.rotulo; if(estado[q.id]._refresh) estado[q.id]._refresh(); };
+        oc.onclick=escolher; rd.onchange=escolher;
+        optEls.push(oc); opts.appendChild(oc);
+      });
+      card.appendChild(opts);
+
+      // tabela comparativa (só se há valores DIFERENTES pra comparar)
+      const comparaveis=(q.alternativas||[]).filter(temImpacto);
+      if(comparaveis.length>=2 && valeComparar(q.alternativas)){
+        const btn=el('button','cmpbtn','Ver as opções lado a lado');
+        const tbl=montarTabela(q);
+        btn.onclick=()=>{const vis=tbl.style.display==='table';tbl.style.display=vis?'none':'table';btn.textContent=vis?'Ver as opções lado a lado':'Esconder a comparação';};
+        card.appendChild(btn); card.appendChild(tbl);
+      }
+    }
+
+    // "SUA VEZ" — sempre visível: aqui o Flávio acrescenta, argumenta ou propõe o próprio caminho.
+    const sv = el('div','suavez');
+    const svh = el('div','sv-h');
+    svh.innerHTML='<svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg> Sua vez';
+    sv.appendChild(svh);
+    sv.appendChild(el('p','sv-sub','Não concorda, quer acrescentar algo ou seguir um caminho diferente? Escreva aqui — isso passa a valer como a sua decisão.'));
+    const altBox = el('div','altbox');
+    const altTa = document.createElement('textarea');
+    altTa.placeholder='Ex: “prefiro fazer diferente…”, “concordo, mas cuidado com…”, “faça a A só que…”. Deixe em branco se estiver de acordo.';
+    altTa.oninput=()=>{ estado[q.id].altTexto=altTa.value; if(estado[q.id]._refresh) estado[q.id]._refresh(); };
+    estado[q.id]._altTa=altTa;
+    altBox.appendChild(altTa); sv.appendChild(altBox); card.appendChild(sv);
+
+    if(q.parametros && q.parametros.length){
+      const pb = el('div','params'); pb.appendChild(el('div','plabel','Parâmetros sugeridos — edite se quiser'));
+      q.parametros.forEach(p=>{
+        if(!p||!p.nome) return;
+        const row = el('div','prow');
+        row.appendChild(el('span','pname',p.nome));
+        const inp=document.createElement('input');inp.className='pval';inp.value=p.valorSugerido||'';
+        inp.oninput=()=>{ estado[q.id].params[p.nome]=inp.value; };
+        row.appendChild(inp);
+        if(p.porque) row.appendChild(el('div','pwhy','Por que: '+p.porque));
+        pb.appendChild(row);
+      });
+      card.appendChild(pb);
+    }
+
+    // UMA decisão só: a escolha É o cartão. Uma frase diz o que significa; um botão só (Não fazer).
+    const status = el('div','statusdec');
+    const dec = el('div','decis');
+    const bExcluir = el('button','del','Não fazer este item');
+    function statusTexto(){
+      const s=estado[q.id];
+      if(s.decisao==='excluir') return '🚫 Você marcou: NÃO fazer nenhum destes agora.';
+      if(isOrd){
+        const n=(s.ordem||[]).length, tot=(q.alternativas||[]).length;
+        if(!n) return 'Monte o plano: clique nos itens na ordem que quer fazer.';
+        if(s.altTexto.trim()) return '✎ Plano com '+n+' item(ns) + sua observação abaixo.';
+        return '✓ Plano montado: '+n+' de '+tot+' item(ns), na ordem que você definiu.';
+      }
+      const alt=(q.alternativas||[]).find(a=>a.rotulo===s.alt);
+      if(s.altTexto.trim()) return '✎ Você escreveu uma proposta própria (abaixo).';
+      if(alt && s.alt!==s.recAlt) return '✎ Você mudou minha recomendação — escolheu: '+((alt.rotulo?'Opção '+alt.rotulo+' — ':'')+(alt.texto||''));
+      if(alt) return '✓ Você aceitou minha recomendação.';
+      return 'Escolha uma opção acima.';
+    }
+    function refresh(){
+      const s=estado[q.id];
+      if(s.decisao!=='excluir'){
+        s.decisao = (s.altTexto.trim() || (s.alt && s.alt!==s.recAlt)) ? 'alterar' : 'aceitar';
+      }
+      status.textContent=statusTexto();
+      status.className='statusdec'+(s.decisao==='excluir'?' st-excl':(s.decisao==='alterar'?' st-alt':' st-ok'));
+      bExcluir.classList.toggle('on',s.decisao==='excluir');
+      bExcluir.textContent = s.decisao==='excluir' ? 'Voltar a fazer este item' : 'Não fazer este item';
+      card.classList.toggle('excluido',s.decisao==='excluir');
+      optEls.forEach(oc=>oc.classList.toggle('sel', oc._rot===s.alt && s.decisao!=='excluir'));
+      atualizarVisibilidade();
+    }
+    bExcluir.onclick=()=>{ const s=estado[q.id]; s.decisao=(s.decisao==='excluir')?'aceitar':'excluir'; refresh(); };
+    estado[q.id]._refresh=refresh;
+    dec.appendChild(bExcluir);
+    card.appendChild(status);
+    card.appendChild(dec);
+    refresh();
+    if(renderPlano) renderPlano();  // desenha o plano inicial (tipo "ordenar")
+
+    if(irrev){
+      const cf=el('label','confirm');
+      const cb=document.createElement('input');cb.type='checkbox';
+      cb.onchange=()=>{ estado[q.id].confirmaIrrev=cb.checked; };
+      cf.appendChild(cb);
+      cf.appendChild(document.createTextNode('Confirmo que entendo que esta decisão NÃO tem volta e autorizo.'));
+      card.appendChild(cf);
+    }
+
+    const ori = el('div','orient');
+    ori.appendChild(el('label',null,'Recado extra pra mim (opcional — mesmo aceitando a opção acima)'));
+    const ota=document.createElement('textarea');
+    ota.oninput=()=>{ estado[q.id].orient=ota.value; };
+    ori.appendChild(ota);card.appendChild(ori);
+
+    const det=el('button','detbtn','＋ ver detalhes');
+    det.onclick=()=>{ const on=card.classList.contains('enxuto'); card.classList.toggle('enxuto',!on);
+      det.textContent = on ? '－ ocultar detalhes' : '＋ ver detalhes'; };
+    card.appendChild(det);
+
+    cont.appendChild(card);
+  });
+}
+
+function montarTabela(q){
+  const t=el('table','cmptable');
+  const linhas=[['Opção',a=>(a.rotulo?a.rotulo+') ':'')+(a.texto||'')],
+                ['Custo',a=>a.custo!=null?a.custo:'—'],
+                ['Prazo',a=>a.prazo!=null?a.prazo:'—'],
+                ['Risco',a=>a.risco!=null?a.risco:'—'],
+                ['Dá pra voltar atrás?',a=>a.reversivel==null?'—':(a.reversivel?'Sim':'Não')]];
+  const thead=document.createElement('tr');
+  thead.appendChild(document.createElement('th'));
+  (q.alternativas||[]).forEach(a=>{const th=document.createElement('th');th.textContent=(a.rotulo||'');if(a.recomendada)th.textContent+=' ★';thead.appendChild(th);});
+  t.appendChild(thead);
+  linhas.forEach(([nome,fn])=>{
+    const tr=document.createElement('tr');
+    const th=document.createElement('th');th.textContent=nome;tr.appendChild(th);
+    (q.alternativas||[]).forEach(a=>{const td=document.createElement('td');td.textContent=fn(a);if(a.recomendada)td.classList.add('rec');tr.appendChild(td);});
+    t.appendChild(tr);
+  });
+  return t;
+}
+
+function condicaoOk(dep){
+  if(!dep) return true;
+  const s=estado[dep.de]; if(!s) return true;
+  const cond=(dep.mostrarQuando||'').toLowerCase();
+  if(cond==='excluido') return s.decisao==='excluir';
+  if(cond==='nao-excluido'||cond==='nao_excluido') return s.decisao!=='excluir';
+  if(cond.startsWith('alt:')) return s.decisao!=='excluir' && s.alt===dep.mostrarQuando.split(':')[1];
+  return true;
+}
+
+function atualizarVisibilidade(){
+  (DADOS.perguntas||[]).forEach(q=>{
+    if(!estado[q.id]) return;
+    const vis=condicaoOk(q.dependeDe);
+    estado[q.id].visivel=vis;
+    const card=document.getElementById('card-'+q.id);
+    if(card) card.style.display=vis?'block':'none';
+  });
+}
+
+function renderResumo(){
+  const qs = DADOS.perguntas||[];
+  const c={trava:0,espera:0,refino:0};
+  qs.forEach(q=>{ c[q.urgencia||'espera']=(c[q.urgencia||'espera']||0)+1; });
+  const tempo = DADOS.tempoEstimado && DADOS.tempoEstimado.trim()
+    ? DADOS.tempoEstimado.trim()
+    : ('~'+Math.max(1,Math.round(qs.length*0.75))+' min');
+  const box=document.getElementById('resumo');
+  const parts=[];
+  parts.push('<b>'+qs.length+'</b> '+(qs.length===1?'decisão':'decisões'));
+  if(c.trava)  parts.push('<span class="u-trava">'+c.trava+' '+(c.trava===1?'trava':'travam')+'</span>');
+  if(c.espera) parts.push('<span class="u-espera">'+c.espera+' pode esperar</span>');
+  if(c.refino) parts.push('<span class="u-refino">'+c.refino+' refino</span>');
+  parts.push('tempo <b>'+tempo+'</b>');
+  box.innerHTML=parts.join('<span class="sep">·</span>');
+}
+
+function aceitarTudo(){
+  (DADOS.perguntas||[]).forEach(q=>{
+    const s=estado[q.id];
+    const rec=(q.alternativas||[]).find(a=>a.recomendada);
+    s.decisao='aceitar'; s.altTexto='';
+    if(s._altTa) s._altTa.value='';
+    if(rec){
+      s.alt=rec.rotulo;
+      const r=document.querySelector('input[name="q'+q.id+'"][value="'+rec.rotulo+'"]');
+      if(r) r.checked=true;
+    }
+    if(s._refresh) s._refresh();
+  });
+  document.getElementById('hint').textContent='Todas as recomendações marcadas. Enviando…';
+  concluir();
+}
+
+function pendenciasIrrev(){
+  const faltam=[];
+  (DADOS.perguntas||[]).forEach(q=>{
+    const s=estado[q.id];
+    if(s.visivel && q.irreversivel && s.decisao!=='excluir' && !s.confirmaIrrev) faltam.push(q.id);
+  });
+  return faltam;
+}
+
+function gerar(){
+  const faltam=pendenciasIrrev();
+  if(faltam.length){
+    document.getElementById('hint').textContent='⚠ Item(ns) '+faltam.join(', ')+' são SEM VOLTA — marque a confirmação vermelha ou escolha “Não fazer”.';
+    const c=document.getElementById('card-'+faltam[0]); if(c) c.scrollIntoView({behavior:'smooth',block:'center'});
+    return;
+  }
+  const semDetalhe=[];
+  (DADOS.perguntas||[]).forEach(q=>{ const s=estado[q.id];
+    if(s && s.visivel && s.decisao==='alterar' && !s.altTexto.trim() && (s.alt===s.recAlt || s.alt==null)) semDetalhe.push(q.id); });
+  if(semDetalhe.length){
+    document.getElementById('hint').textContent='✏ Item(ns) '+semDetalhe.join(', ')+': você clicou ALTERAR mas não mudou nada. Escolha outra opção ou escreva a mudança.';
+    const c=document.getElementById('card-'+semDetalhe[0]); if(c) c.scrollIntoView({behavior:'smooth',block:'center'});
+    return;
+  }
+  const L=[];
+  L.push('RESPOSTAS DE FLÁVIO');
+  L.push('==================================================');
+  if(DADOS.origem) L.push('PAINEL DE ORIGEM: '+DADOS.origem+'  (cole esta resposta na sessão correspondente)');
+  L.push('Assunto: '+(DADOS.titulo||''));
+  L.push('');
+  (DADOS.perguntas||[]).forEach(q=>{
+    const s=estado[q.id];
+    if(!s.visivel){ return; }
+    L.push('ITEM '+q.id+' — '+(q.titulo||'')+'   ['+(URG[q.urgencia||'espera']||URG.espera).label+']');
+    const isOrdG=(q.tipo==='ordenar'||q.tipo==='plano'||q.ordenar===true);
+    if(isOrdG){
+      if(s.decisao==='excluir'){
+        L.push('  DECISÃO: não fazer nenhum destes agora.');
+      } else {
+        const ord=s.ordem||[];
+        if(!ord.length){ L.push('  PLANO: (nenhum item selecionado)'); }
+        else {
+          L.push('  PLANO — FAZER NESTA ORDEM:');
+          ord.forEach((rot,i)=>{ const a=(q.alternativas||[]).find(x=>x.rotulo===rot); L.push('    '+(i+1)+') '+((a&&a.texto)||rot)); });
+          const fora=(q.alternativas||[]).filter(a=>ord.indexOf(a.rotulo)<0);
+          if(fora.length) L.push('  FORA DO PLANO (não fazer agora): '+fora.map(a=>a.texto||a.rotulo).join('; '));
+        }
+        if(s.altTexto.trim()) L.push('  AJUSTE/ACRÉSCIMO DO FLÁVIO: '+s.altTexto.trim());
+      }
+      if(s.orient.trim()) L.push('  ORIENTAÇÃO: '+s.orient.trim());
+      L.push('');
+      return;
+    }
+    if(s.decisao==='excluir'){
+      L.push('  DECISÃO: EXCLUIR este item / não fazer.');
+    } else {
+      const alt=(q.alternativas||[]).find(a=>a.rotulo===s.alt);
+      const rotAlt=alt?((alt.rotulo?('Opção '+alt.rotulo+' — '):'')+(alt.texto||'')):'(sem alternativa marcada)';
+      if(s.decisao==='alterar'){
+        const parts=[];
+        if(alt && s.alt!==s.recAlt) parts.push('trocou a recomendação pela '+rotAlt);
+        if(s.altTexto.trim()) parts.push('proposta do Flávio: '+s.altTexto.trim());
+        L.push('  DECISÃO: ALTERAR — '+(parts.length?parts.join('; '):'(mudança não detalhada)'));
+      } else {
+        L.push('  DECISÃO: '+rotAlt);
+      }
+      if(q.irreversivel) L.push('  IRREVERSÍVEL: confirmado e autorizado por Flávio.');
+      const pk=Object.keys(s.params||{});
+      if(pk.length){
+        L.push('  PARÂMETROS:');
+        (q.parametros||[]).forEach(p=>{
+          if(!p||!p.nome) return;
+          const atual=s.params[p.nome];
+          const mudou=(String(atual)!==String(p.valorSugerido));
+          L.push('    - '+p.nome+' = '+atual+(mudou?'  (alterado; sugestão era: '+p.valorSugerido+')':''));
+        });
+      }
+      if(s.altTexto.trim() && s.decisao!=='alterar') L.push('  OBSERVAÇÃO SOBRE ALTERNATIVAS: '+s.altTexto.trim());
+    }
+    if(s.orient.trim()) L.push('  ORIENTAÇÃO: '+s.orient.trim());
+    L.push('');
+  });
+  L.push('==================================================');
+  L.push('Fim. Siga estas decisões do Flávio: se envolver código, implemente com qualidade máxima; se for decisão de negócio/operação, execute conforme o combinado e confirme.');
+  const out=L.join('\n');
+  document.getElementById('saidaTxt').value=out;
+  document.getElementById('saida').style.display='block';
+  document.getElementById('btnCopy').style.display='inline-block';
+  document.getElementById('saida').scrollIntoView({behavior:'smooth'});
+}
+
+function concluir(){
+  gerar();
+  if(document.getElementById('saida').style.display!=='block') return;
+  salvar();
+  document.getElementById('hint').textContent='✓ Enviado. Pode FECHAR esta janela — a sessão vai continuar sozinha.';
+}
+
+function nomeArquivo(){
+  const raw=(DADOS.origem||DADOS.id||DADOS.titulo||'resposta').toString().toLowerCase()
+    .replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,60);
+  return 'resposta-perguntar-'+(raw||'flavio')+'.txt';
+}
+
+function salvar(){
+  const txt=document.getElementById('saidaTxt').value;
+  try{ navigator.clipboard && navigator.clipboard.writeText(txt); }catch(e){}
+  try{ document.getElementById('saidaTxt').select(); document.execCommand('copy'); }catch(e){}
+  let baixou=false;
+  try{
+    const a=document.createElement('a');
+    a.href='data:text/plain;charset=utf-8,'+encodeURIComponent(txt);
+    a.download=nomeArquivo();
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    baixou=true;
+  }catch(e){ baixou=false; }
+  document.getElementById('hint').textContent = baixou
+    ? 'Baixado na pasta Downloads E copiado. A sessão continua sozinha. Arquivo: '+nomeArquivo()
+    : 'Não deu para baixar aqui, MAS já copiei o texto. É só colar na conversa.';
+}
+
+function copiar(){
+  const t=document.getElementById('saidaTxt'); t.select();
+  navigator.clipboard.writeText(t.value).then(
+    ()=>{ document.getElementById('hint').textContent='Copiado! Cole na conversa.'; },
+    ()=>{ document.execCommand('copy'); document.getElementById('hint').textContent='Copiado (selecionado). Cole na conversa.'; }
+  );
+}
+
+render();
+</script>
+</body>
+</html>

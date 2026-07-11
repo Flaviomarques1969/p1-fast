@@ -64,10 +64,10 @@ public static class LivePanel
         if (input.UltimoSample is { } t)
         {
             sb.AppendLine(SubLine($"   RPM         {t.Rpm,5}              Marcha       {t.Marcha,3}"));
-            sb.AppendLine(SubLine($"   Temp Água   {t.WaterTempC,5:F1}°C            Temp Óleo    {t.OilTempC,5:F1}°C"));
-            sb.AppendLine(SubLine($"   Press Óleo  {t.OilPressBar,5:F2} bar          Lambda       {t.Lambda,5:F2}"));
-            sb.AppendLine(SubLine($"   MAP         {t.MapBar,5:F2} bar          TPS          {t.TpsPct,5:F1}%"));
-            sb.AppendLine(SubLine($"   Bateria     {t.BatteryV,5:F1} V            EGT          {t.EgtC,5}°C"));
+            sb.AppendLine(SubLine(FormattableString.Invariant($"   Temp Água   {t.WaterTempC,5:F1}°C            Temp Óleo    {t.OilTempC,5:F1}°C")));
+            sb.AppendLine(SubLine(FormattableString.Invariant($"   Press Óleo  {t.OilPressBar,5:F2} bar          Lambda       {t.Lambda,5:F2}")));
+            sb.AppendLine(SubLine(FormattableString.Invariant($"   MAP         {t.MapBar,5:F2} bar          TPS          {t.TpsPct,5:F1}%")));
+            sb.AppendLine(SubLine(FormattableString.Invariant($"   Bateria     {t.BatteryV,5:F1} V            EGT          {t.EgtC,5}°C")));
         }
         else
         {

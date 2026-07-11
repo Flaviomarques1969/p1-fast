@@ -18,7 +18,10 @@
 //
 // Retorno null → track sem âncoras (caller mantém x/y = null).
 
-const M_PER_DEG_LAT = 111000;
+// Metro-por-grau vem da casa única (geo.js). Aqui o valor se CANCELA no fator afim
+// (k = B/A, com A e P usando a mesma constante), então o resultado é idêntico —
+// só deixa de duplicar o número.
+import { M_POR_GRAU_LAT as M_PER_DEG_LAT } from '../domain/geo.js';
 
 function latlngToMeters(lat, lng, origin) {
   const dLat = lat - origin.lat;
