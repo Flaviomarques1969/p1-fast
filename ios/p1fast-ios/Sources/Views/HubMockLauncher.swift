@@ -502,7 +502,14 @@ struct HubMockLauncher: View {
     /// fundo da Home (prova do `--p1-home`).
     private static func homeDataComHero(carroId: String) -> HomeData {
         // Base oficial: HomeData não tem campos premium (heroCarroId); usa o mock padrão.
-        return HomeData.mockFilled
+        // `--p1-home-100`: variação SÓ-DEV com prontidão 100% e zero pendências —
+        // prova visual do anel VERDE do herói (verde = bom, padrão Flávio 2026-07-09).
+        var dados = HomeData.mockFilled
+        if ProcessInfo.processInfo.arguments.contains("--p1-home-100") {
+            dados.prontidaoPct = 100
+            dados.pendenciasAbertas = 0
+        }
+        return dados
     }
 
     /// HomeData enxuta (sem foto/sem carros) pra screenshot do modo preparação
