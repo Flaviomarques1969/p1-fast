@@ -141,12 +141,12 @@ public sealed partial class MainWindow : Window
         BestAlltime,  // melhor de todos os tempos — dourado bloom
         Current,      // trecho em curso — amarelo (foco)
         // TIPOS de volta do PLANO do piloto. MARTELO (Flávio 2026-07-11, via canal): a
-        // barra é SÓ voltas planejadas + transições de box — o térmico é da TELA DEDICADA.
-        // Box NÃO consome volta planejada (bug achado pelo Flávio 11/07 à noite): box +
-        // out-lap são cápsulas INSERIDAS; a numeração retoma na volta interrompida.
+        // barra é SÓ voltas planejadas + desvios de box — o térmico é da TELA DEDICADA.
+        // Box NÃO consome volta planejada (Flávio 11/07 à noite): a numeração retoma na
+        // volta interrompida. Revisão 12/07: o BOX é UM marcador só = entrada + volta de
+        // saída (sem cápsula própria de out-lap); a out-lap ainda conta como volta rodada.
         Planejada,    // volta de ritmo planejada pelo piloto — cinza-azulado (a rodar)
-        Box,          // parada no box planejada — magenta cheio (parado)
-        Saida,        // volta de saída do box (out-lap) — contorno magenta (rodando, transição)
+        Box,          // desvio pro box (entrada + saída) — magenta cheio
     }
 
     private static readonly Dictionary<StintBlockState, Color> StintColors = new()
@@ -159,22 +159,20 @@ public sealed partial class MainWindow : Window
         [StintBlockState.BestAlltime] = Ouro,
         [StintBlockState.Current]     = Foco,
         [StintBlockState.Planejada]   = Color.FromArgb(0xFF, 0x55, 0x60, 0x70),  // slate (planejada)
-        [StintBlockState.Box]         = Color.FromArgb(0xFF, 0xE0, 0x56, 0xA0),  // magenta (parada no box)
-        [StintBlockState.Saida]       = Color.FromArgb(0xFF, 0xE0, 0x56, 0xA0),  // magenta (tinta do contorno da out-lap)
+        [StintBlockState.Box]         = Color.FromArgb(0xFF, 0xE0, 0x56, 0xA0),  // magenta (desvio pro box)
     };
 
     // Plano do stint de EXEMPLO (placeholder) enquanto o plano REAL do piloto não está
     // ligado ao cockpit (telas só exibem — virá do envelope da nuvem `plano_stint`).
     // Barra DINÂMICA (Flávio 2026-07-05): o placeholder é um stint de EXEMPLO de 11 voltas
-    // planejadas com 1 parada na 6ª. Bug do box corrigido (Flávio 2026-07-11 à noite):
-    // BOX + SAÍDA são transição INSERIDA — a barra numera 1..5, BOX, SAÍDA, 6..11.
+    // planejadas com 1 parada na 6ª. Box não consome a volta (Flávio 11/07); revisão 12/07:
+    // BOX é UM marcador (entrada + saída) — a barra numera 1..5, BOX, 6..11 (12 cápsulas).
     private static readonly StintBlockState[] PlanoStintPlaceholder =
     {
         StintBlockState.Planejada,                                     // 1
         StintBlockState.Planejada, StintBlockState.Planejada,          // 2,3
         StintBlockState.Planejada, StintBlockState.Planejada,          // 4,5
-        StintBlockState.Box,                                           // parada no box (transição)
-        StintBlockState.Saida,                                         // volta de saída (out-lap)
+        StintBlockState.Box,                                           // desvio pro box (entrada + saída)
         StintBlockState.Planejada, StintBlockState.Planejada,          // 6,7
         StintBlockState.Planejada, StintBlockState.Planejada,          // 8,9
         StintBlockState.Planejada, StintBlockState.Planejada,          // 10,11
@@ -193,7 +191,6 @@ public sealed partial class MainWindow : Window
     {
         TipoVoltaStint.Planejada   => StintBlockState.Planejada,
         TipoVoltaStint.Box         => StintBlockState.Box,
-        TipoVoltaStint.Saida       => StintBlockState.Saida,
         _                          => StintBlockState.Pending, // Vaga (slot além do stint)
     };
 

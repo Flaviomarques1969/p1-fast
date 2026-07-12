@@ -104,9 +104,9 @@ public sealed partial class MainWindow
         var plano = _barraPattern;
         var atual = _voltaAtualRender;
 
-        // Numeração = SÓ voltas planejadas (bug do box, Flávio 2026-07-11 à noite): BOX e
-        // SAÍDA são transição e não avançam o contador — depois do box a barra retoma na
-        // volta interrompida (1..5, BOX, SAÍDA, 6..11 — não mais 7..11).
+        // Numeração = SÓ voltas planejadas (Flávio 2026-07-11 à noite): o BOX não avança o
+        // contador — depois do box a barra retoma na volta interrompida (1..5, BOX, 6..11,
+        // não 7..11). Revisão 12/07: um marcador BOX = desvio inteiro (entrada + saída).
         var voltaNum = 0;
 
         for (var i = 0; i < n; i++)
@@ -131,34 +131,16 @@ public sealed partial class MainWindow
             var baseCol  = StintColors.TryGetValue(st, out var c) ? c : Faint;
             var fill     = isAtual ? Foco : baseCol;
 
-            if (st == StintBlockState.Saida && !isAtual)
-            {
-                // out-lap: CONTORNO magenta com miolo escuro — mesma família do BOX (cheio =
-                // parado; contorno = rodando de volta), sem inventar cor nova na paleta.
-                blk.Background = new SolidColorBrush(VagaFill);
-                blk.BorderBrush = new SolidColorBrush(baseCol);
-                blk.BorderThickness = new Thickness(1.4);
-            }
-            else
-            {
-                blk.Background = new SolidColorBrush(fill);
-                blk.BorderBrush = null;
-                blk.BorderThickness = new Thickness(0);
-            }
+            blk.Background = new SolidColorBrush(fill);
+            blk.BorderBrush = null;
+            blk.BorderThickness = new Thickness(0);
             blk.Opacity = isAFazer ? 0.60 : 1.0;                                  // a-fazer a 60%
             blk.RenderTransform = isAtual ? new TranslateTransform { Y = -BarLift } : null;
 
-            var transicao = st is StintBlockState.Box or StintBlockState.Saida;
-            if (!transicao) voltaNum++;
-            lbl.Text = st switch
-            {
-                StintBlockState.Box   => "BOX",
-                StintBlockState.Saida => "SAÍDA",
-                _                     => voltaNum.ToString(),
-            };
-            lbl.FontSize = transicao ? 11 : 15;                                    // número grande
-            lbl.Foreground = new SolidColorBrush(
-                st == StintBlockState.Saida && !isAtual ? baseCol : TintaDe(fill));
+            if (st != StintBlockState.Box) voltaNum++;   // BOX não consome número de volta
+            lbl.Text = st == StintBlockState.Box ? "BOX" : voltaNum.ToString();
+            lbl.FontSize = st == StintBlockState.Box ? 12 : 15;                    // número grande
+            lbl.Foreground = new SolidColorBrush(TintaDe(fill));
         }
 
         AtualizarGlowVoltaAtual(atual);

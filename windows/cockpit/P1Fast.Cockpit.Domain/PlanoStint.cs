@@ -26,8 +26,8 @@ public enum TipoVoltaStint
 {
     Vaga,         // slot além do stint — não há volta planejada aqui
     Planejada,    // volta de ritmo planejada pelo piloto (inclui a 1ª e a última)
-    Box,          // parada no box planejada — TRANSIÇÃO, não consome volta planejada
-    Saida,        // volta de saída do box (out-lap) — cápsula própria (decisão Flávio 2026-07-11)
+    Box,          // desvio pro box num marcador só = ENTRADA + volta de SAÍDA (Flávio 2026-07-12);
+                  // NÃO consome a volta planejada interrompida (ela é rodada depois do box)
 }
 
 /// <summary>Parada planejada no box: em que volta e por quê.</summary>
@@ -167,17 +167,18 @@ public static class PlanoStintParser
     }
 
     /// <summary>Expande o plano nos TIPOS de volta de cada um dos `slots` blocos da barra.
-    /// MARTELO (Flávio 2026-07-11): a barra é SÓ voltas planejadas + transições de box; o
+    /// MARTELO (Flávio 2026-07-11): a barra é SÓ voltas planejadas + desvios de box; o
     /// térmico (aquecimento/resfriamento) é obra da TELA DEDICADA, não da barra.
     ///
-    /// BUG DO BOX (Flávio 2026-07-11, via canal): a parada NÃO substitui a volta planejada —
-    /// ela a INTERROMPE. Box + volta de saída (out-lap, cápsula própria por decisão do Flávio)
-    /// são TRANSIÇÃO inseridas ENTRE as planejadas; a volta interrompida ainda é rodada e
-    /// contada DEPOIS do box. Ex.: 11 voltas com parada na 6ª → 1..5, BOX, SAÍDA, 6..11
-    /// (13 cápsulas). Parada fora de 1..Voltas é ignorada (como antes). Devolve null se o
-    /// plano não dá pra montar (Voltas &lt;= 0) — a UI então usa o placeholder. Sequência
-    /// maior que `slots` trunca no fim; os planos reais (~10 voltas + poucas paradas) ficam
-    /// bem abaixo do teto de 40 da UI.</summary>
+    /// BOX (Flávio 2026-07-11/12, via canal): a parada NÃO substitui a volta planejada — ela a
+    /// INTERROMPE. Um ÚNICO marcador BOX representa o desvio inteiro (ENTRADA + volta de SAÍDA);
+    /// é inserido ENTRE as planejadas, e a volta interrompida ainda é rodada e contada DEPOIS
+    /// do box. Ex.: 11 voltas com parada na 6ª → 1..5, BOX, 6..11 (12 cápsulas). A out-lap NÃO
+    /// tem cápsula própria (revisão 2026-07-12), mas ainda acontece e conta como volta rodada
+    /// (ver MainWindow.VoltaAtual: o BOX ocupa o slot dela na contagem de voltas rodadas).
+    /// Parada fora de 1..Voltas é ignorada. Devolve null se o plano não dá pra montar
+    /// (Voltas &lt;= 0) — a UI então usa o placeholder. Sequência maior que `slots` trunca no
+    /// fim; os planos reais (~10 voltas + poucas paradas) ficam bem abaixo do teto de 40 da UI.</summary>
     public static TipoVoltaStint[]? ExpandirBarra(PlanoStint? plano, int slots)
     {
         if (plano is null || plano.Voltas <= 0 || slots <= 0) return null;
@@ -188,16 +189,13 @@ public static class PlanoStintParser
             if (p.Volta >= 1 && p.Volta <= plano.Voltas)
                 paradasNaVolta[p.Volta] = paradasNaVolta.TryGetValue(p.Volta, out var q) ? q + 1 : 1;
 
-        var seq = new List<TipoVoltaStint>(plano.Voltas + paradasNaVolta.Count * 2);
+        var seq = new List<TipoVoltaStint>(plano.Voltas + paradasNaVolta.Count);
         for (var volta = 1; volta <= plano.Voltas; volta++)
         {
             if (paradasNaVolta.TryGetValue(volta, out var nBox))
                 for (var k = 0; k < nBox; k++)
-                {
-                    seq.Add(TipoVoltaStint.Box);
-                    seq.Add(TipoVoltaStint.Saida);
-                }
-            seq.Add(TipoVoltaStint.Planejada);   // a volta interrompida vem DEPOIS da transição
+                    seq.Add(TipoVoltaStint.Box);   // 1 marcador = entrada + saída do box
+            seq.Add(TipoVoltaStint.Planejada);     // a volta interrompida vem DEPOIS do box
         }
 
         var barra = new TipoVoltaStint[slots];

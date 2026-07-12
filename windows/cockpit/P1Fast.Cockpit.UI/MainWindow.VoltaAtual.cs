@@ -50,12 +50,14 @@ public sealed partial class MainWindow
         return last;
     }
 
-    // ── Bug do box (Flávio 2026-07-11 à noite): BOX é parada, não volta RODADA. O contador
-    // de voltas (_voltaAtualIdx, por cruzamentos da linha) anda em VOLTAS RODADAS — planejadas
-    // E a saída do box (a out-lap cruza a linha ao fechar). A cápsula de BOX nunca é "atual". ──
+    // ── Box não consome volta planejada (Flávio 2026-07-11 à noite). O contador de voltas
+    // (_voltaAtualIdx, por cruzamentos da linha) anda em VOLTAS RODADAS — planejadas E a
+    // out-lap do box (que cruza a linha ao fechar). Revisão 12/07: a out-lap não tem cápsula
+    // própria; o marcador BOX (entrada + saída) OCUPA o slot dela na contagem — durante o
+    // desvio o halo fica no BOX; ao iniciar a volta interrompida, salta pra ela. ──
 
-    /// <summary>Cápsula da idx-ésima volta RODADA (0-based), pulando as cápsulas de BOX.
-    /// -1 = além do plano.</summary>
+    /// <summary>Cápsula da idx-ésima volta RODADA (0-based). Planejada E Box contam como
+    /// slot rodado (o BOX é a out-lap do desvio); só Vaga/Pending é pulada. -1 = além do plano.</summary>
     private int CapsulaDaVolta(int voltaIdx)
     {
         if (voltaIdx < 0) return -1;
@@ -63,27 +65,27 @@ public sealed partial class MainWindow
         var rodada = -1;
         for (var i = 0; i < _stintBlocks.Length && i < plano.Length; i++)
         {
-            if (plano[i] is StintBlockState.Pending or StintBlockState.Box) continue;
+            if (plano[i] == StintBlockState.Pending) continue;   // vaga não é volta rodada
             if (++rodada == voltaIdx) return i;
         }
         return -1;
     }
 
-    /// <summary>Quantas voltas RODÁVEIS o plano tem (planejadas + saídas de box; sem BOX/vaga).
-    /// É o teto do contador de voltas — a régua da tela térmica ("última volta") usa isto.</summary>
+    /// <summary>Quantas voltas RODÁVEIS o plano tem (planejadas + a out-lap de cada box; sem
+    /// vaga). Teto do contador — a régua da tela térmica ("última volta") usa isto.</summary>
     private int TotalVoltasRodaveis()
     {
         var plano = _planoStintReal ?? PlanoStintPlaceholder;
         var total = 0;
         for (var i = 0; i < _stintBlocks.Length && i < plano.Length; i++)
-            if (plano[i] is not (StintBlockState.Pending or StintBlockState.Box)) total++;
+            if (plano[i] != StintBlockState.Pending) total++;
         return total;
     }
 
     // Define a volta atual (clampeada ao plano) e repinta a barra se mudou. Direção C: a atual fica
     // dourada com glow (RepintarBarra em MainWindow.BarraVoltas.cs) — não é mais só um contorno.
-    // idx é a volta RODADA; a cápsula correspondente pula os BOX (CapsulaDaVolta). Fora do
-    // plano → nenhuma cápsula "atual" (antes de começar / além do plano).
+    // idx é a volta RODADA; CapsulaDaVolta acha a cápsula (o BOX pode ser a "atual" durante o
+    // desvio). Fora do plano → nenhuma cápsula "atual" (antes de começar / além do plano).
     private void ApplyVoltaAtualHalo(int idx)
     {
         if (_stintBlocks.Length == 0) return;
