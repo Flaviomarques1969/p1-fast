@@ -18,7 +18,7 @@ namespace P1Fast.Cockpit.Domain;
 /// <summary>Um fix decodificado do RaceBox (espelho de RaceBoxFix da UI + o iTOW cru).</summary>
 public readonly record struct RaceBoxDecoded(
     double Lat, double Lng, double Kmh, int Fix, int NumSV, double HaccM,
-    double? HeadingDeg, double GX, double GY, double GZ, long ITowMs);
+    double? HeadingDeg, double GX, double GY, double GZ, long ITowMs, string? RawHex = null);
 
 public static class RaceBoxUbxParser
 {
@@ -54,7 +54,8 @@ public static class RaceBoxUbxParser
             if (ok)
             {
                 if (buf[i + 2] == 0xFF && buf[i + 3] == 0x01 && len >= 80)
-                    fixes.Add(Decode(buf, i + 6));
+                    // RawHex: o quadro inteiro (B5 62 … checksum) pro gravador guardar cru.
+                    fixes.Add(Decode(buf, i + 6) with { RawHex = Convert.ToHexString(buf, i, tot).ToLowerInvariant() });
                 i += tot;   // frame válido: pula o frame inteiro
             }
             else

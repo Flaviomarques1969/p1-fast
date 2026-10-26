@@ -558,7 +558,9 @@ public sealed partial class MainWindow
                 // gx/gy/gz = aceleração crua do RaceBox (g), gravada pro dia de bancada calibrar
                 // o eixo + verificar os offsets. Ainda não alimenta a lógica da tela.
                 new { lat = f.Lat, lon = f.Lng, kmh = f.Kmh, fix = f.Fix, numSV = f.NumSV, hacc = f.HaccM,
-                      gx = f.GX, gy = f.GY, gz = f.GZ },
+                      gx = f.GX, gy = f.GY, gz = f.GZ, heading = f.HeadingDeg },
+                // rawHex = o quadro UBX inteiro (Flávio 26/10, painel p1fast-gps-pacote-bruto-1631 = A).
+                rawHex: f.RawHex,
                 // Velocidade de fix fraco é lixo: não pode ABRIR nem SEGURAR a captura
                 // automática por movimento (jitter de 2D pareceria "carro andando").
                 velKmh: fixBom ? f.Kmh : (double?)null);

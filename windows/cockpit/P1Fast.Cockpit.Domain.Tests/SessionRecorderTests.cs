@@ -227,4 +227,31 @@ public class SessionRecorderTests
         }
         finally { Directory.Delete(dir, true); }
     }
+
+    // Pacote bruto + rumo do GPS (Flávio 26/10, painel p1fast-gps-pacote-bruto-1631 = A):
+    // o que o MainWindow.Live passa no Gps(...) tem que chegar ao disco e voltar na releitura.
+    [Fact]
+    public void Gps_RawHexEHeading_VaoParaODiscoEVoltam()
+    {
+        var dir = NovaPasta();
+        try
+        {
+            using var store = new FileSessionStore(dir);
+            var rec = new SessionRecorder(store);
+            const string quadro = "b562ff0150000102";
+
+            rec.Gps(new { lat = -15.7, lon = -47.8, kmh = 60.0, fix = 3, numSV = 9, hacc = 1.2,
+                          gx = 0.1, gy = 0.0, gz = 1.0, heading = 123.4 },
+                    rawHex: quadro, velKmh: 60.0);
+            var resumo = rec.Encerrar();
+
+            var lidos = rec.ExportarSessao(resumo!.Id);
+            Assert.Single(lidos);
+            Assert.Equal("gps", lidos[0].Tipo);
+            Assert.Equal(quadro, lidos[0].RawHex);
+            var el = (JsonElement)lidos[0].Dados!;
+            Assert.Equal(123.4, el.GetProperty("heading").GetDouble(), 3);
+        }
+        finally { try { Directory.Delete(dir, true); } catch { } }
+    }
 }

@@ -132,4 +132,32 @@ public class RaceBoxUbxParserTests
         Assert.Equal(8000, t[1]);
         Assert.Equal(40, t[1] - t[0]);
     }
+
+    // Pacote bruto (Flávio 26/10, painel p1fast-gps-pacote-bruto-1631 = A): cada fix leva o
+    // quadro UBX INTEIRO em hex — força G/giroscópio/hora do GPS saem depois, do disco.
+    [Fact]
+    public void Extract_RawHex_EhOQuadroInteiroByteAByte()
+    {
+        var frame = Frame(Payload(itow: 777, fix: 3, numSV: 9, lat: -15.70, lon: -47.80, kmh: 60));
+        var f = RaceBoxUbxParser.Extract(frame, out _)[0];
+
+        Assert.Equal(Convert.ToHexString(frame).ToLowerInvariant(), f.RawHex);
+        Assert.StartsWith("b562ff01", f.RawHex);
+        Assert.Equal(frame, Convert.FromHexString(f.RawHex!));
+    }
+
+    [Fact]
+    public void Extract_RawHex_LixoEDoisQuadros_CadaFixLevaOProprio()
+    {
+        var f1 = Frame(Payload(itow: 1000, fix: 3, numSV: 9, lat: -15.70, lon: -47.80, kmh: 60));
+        var f2 = Frame(Payload(itow: 1040, fix: 3, numSV: 9, lat: -15.71, lon: -47.81, kmh: 61));
+        var buf = new byte[] { 0x00, 0xB5, 0x13 };
+        buf = [.. buf, .. f1, .. f2];
+
+        var fixes = RaceBoxUbxParser.Extract(buf, out _);
+
+        Assert.Equal(2, fixes.Count);
+        Assert.Equal(Convert.ToHexString(f1).ToLowerInvariant(), fixes[0].RawHex);
+        Assert.Equal(Convert.ToHexString(f2).ToLowerInvariant(), fixes[1].RawHex);
+    }
 }

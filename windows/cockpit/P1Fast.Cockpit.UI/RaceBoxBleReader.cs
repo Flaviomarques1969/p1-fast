@@ -31,8 +31,11 @@ namespace P1Fast.Cockpit.UI;
 // TWallMs (5.3a): carimbo de parede JÁ espaçado por frame — quando um notify BLE traz
 // vários fixes, cada um recebe seu tempo pelo iTOW (não todos na mesma chegada). 0 = não
 // informado (fluxos que não passam pelo espaçador).
+// RawHex: o quadro UBX INTEIRO como chegou (B5 62 … checksum), em hex minúsculo — vai pra
+// gaveta RawHex do gravador, pra força G/giroscópio/hora do GPS saírem depois das sessões
+// já gravadas sem voltar à pista (Flávio 26/10, painel p1fast-gps-pacote-bruto-1631 = A).
 public readonly record struct RaceBoxFix(double Lat, double Lng, double Kmh, int Fix, int NumSV, double HaccM,
-    double? HeadingDeg = null, double GX = 0, double GY = 0, double GZ = 0, long TWallMs = 0);
+    double? HeadingDeg = null, double GX = 0, double GY = 0, double GZ = 0, long TWallMs = 0, string? RawHex = null);
 
 public sealed class RaceBoxBleReader
 {
@@ -260,7 +263,7 @@ public sealed class RaceBoxBleReader
         {
             var d = decs[k];
             _onFix(new RaceBoxFix(d.Lat, d.Lng, d.Kmh, d.Fix, d.NumSV, d.HaccM,
-                                  d.HeadingDeg, d.GX, d.GY, d.GZ, tWalls[k]));
+                                  d.HeadingDeg, d.GX, d.GY, d.GZ, tWalls[k], d.RawHex));
         }
     }
 }
