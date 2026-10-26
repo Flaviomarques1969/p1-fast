@@ -488,8 +488,8 @@ public sealed partial class MainWindow
         long tWall = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         lock (_liveRecLock)
             _liveRecorder?.Gps(
-                new { lat = f.Lat, lon = f.Lng, kmh = f.Kmh, fix = f.Fix, numSV = f.NumSV, hacc = f.HaccM },
-                velKmh: f.Kmh);
+                new { lat = f.Lat, lon = f.Lng, kmh = f.Kmh, fix = f.Fix, numSV = f.NumSV, hacc = f.HaccM, heading = f.HeadingDeg },
+                rawHex: f.RawHex, velKmh: f.Kmh);
 
         // Nuvem: ENFILEIRA todo fix (o laço da nuvem drena pelo GpsLivePublisher, fila-que-
         // não-perde, e reenvia na religação — o disco acima já guarda TODOS os fixes de

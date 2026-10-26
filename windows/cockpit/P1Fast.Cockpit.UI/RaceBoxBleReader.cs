@@ -24,7 +24,10 @@ namespace P1Fast.Cockpit.UI;
 // HeadingDeg (L2): rumo do movimento do PACOTE (headMot, 0=norte, horário) — antes era
 // descartado e o ângulo do ápice saía por 2 posições (mais ruidoso). Null quando não
 // confiável (parado/quase parado: o RaceBox congela/inventa o rumo em baixa velocidade).
-public readonly record struct RaceBoxFix(double Lat, double Lng, double Kmh, int Fix, int NumSV, double HaccM, double? HeadingDeg = null);
+// RawHex: o quadro UBX INTEIRO como chegou (B5 62 … checksum), em hex minúsculo — vai pra
+// gaveta RawHex do gravador, pra força G/giroscópio/hora do GPS saírem depois das sessões
+// já gravadas sem voltar à pista (Flávio 26/10, painel p1fast-gps-pacote-bruto-1631 = A).
+public readonly record struct RaceBoxFix(double Lat, double Lng, double Kmh, int Fix, int NumSV, double HaccM, double? HeadingDeg = null, string? RawHex = null);
 
 public sealed class RaceBoxBleReader
 {
@@ -172,7 +175,7 @@ public sealed class RaceBoxBleReader
                 bool ok = a == buf[i + 6 + len] && b == buf[i + 7 + len];
 
                 if (ok && buf[i + 2] == 0xFF && buf[i + 3] == 0x01 && len >= 80)
-                    fixes.Add(Decode(buf, i + 6));
+                    fixes.Add(Decode(buf, i + 6) with { RawHex = Convert.ToHexString(buf, i, tot).ToLowerInvariant() });
                 i += tot;
             }
 
