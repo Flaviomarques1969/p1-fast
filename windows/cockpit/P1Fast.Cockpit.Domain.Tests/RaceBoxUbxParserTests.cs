@@ -41,6 +41,30 @@ public class RaceBoxUbxParserTests
         return f;
     }
 
+    // Item 9 (27/10): giro X/Y/Z (int16, centésimos de °/s) nos offsets 74/76/78 da documentação;
+    // a aceleração vizinha (68/70/72, milésimos de g) não pode se misturar com o giro.
+    [Fact]
+    public void Decode_GiroNos74_76_78_EmGrausPorSegundo_SemMisturarComAceleracao()
+    {
+        var p = Payload(itow: 1, fix: 3, numSV: 12, lat: -15.77, lon: -47.90, kmh: 80);
+        void I16(int o, short v) { p[o] = (byte)(v & 0xFF); p[o + 1] = (byte)((v >> 8) & 0xFF); }
+        I16(68, 250); I16(70, -120); I16(72, 1003);        // 0,250 / −0,120 / 1,003 g
+        I16(74, 1234); I16(76, -560); I16(78, -2875);      // 12,34 / −5,60 / −28,75 °/s
+        var f = RaceBoxUbxParser.Decode(p, 0);
+        Assert.Equal(12.34, f.GiroX, 6);
+        Assert.Equal(-5.60, f.GiroY, 6);
+        Assert.Equal(-28.75, f.GiroZ, 6);
+        Assert.Equal(0.250, f.GX, 6);
+        Assert.Equal(-0.120, f.GY, 6);
+        Assert.Equal(1.003, f.GZ, 6);
+        // controle: pacote sem giro gravado → 0 (não inventa giro)
+        var semGiro = RaceBoxUbxParser.Decode(Payload(itow: 1, fix: 3, numSV: 12, lat: -15.77, lon: -47.90, kmh: 80), 0);
+        Assert.Equal(0, semGiro.GiroZ);
+        // pelo Extract (frame inteiro) o giro chega igual
+        var viaFrame = RaceBoxUbxParser.Extract(Frame(p), out _);
+        Assert.Equal(-28.75, Assert.Single(viaFrame).GiroZ, 6);
+    }
+
     [Fact]
     public void Extract_FrameValido_DecodificaCamposEiTOW()
     {

@@ -34,7 +34,7 @@ const rec = ler('ios/p1fast-ios/Sources/Telemetry/LiveTelemetryRecorder.swift');
 t('iPhone: publicador GPS do canal desligado (= nil)', /private let cockpitGpsPublisher: CockpitGpsPublisher\? = nil\s*$/m.test(rec));
 t('iPhone: nenhum CockpitGpsPublisher(client:) criado no gravador', !/CockpitGpsPublisher\(client:/.test(rec));
 const live = ler('windows/cockpit/P1Fast.Cockpit.UI/MainWindow.Live.cs');
-const dic = (live.match(/_liveCloudGps\.Enqueue\(new Dictionary[\s\S]{0,1200}?\}\);/) || [''])[0];
+const dic = (live.match(/_liveCloudGps\.Enqueue\(new Dictionary[\s\S]{0,1800}?\}\);/) || [''])[0];
 t('Cockpit: fix do RaceBox vai ao canal com source = "racebox"', /\["source"\]\s*=\s*"racebox"/.test(dic));
 
 console.log(`\ngps-fonte-unica: ${ok} ok / ${fail} fail`);

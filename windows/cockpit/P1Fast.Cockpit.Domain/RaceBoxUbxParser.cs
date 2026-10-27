@@ -9,6 +9,11 @@
 // (offset 0 do payload, u32 ms — tempo GPS da semana) e usá-lo pra ESPAÇAR os frames de
 // uma mesma rajada BLE, que antes ganhavam todos o mesmo carimbo de chegada (dt~0 →
 // km/h absurdo no cérebro). O RaceBoxBleReader passa a delegar aqui.
+//
+// Item 9 do GPS (27/10): giro do carro (rotation rate X/Y/Z, int16 em centésimos de °/s)
+// nos offsets 74/76/78 da DOCUMENTAÇÃO do protocolo do RaceBox Mini — NÃO conferidos em
+// gravação ainda (nenhuma gravação até 27/10 guardou o quadro cru). A conferência é a
+// 1ª gravação com RawHex: giro Z somado no tempo × mudança do rumo do GPS.
 
 using System;
 using System.Collections.Generic;
@@ -18,7 +23,8 @@ namespace P1Fast.Cockpit.Domain;
 /// <summary>Um fix decodificado do RaceBox (espelho de RaceBoxFix da UI + o iTOW cru).</summary>
 public readonly record struct RaceBoxDecoded(
     double Lat, double Lng, double Kmh, int Fix, int NumSV, double HaccM,
-    double? HeadingDeg, double GX, double GY, double GZ, long ITowMs, string? RawHex = null);
+    double? HeadingDeg, double GX, double GY, double GZ, long ITowMs, string? RawHex = null,
+    double GiroX = 0, double GiroY = 0, double GiroZ = 0);
 
 public static class RaceBoxUbxParser
 {
@@ -83,7 +89,12 @@ public static class RaceBoxUbxParser
         double gx = BitConverter.ToInt16(b, o + 68) / 1000.0;
         double gy = BitConverter.ToInt16(b, o + 70) / 1000.0;
         double gz = BitConverter.ToInt16(b, o + 72) / 1000.0;
-        return new RaceBoxDecoded(lat, lon, kmh, fix, numSV, hacc, heading, gx, gy, gz, itow);
+        // giro em °/s (centésimos no pacote) — offsets da documentação, a conferir (ver topo)
+        double rx = BitConverter.ToInt16(b, o + 74) / 100.0;
+        double ry = BitConverter.ToInt16(b, o + 76) / 100.0;
+        double rz = BitConverter.ToInt16(b, o + 78) / 100.0;
+        return new RaceBoxDecoded(lat, lon, kmh, fix, numSV, hacc, heading, gx, gy, gz, itow,
+            GiroX: rx, GiroY: ry, GiroZ: rz);
     }
 
     /// <summary>Espaça os timestamps de parede dos frames de UMA MESMA rajada BLE (5.3a).

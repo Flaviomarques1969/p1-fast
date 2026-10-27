@@ -8276,7 +8276,10 @@ html,body{
      Item 7 (27/10): pancadas (gVert) no mapa, anel nos lugares que se repetem em 2+ voltas e a linha de
      consistência das voltas — tudo do pacote do cérebro (s.pancadas, s.consistencia); a tela não conta.
      Item 8 (27/10): trocas de marcha PROVÁVEIS (s.trocas) — losango azul-claro no mapa onde o G caiu e a
-     linha "trocas (provável)"; a tela não procura troca. -->
+     linha "trocas (provável)"; a tela não procura troca.
+     Item 9 (27/10): traseira saiu PROVÁVEL (s.traseira) — triângulo lilás no mapa onde o carro girou além
+     do que a curva explica e a linha "traseira (provável · giro a conferir)", só quando chega giro do
+     RaceBox (s.traseira.temGiro); a tela não julga giro. -->
 <style>
   .tv-rastro path{fill:none;stroke-linecap:round;stroke-linejoin:round;}
   .tv-rastro .tv-ultima{stroke:#FFFFFF;stroke-opacity:.30;stroke-width:3;}
@@ -8307,7 +8310,7 @@ html,body{
      linha branca fictícia e o "fantasma" de volta de referência que este cérebro não calcula) */
   .b-map.tv-on [data-trechos],.b-map.tv-on [data-traj-live],.b-map.tv-on [data-marker^="ghost"]{display:none;}
   .b-map.tv-parado .tv-setores,.b-map.tv-parado .tv-g,.b-map.tv-parado .tv-rastro,
-  .b-map.tv-parado .tv-consist,.b-map.tv-parado .tv-pancadas,.b-map.tv-parado .tv-trocas{opacity:.45;}
+  .b-map.tv-parado .tv-consist,.b-map.tv-parado .tv-pancadas,.b-map.tv-parado .tv-trocas,.b-map.tv-parado .tv-traseira{opacity:.45;}
 </style>
 <script type="module">
   import { criarCerebroGpsTv } from '/web/command-box/cerebro/cerebro-gps-tv.js';
@@ -8343,13 +8346,15 @@ html,body{
     grupo.appendChild(gp);
     var gt = document.createElementNS(NS, 'g'); gt.setAttribute('class', 'tv-trocas'); gt.setAttribute('data-tv-trocas', '');
     grupo.appendChild(gt);
+    var gs = document.createElementNS(NS, 'g'); gs.setAttribute('class', 'tv-traseira'); gs.setAttribute('data-tv-traseira', '');
+    grupo.appendChild(gs);
     var cons = document.createElement('div'); cons.className = 'tv-consist'; cons.setAttribute('data-tv-consist', '');
     var set = document.createElement('div'); set.className = 'tv-setores'; set.setAttribute('data-tv-setores', '');
     var circ = document.createElement('div'); circ.className = 'tv-g'; circ.setAttribute('data-tv-g', '');
     circ.innerHTML = '<svg viewBox="-60 -60 120 120"></svg><div class="tv-g-txt" data-tv-g-txt></div>';
     var leg = document.createElement('div'); leg.className = 'tv-legenda'; leg.setAttribute('data-tv-legenda', '');
     [set, cons, circ, leg].forEach(function(el){ el.style.display = 'none'; mapa.appendChild(el); });
-    return { mapa: mapa, rastro: g, pancadas: gp, trocas: gt, cons: cons, set: set, circ: circ, circSvg: circ.querySelector('svg'),
+    return { mapa: mapa, rastro: g, pancadas: gp, trocas: gt, traseira: gs, cons: cons, set: set, circ: circ, circSvg: circ.querySelector('svg'),
       circTxt: circ.querySelector('[data-tv-g-txt]'), leg: leg };
   }
 
@@ -8433,6 +8438,14 @@ html,body{
     el.innerHTML = tr.ultima.map(function(p){ return los(p, 5, .35); }).join('') + tr.volta.map(function(p){ return los(p, 7, .9); }).join('');
   }
 
+  // item 9: triângulo onde a traseira saiu (volta corrente forte, última apagada)
+  function desenharTraseira(el, ts){
+    function tri(p, r, op){ return '<path d="M' + p.x + ' ' + (p.y - r) + ' L' + (p.x + r) + ' ' + (p.y + r * .8) + ' L' + (p.x - r)
+      + ' ' + (p.y + r * .8) + ' Z" fill="none" stroke="#C4A1FF" stroke-opacity="' + op + '" stroke-width="1.6"/>'; }
+    el.innerHTML = !ts || !ts.temGiro ? ''
+      : ts.ultima.map(function(p){ return tri(p, 6, .35); }).join('') + ts.volta.map(function(p){ return tri(p, 8, .9); }).join('');
+  }
+
   function desenharConsistencia(ui, s){
     var k = s.consistencia, pc = s.pancadas, l = [];
     if(k) l.push('consistência <b>±' + k.desvioS.toFixed(2).replace('.', ',') + ' s</b> · amplitude <b>'
@@ -8448,6 +8461,10 @@ html,body{
     if(tr && tr.total) l.push('trocas (provável) <b>' + (s.voltaAtual ? tr.volta.length : 0) + '</b> nesta volta'
       + (ult && ult.trocas != null ? ' · <b>' + ult.trocas + '</b> na última' : '')
       + (ult && ult.trocaBuracoMedioS != null ? ' · buraco <b>' + ult.trocaBuracoMedioS.toFixed(2).replace('.', ',') + ' s</b>' : ''));
+    var ts = s.traseira;
+    if(ts && ts.temGiro) l.push('traseira (provável · giro a conferir) <b>' + (s.voltaAtual ? ts.volta.length : 0) + '</b> nesta volta'
+      + (ult && ult.traseira != null ? ' · <b>' + ult.traseira + '</b> na última' : '')
+      + (ts.sinalAprendido ? '' : ' · aprendendo o giro nas curvas'));
     ui.cons.innerHTML = l.join('<br>');
   }
 
@@ -8493,6 +8510,7 @@ html,body{
     desenharSetores(ui, s);
     desenharPancadas(ui.pancadas, s.pancadas);
     desenharTrocas(ui.trocas, s.trocas);
+    desenharTraseira(ui.traseira, s.traseira);
     desenharConsistencia(ui, s);
     desenharTempos(s);
     desenharLegenda(ui, s);

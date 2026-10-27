@@ -23,6 +23,9 @@
 //  - troca de marcha (item 8): buraco curto no G longitudinal durante aceleração, pela casa
 //    troca-marcha-g.js (só com o zero do box valendo). Tudo "provável" até a régua da pista; a troca
 //    sai ~1 s depois (o critério olha à frente) e conta na volta onde o G caiu.
+//  - traseira saiu (item 9): chave giroZ que o notebook publica (giro cru do RaceBox, °/s) contra
+//    o giro que a curva explica (gLat ÷ velocidade), pela casa traseira-giro.js. Só com zero do box;
+//    "provável" e "a conferir" (offset do giro ainda não conferido em gravação). Saída de frente NÃO.
 // ============================================================================
 
 import { criarDetectorChegada } from './chegada-gps.js';
@@ -30,6 +33,7 @@ import { geoParaCommandBox } from '../../cockpit/pista-brasilia-commandbox.js';
 import { fracDe } from '../pista-cb-polyline.js';
 import { pontoGpsAceito } from '../../cockpit/gps-fonte-unica.js';
 import { criarDetectorTrocaMarcha } from './troca-marcha-g.js';
+import { criarDetectorTraseira } from './traseira-giro.js';
 
 /** Linha de chegada oficial de Brasília (tabela marcos, migração 0031 — a mesma da Vista Piloto). */
 export const MARCO_CHEGADA_BRASILIA = {
@@ -168,11 +172,19 @@ export function criarCerebroGpsTv(opts = {}) {
   let grupoPancada = null;        // pancada em curso (|gVert| ainda acima do limite)
   const trocas = [];              // item 8: {n volta da queda, x, y, t, kmh, gAntes, buracoS, provavel}
   const detTroca = criarDetectorTrocaMarcha();
+  const traseiras = [];           // item 9: {n volta do início, x, y, t, duracaoMs, excessoDps, provavel}
+  const detTraseira = criarDetectorTraseira();
+  let viuGiro = false;
 
   function contarTrocas(v) {
     const da = trocas.filter(tr => tr.n === v.n);
     v.trocas = da.length;
     v.trocaBuracoMedioS = da.length ? r3(media(da.map(tr => tr.buracoS))) : null;
+  }
+  function contarTraseiras(v) {
+    const da = traseiras.filter(e => e.n === v.n);
+    v.traseira = da.length;
+    v.traseiraMaxDps = da.length ? Math.max(...da.map(e => e.excessoDps)) : null;
   }
 
   function fecharVolta(t) {
@@ -191,6 +203,7 @@ export function criarCerebroGpsTv(opts = {}) {
       pancadas: daVolta.length,
       pancadaMaxG: daVolta.length ? daVolta.reduce((m, p) => (Math.abs(p.g) > Math.abs(m) ? p.g : m), 0) : null };
     contarTrocas(v);
+    contarTraseiras(v);
     if (guardarVoltas) { v.perfil = perfilVolta; v.rastro = rastroVolta; v.distM = Math.round(distVolta); }
     voltas.push(v);
     rastroUltima = rastroVolta; gUltima = gVolta; picosUltima = picosVolta.n ? picosVolta : null;
@@ -277,6 +290,18 @@ export function criarCerebroGpsTv(opts = {}) {
       if (fechada) contarTrocas(fechada);
     }
 
+    // 2d) traseira saiu (item 9): giro do carro × giro que a curva explica (só com zero do box)
+    const giroZ = typeof g.giroZ === 'number' && Number.isFinite(g.giroZ) ? g.giroZ : null;
+    if (giroZ != null) viuGiro = true;
+    const saidas = detTraseira.ler(zeroOk && giroZ != null
+      ? { t, giroZ, gLat, kmh: kmh != null ? kmh : 0, n: voltaN, x: pos ? r1(pos.x) : null, y: pos ? r1(pos.y) : null }
+      : { t });
+    for (const e of saidas) {
+      traseiras.push(e);
+      const fechada = voltas.find(v => v.n === e.n);
+      if (fechada) contarTraseiras(fechada);
+    }
+
     // 3) mapa: rastro da volta com velocidade e fase do G
     if (pos && (!ultimoRastroGeo || distM(ultimoRastroGeo, { lat: g.lat, lng }) >= PASSO_RASTRO_M)) {
       ultimoRastroGeo = { lat: g.lat, lng };
@@ -359,6 +384,15 @@ export function criarCerebroGpsTv(opts = {}) {
         total: trocas.length,
         volta: trocas.filter(tr => tr.n === voltaN && tr.x != null).map(tr => ({ x: tr.x, y: tr.y, kmh: tr.kmh, buracoS: tr.buracoS })),
         ultima: ultima ? trocas.filter(tr => tr.n === ultima.n && tr.x != null).map(tr => ({ x: tr.x, y: tr.y, kmh: tr.kmh, buracoS: tr.buracoS })) : [],
+      },
+      traseira: {
+        provavel: true,
+        aConferir: true,          // offset do giro no pacote ainda não conferido em gravação
+        temGiro: viuGiro,
+        sinalAprendido: detTraseira.sinal() !== 0,
+        total: traseiras.length,
+        volta: traseiras.filter(e => e.n === voltaN && e.x != null).map(e => ({ x: e.x, y: e.y, excessoDps: e.excessoDps })),
+        ultima: ultima ? traseiras.filter(e => e.n === ultima.n && e.x != null).map(e => ({ x: e.x, y: e.y, excessoDps: e.excessoDps })) : [],
       },
     };
   }

@@ -33,6 +33,9 @@ G do carro no mesmo evento `gps` (item 5, 27/10/2026): `gLong` (+ acelera / − 
 (zero + eixos provados; não aprende de novo) — nenhuma tela recalcula G a partir de `gx/gy/gz`.
 `gVert` (item 7, 27/10/2026): G vertical (+ para cima, sem a gravidade = gz − zero de gz da mesma parada;
 1 G nominal até a 1ª parada) — mesma peça, mesmo evento, também gravado no `.jsonl`; `null` sem gz.
+`giroZ` (item 9, 27/10/2026): giro do aparelho em torno do eixo vertical (°/s, CRU do RaceBox; o sinal depende
+da montagem e é aprendido em curva pelo cérebro) — mesmo evento, também no `.jsonl`. Offset no pacote vem da
+documentação e ainda NÃO foi conferido em gravação (conferir pela 1ª gravação com `rawHex`).
 **Fonte única de posição = RaceBox** (publicado pelo Cockpit com `source: 'racebox'`; Flávio 27/10/2026,
 painel `p1fast-gps-fonte-unica-0911` = C). O iPhone não publica mais `gps`; ponto `source: 'iphone…'`
 é descartado na ponte (`web/cockpit/gps-fonte-unica.js`, catraca `tests/node-smoke-gps-fonte-unica.mjs`).
@@ -57,6 +60,7 @@ Cada cálculo tem UMA casa. Telas usam a casa; **proibido** recriar a conta dent
 | TV do box: mapa com km/h e G, círculo de G, voltas e setores (item 5 do GPS); pancadas, lugares repetidos e consistência das voltas (item 7) | `web/command-box/cerebro/cerebro-gps-tv.js` |
 | Página da volta e comparação entre 2 voltas no celular (item 6 do GPS; volta/setor vêm da MESMA peça da TV) | `web/command-box/cerebro/cerebro-pagina-volta.js` |
 | Troca de marcha PROVÁVEL pelo G longitudinal (item 8 do GPS; critério da análise de 27/10, em fluxo; só com zero do box; a TV recebe por volta `trocas`/`trocaBuracoMedioS` e `s.trocas` do cérebro da TV) | `web/command-box/cerebro/troca-marcha-g.js` |
+| Traseira saiu PROVÁVEL pelo giro (item 9 do GPS; giro do carro acima do que a curva explica = G lateral ÷ velocidade; sinal aprendido em curva; só com zero do box; a TV recebe por volta `traseira`/`traseiraMaxDps` e `s.traseira` do cérebro da TV; saída de FRENTE não se mede sem ângulo do volante) | `web/command-box/cerebro/traseira-giro.js` |
 | Frenagem | `web/command-box/frenagem-real.js` · `frenagem-curvas-reais.js` |
 | Passagem (tempo por trecho) | `web/command-box/passagem-real.js` · `passagem-curvas-reais.js` |
 | Mínima de curva (vmin) | `web/command-box/vmin-curvas-reais.js` · `vmin-aprendizado.js` |

@@ -568,7 +568,10 @@ public sealed partial class MainWindow
                 // gx/gy/gz = aceleração crua do RaceBox (g), gravada pro dia de bancada calibrar
                 // o eixo + verificar os offsets. gLong/gLat/zeroOk = G do carro (item 6).
                 new { lat = f.Lat, lon = f.Lng, kmh = f.Kmh, fix = f.Fix, numSV = f.NumSV, hacc = f.HaccM,
-                      gx = f.GX, gy = f.GY, gz = f.GZ, heading = f.HeadingDeg, gLong, gLat, zeroOk, gVert },
+                      gx = f.GX, gy = f.GY, gz = f.GZ, heading = f.HeadingDeg, gLong, gLat, zeroOk, gVert,
+                      // Item 9 (27/10): giro Z cru do aparelho (°/s; sinal depende da montagem — o
+                      // cérebro aprende em curva). Offset da documentação, conferido pelo rawHex.
+                      giroZ = f.GiroZ },
                 // rawHex = o quadro UBX inteiro (Flávio 26/10, painel p1fast-gps-pacote-bruto-1631 = A).
                 rawHex: f.RawHex,
                 // Velocidade de fix fraco é lixo: não pode ABRIR nem SEGURAR a captura
@@ -603,6 +606,8 @@ public sealed partial class MainWindow
                 ["zeroOk"] = zeroOk,
                 // Item 7: G vertical (+ para cima, sem a gravidade) — pancadas e zebras na TV do box.
                 ["gVert"]  = gVert,
+                // Item 9: giro Z cru (°/s) — "traseira saiu" na TV do box (cérebro aprende o sinal).
+                ["giroZ"]  = f.GiroZ,
             });
         }
 

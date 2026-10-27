@@ -35,7 +35,8 @@ namespace P1Fast.Cockpit.UI;
 // gaveta RawHex do gravador, pra força G/giroscópio/hora do GPS saírem depois das sessões
 // já gravadas sem voltar à pista (Flávio 26/10, painel p1fast-gps-pacote-bruto-1631 = A).
 public readonly record struct RaceBoxFix(double Lat, double Lng, double Kmh, int Fix, int NumSV, double HaccM,
-    double? HeadingDeg = null, double GX = 0, double GY = 0, double GZ = 0, long TWallMs = 0, string? RawHex = null);
+    double? HeadingDeg = null, double GX = 0, double GY = 0, double GZ = 0, long TWallMs = 0, string? RawHex = null,
+    double GiroZ = 0);   // item 9: giro em torno do eixo vertical do aparelho (°/s), offset a conferir
 
 public sealed class RaceBoxBleReader
 {
@@ -267,7 +268,7 @@ public sealed class RaceBoxBleReader
         {
             var d = decs[k];
             _onFix(new RaceBoxFix(d.Lat, d.Lng, d.Kmh, d.Fix, d.NumSV, d.HaccM,
-                                  d.HeadingDeg, d.GX, d.GY, d.GZ, tWalls[k], d.RawHex));
+                                  d.HeadingDeg, d.GX, d.GY, d.GZ, tWalls[k], d.RawHex, d.GiroZ));
         }
     }
 }

@@ -5,6 +5,7 @@
 import { readFileSync } from 'node:fs';
 import { criarCerebroGpsTv, SEM_DADO_MS, PANCADA_G, LUGAR_FRAC } from '../web/command-box/cerebro/cerebro-gps-tv.js';
 import { criarDetectorTrocaMarcha } from '../web/command-box/cerebro/troca-marcha-g.js';
+import { criarDetectorTraseira, giroEsperadoDps, APRENDER_MIN } from '../web/command-box/cerebro/traseira-giro.js';
 
 let ok = 0, fail = 0;
 const t = (nome, cond, extra) => { if (cond) { ok++; console.log('  ok ', nome); } else { fail++; console.log('  FAIL', nome, extra ?? ''); } };
@@ -278,19 +279,88 @@ function rodar(cerebro, tempos, { inicioFrac = 0.9, extra = () => ({}), pularEm 
   t('mapa da última volta fechada (a 3) não herda a troca da volta 2', s.trocas.ultima.length === 0);
 }
 
+// 3e) Item 9 — traseira saiu pelo giro (provável). Curva firme a 80 km/h com G lateral 0,8: o giro que a
+// curva explica é gLat×g÷v ≈ 20 °/s. Aparelho montado "de cabeça para baixo" (giro com sinal −1): o
+// detector tem de APRENDER o sinal e só julgar depois. Saída = giro 60% acima do esperado (≈ +12 °/s).
+{
+  const ESP = giroEsperadoDps(0.8, 80);
+  t('física: giro esperado a 80 km/h com 0,8 G ≈ 20,2 °/s', perto(ESP, 20.2, 0.1), ESP);
+  // anda `ms` de curva a 25 Hz; `giro(ts)` devolve o fator sobre o esperado (1 = curva limpa) ou null (sem giro)
+  const curva = ({ ms = 8000, montagem = -1, kmh = () => 80, gLat = 0.8, giro = () => 1 } = {}) => {
+    const d = criarDetectorTraseira(); const out = [];
+    for (let ts = 0; ts < ms; ts += 40) {
+      const f = giro(ts); const k = kmh(ts); const gl = typeof gLat === 'function' ? gLat(ts) : gLat;
+      out.push(...d.ler({ t: ts, giroZ: f == null ? null : montagem * f * giroEsperadoDps(gl, k), gLat: gl, kmh: k }));
+    }
+    return { d, out };
+  };
+  const janela = (de, dur, fator = 1.6) => (ts) => (ts >= de && ts < de + dur ? fator : 1);
+  const est = curva();
+  t('sinal do giro aprendido = −1 (aparelho invertido) depois de 2 s de curva', est.d.sinal() === -1 && est.d.aprendido() >= APRENDER_MIN, est.d.sinal());
+  t('curva estável de 8 s = 0 saídas', est.out.length === 0, JSON.stringify(est.out));
+  const s04 = curva({ giro: janela(5000, 400) }).out;
+  t('saída de 0,4 s com giro 60% acima = 1, "provável", excesso ≈ 12 °/s',
+    s04.length === 1 && s04[0].provavel === true && s04[0].t === 5000 && s04[0].duracaoMs >= 320 && s04[0].duracaoMs <= 400
+    && perto(s04[0].excessoDps, 0.6 * ESP, 0.2), JSON.stringify(s04));
+  t('montagem normal (sinal +1) acha a mesma saída', curva({ montagem: 1, giro: janela(5000, 400) }).out.length === 1);
+  t('controle: a mesma saída ANTES de aprender o sinal (1 s de curva) = 0', curva({ giro: janela(1000, 400) }).out.length === 0);
+  t('controle: saída de 0,12 s (ruído) = 0', curva({ giro: janela(5000, 120) }).out.length === 0);
+  // folga de 30%: curva fechada a 40 km/h com 1,2 G (≈ 61 °/s esperado) — 20% acima já passa de 5 °/s
+  t('controle: giro só 20% acima (≈ +12 °/s, dentro da folga de 30%) = 0; 40% acima = 1',
+    curva({ kmh: () => 40, gLat: 1.2, giro: janela(5000, 400, 1.2) }).out.length === 0
+    && curva({ kmh: () => 40, gLat: 1.2, giro: janela(5000, 400, 1.4) }).out.length === 1);
+  t('controle: a mesma saída a 20 km/h (abaixo de 30) = 0',
+    curva({ kmh: (ts) => (ts >= 4500 && ts < 6000 ? 20 : 80), giro: janela(5000, 400) }).out.length === 0);
+  // depois de aprender a 0,8 G, o G lateral cai na janela da saída
+  const gCai = (gl) => (ts) => (ts >= 4500 && ts < 6000 ? gl : 0.8);
+  t('controle: curva leve (0,25 G → 6 °/s esperado) com 60% acima = 0 (excesso < 5 °/s); com 2× = 1',
+    curva({ gLat: gCai(0.25), giro: janela(5000, 400) }).out.length === 0
+    && curva({ gLat: gCai(0.25), giro: janela(5000, 400, 2) }).out.length === 1);
+  t('controle: quase reta (0,15 G, abaixo de 0,2) com giro 4× = 0; a 0,25 G com 4× = 1',
+    curva({ gLat: gCai(0.15), giro: janela(5000, 400, 4) }).out.length === 0
+    && curva({ gLat: gCai(0.25), giro: janela(5000, 400, 4) }).out.length === 1);
+  t('controle: giro no sentido OPOSTO à curva = 0', curva({ giro: janela(5000, 400, -1.6) }).out.length === 0);
+  const semGiro = curva({ giro: () => null });
+  t('controle: sem giro = 0 saídas e sinal não aprendido', semGiro.out.length === 0 && semGiro.d.sinal() === 0);
+  t('controle: vão sem giro no meio não emenda duas metades curtas (0,16 s + 0,16 s = 0)',
+    curva({ giro: (ts) => (ts >= 5160 && ts < 5240 ? null : janela(5000, 400)(ts)) }).out.length === 0);
+}
+// cérebro da TV: saída que começa antes da chegada e só fecha depois conta na volta em que COMEÇOU
+{
+  const gl = 0.8, giro = (fator) => -fator * giroEsperadoDps(gl, 80);
+  const saida = (v, fr) => (v === 2 && fr > 0.99) || (v === 3 && fr < 0.003);
+  const montar = (extra) => { const c = criarCerebroGpsTv({ marcoChegada: MARCO, projetar }); rodar(c, [60, 60, 60], { extra }); return c.snapshot(); };
+  const s = montar((tw, fr, v) => ({ gLat: gl, gLong: 0, zeroOk: true, giroZ: giro(saida(v, fr) ? 1.6 : 1) }));
+  t('cérebro: traseira atravessando a chegada conta na volta 2 (e só nela)', s.voltas.length === 3
+    && s.voltas.map(v => v.traseira).join() === '0,1,0' && perto(s.voltas[1].traseiraMaxDps, 0.6 * giroEsperadoDps(gl, 80), 0.3)
+    && s.traseira.total === 1, JSON.stringify(s.voltas.map(v => [v.traseira, v.traseiraMaxDps])));
+  t('cérebro: pacote marca "provável", "a conferir", tem giro e sinal aprendido',
+    s.traseira.provavel === true && s.traseira.aConferir === true && s.traseira.temGiro === true && s.traseira.sinalAprendido === true);
+  t('cérebro: mapa da última volta fechada (a 3) não herda a saída da volta 2', s.traseira.ultima.length === 0);
+  const sz = montar((tw, fr, v) => ({ gLat: gl, gLong: 0, zeroOk: false, giroZ: giro(saida(v, fr) ? 1.6 : 1) }));
+  t('controle cérebro: mesmo giro sem zero do box = 0 saídas', sz.traseira.total === 0 && sz.voltas.every(v => v.traseira === 0));
+  const sg = montar(() => ({ gLat: gl, gLong: 0, zeroOk: true }));
+  t('controle cérebro: gravação sem giroZ (como a de 27/10) = temGiro falso e 0 saídas',
+    sg.traseira.temGiro === false && sg.traseira.total === 0);
+}
+
 // 4) Ligações na fonte (quem desligar reprova aqui)
 const live = ler('windows/cockpit/P1Fast.Cockpit.UI/MainWindow.Live.cs');
 const dic = (live.match(/_liveCloudGps\.Enqueue\(new Dictionary[\s\S]{0,1800}?\}\);/) || [''])[0];
 t('Cockpit: canal leva gLong/gLat/zeroOk', /\["gLong"\]/.test(dic) && /\["gLat"\]/.test(dic) && /\["zeroOk"\]/.test(dic));
 t('Cockpit (item 7): canal e .jsonl levam gVert da MESMA peça (Converter com f.GZ)',
   /\["gVert"\]\s*=\s*gVert/.test(dic) && /_gpsFiltro\.Acel\.Converter\(f\.GX, f\.GY, f\.GZ\)/.test(live)
-  && /_liveRecorder\?\.Gps\([\s\S]{0,600}?gVert \}/.test(live));
+  && /_liveRecorder\?\.Gps\([\s\S]{0,600}?gVert[,\s][\s\S]{0,300}?\}/.test(live));
 t('Cockpit: G do canal sai da MESMA peça do cérebro (Acel.Converter), sem aprender de novo',
   /_gpsFiltro\.Acel\.Converter\(f\.GX, f\.GY(, f\.GZ)?\)/.test(live) && !/_gpsFiltro\.Acel\.Ler\(/.test(live));
 const contrato = ler('docs/CONTRATO_DADOS.md');
 t('contrato: gLong/gLat/zeroOk registrados e casa do cérebro da TV listada',
   /gLong/.test(contrato) && /zeroOk/.test(contrato) && /cerebro-gps-tv\.js/.test(contrato));
 t('contrato (item 7): gVert registrado', /gVert/.test(contrato));
+t('Cockpit (item 9): canal e .jsonl levam giroZ do RaceBox; leitor BLE repassa d.GiroZ',
+  /\["giroZ"\]\s*=\s*f\.GiroZ/.test(dic) && /_liveRecorder\?\.Gps\([\s\S]{0,900}?giroZ\s*=\s*f\.GiroZ[\s\S]{0,100}?\}/.test(live)
+  && /tWalls\[k\], d\.RawHex, d\.GiroZ\)/.test(ler('windows/cockpit/P1Fast.Cockpit.UI/RaceBoxBleReader.cs')));
+t('contrato (item 9): giroZ registrado e casa da traseira listada', /giroZ/.test(contrato) && /traseira-giro\.js/.test(contrato));
 const tela = ler('_design-reference/mockup-command-box-vista-piloto.html');
 const camada = (tela.match(/<!-- TV-GPS item 5[\s\S]*?<\/script>/) || [''])[0];
 t('TV: Vista Piloto carrega o cérebro da TV pela ponte única', /cerebro-gps-tv\.js/.test(camada) && /cloud-bridge\.js/.test(camada));
@@ -306,6 +376,12 @@ t('TV (item 8): camada desenha as trocas do pacote, dentro do quadro, marcadas "
 t('TV (item 8): camada não procura troca (sem detector, BURACO ou QUEDA na tela)',
   !/criarDetectorTrocaMarcha|troca-marcha-g|BURACO_|QUEDA_FRAC/.test(camada));
 t('contrato (item 8): casa da troca de marcha registrada', /troca-marcha-g\.js/.test(contrato));
+t('TV (item 9): camada desenha a traseira do pacote, dentro do quadro, só com giro, marcada "provável · giro a conferir"',
+  /s\.traseira/.test(camada) && /if\(ts && ts\.temGiro\) l\.push\('traseira \(provável · giro a conferir\)/.test(camada)
+  && /el\.innerHTML = !ts \|\| !ts\.temGiro \?/.test(camada)
+  && /function quadro\(\)[\s\S]*?desenharTraseira\(ui\.traseira, s\.traseira\);[\s\S]*?\n  \}/.test(camada));
+t('TV (item 9): camada não julga giro (sem detector, EXCESSO_ ou giro esperado na tela)',
+  !/criarDetectorTraseira|traseira-giro|EXCESSO_|giroEsperado|giroZ/.test(camada));
 t('TV: a camada só exibe (não projeta GPS nem refaz G/volta)',
   camada.length > 0 && !/geoParaCommandBox|fracDe\(|criarDetectorChegada|Math\.hypot|createClient/.test(camada));
 
