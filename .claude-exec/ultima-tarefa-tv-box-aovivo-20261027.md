@@ -239,3 +239,30 @@ PONTO DE PARADA 1027-1834 (27/10 ~18h34): heartbeat commitado (d56b7b74d); E4 es
 
 ### RETOMADA 1027-1834 (27/10, depois do /clear)
 Segue do PRÓXIMO (1) da seção E4: catraca node-smoke-teste-ao-vivo.mjs (+ controles) → smoke um a um → commit+push → E5. Produção intocada.
+- (RETOMADA 1027-1834) E4 FECHADA: catraca tests/node-smoke-teste-ao-vivo.mjs 31/31 (1 régua errada consertada: regex do ícone esperava "');");
+  CONTROLE árvore velha (index.html + INSTALAR-ICONE do backup + TESTE-AO-VIVO estragado com --producao/Debug/sem ?canal) = 14 ok / 7 FAIL, saída 1.
+  Somada ao npm run smoke (+ smoke:teste-ao-vivo); smoke um a um 83/84 (só schema-parity; nenhum commit de hoje toca Migrations.swift/supabase,
+  último 21/06). arquitetura 39/0. Commit a33294356 + push na branch claude/tv-box-aovivo-e2-20261027. Nada publicado.
+### E5 — EM ANDAMENTO (27/10 ~18h50), nada publicado
+- p1box NO AR = publicação de 01/07 (dpl_FNKZphaSJqLyB7bTtC2qz2242V73, 41 arquivos). A Vista do ar tem ~286 linhas (Vmin novo, combustível
+  da nuvem, nuvemFresca) que a linha desta branch NÃO tem (divergiu em 47eff2567, 05/07) → publicar a Vista nova por cima = REGRESSÃO.
+  DECISÃO (minha, sem regressão): TV nova em /tv/ com cópia própria das peças (/tv/web/...), telas do ar byte a byte, /api/room (ponte) +
+  package.json type module. fam-racing (184 dias no ar) e p1tv FORA: validador antigo ignora campo extra → ponte funciona com ele.
+- Cópia fiel do ar: .claude-exec/p1box-ar-20261027/ (arquivos/ + MANIFESTO-AR.sha256 + lista Vercel): 41/41 sha1 = uid da Vercel.
+- tools/montar-p1box-tv.mjs (NOVO, sem commit): pacote dist/p1box-tv = 82 arquivos (41 do ar idênticos + 41 novos), lista
+  dist/p1box-tv-LISTA.sha256; replay-hoje-* fora de propósito (só DEV). Controles: base alterada = RECUSADO saída 1; sem isolar = RECUSADO.
+- gps.cmd (ponte ~/Projetos/p1fast-ponte-notebook/pagina/): escrito por mim, APROVADO pela imac-9c (BR = esta branch, build Release,
+  ícones se as 2 compilações passam, abre TESTE-AO-VIVO com Release ok). Backup gps.cmd.bak-20261027-1844-antes-e2-release. Ela pede o clique ao Flávio.
+- ENSAIO .claude-exec/ensaio-pacote-p1box/ensaio-pacote.mjs (nuvem REAL, canal de teste; sala de vídeo falsa): 13 ok / 3 FAIL.
+  TRIAGEM: os 3 (E1, E3, E4) = RÉGUA ERRADA — antes de eu publicar, a TV já mostrava "GPS SEM POSIÇÃO · 5 satélites": outro emissor
+  vivo no cockpit-bubi-dev-teste (notebook/imac-9c). Isolamento, /api/room espectador, 0 404, 0 erro de script, telas do ar OK, 80/80 msgs aceitas.
+PRÓXIMO: (1) ensaio em canal SÓ DELE: CANAL=cockpit-bubi-dev-ensaio-e5 (passa na regra ^cockpit-bubi-[a-z0-9-]{1,40}$) — trocar a const
+CANAL do ensaio, rodar, e como controle rodar no dev-teste de novo (deve repetir as 3 falhas só se o outro emissor seguir vivo);
+(2) catraca do montador em tests/ (+ npm run smoke) e commit+push de tools/montar-p1box-tv.mjs + ensaio; (3) PACOTE-TV-BOX-AO-VIVO.md
+(ENTRA: /tv/ 39 + api/room.js + package.json; NÃO ENTRA: as 41 do ar, fam-racing, p1tv, Vista de julho; passos: link p1box no dist,
+vercel deploy (preview) → conferir → --prod; rollback = promote dpl_FNKZphaSJqLyB7bTtC2qz2242V73; pós: sha das 41 do ar + /tv/?tv=1);
+(4) frase MIGRAR no fecho; (5) relatório do clique no notebook (imac-9c manda).
+PONTO DE PARADA 1027-1847 (27/10 ~18h50): E4 commitada (a33294356); E5 no meio sem commit — seguir do PRÓXIMO (1) da seção E5.
+
+### RETOMADA 1027-1847 (27/10, depois do /clear)
+Segue do PRÓXIMO (1) da seção E5: ensaio em canal só dele (cockpit-bubi-dev-ensaio-e5) → catraca do montador + smoke → commit/push → PACOTE-TV-BOX-AO-VIVO.md → frase MIGRAR. Produção intocada.
