@@ -62,3 +62,22 @@ E5 PACOTE + ENSAIO: montar p1box com a TV nova (+ ponte de sala), PACOTE-*.md, e
 
 ## ANDAMENTO
 - 27/10 16h28: auditoria fechada, ficha escrita, worktree criada (base 42535e946 já com o conserto da religação). Próximo: E1.
+- 27/10 16h28: E1 começou só com leitura (nada editado). Pontos de entrada confirmados: .stage max 1280×720 (linhas 77-86);
+  tick() da demo (linhas ~7062-7085) usa window.__cbPos.fracAt(now) e, sem posição real, volta ao relógio fictício (T1) e escreve o selo
+  cb-live-selo (T2). PRÓXIMO: ler os outros 5 escritores do selo (:7744,7869,7927,8138,8189,8551), onGps do HUD (:7887-7895), camada
+  modo RaceBox (:8600-8691); desenhar o "modo TV" (ligado com ?canal= ou ?tv=1): sem relógio de demo, selo com dono único, idade pelo tWall,
+  escala da .stage para preencher a tela; backup do HTML em .claude-exec/backup-tv-honesta-20261027/ ANTES de editar.
+
+## RETOMADA 1027-1629 (27/10, conversa nova após /clear)
+Território reservado de novo (tv-box-aovivo-1027). Backup do HTML em .claude-exec/backup-tv-honesta-20261027/ (base 4e9b62c85).
+Desenho da E1: módulo puro web/command-box/cerebro/cerebro-tv-sinal.js (idade pelo tWall, ordem, fix, estados do selo) +
+"modo TV" no HTML (?tv=1 ou ?canal=; ?tv=0 desliga): selo com dono único, HUD/carro só o ponto mais novo a 5 Hz, carro congela
+na queda, cobertura RaceBox desde o início, layout do arquivo (não o salvo), escala para a tela, sem barra de edição;
+sem ponte → recarrega em 15 s.
+- 27/10 ~17h: E1 PRONTA E PROVADA em DEV. Modo TV (?tv=1 ou ?canal=; ?tv=0 desliga) em _design-reference/mockup-command-box-vista-piloto.html
+  + cérebro novo web/command-box/cerebro/cerebro-tv-sinal.js (registrado em docs/CONTRATO_DADOS.md e na trava de arquitetura).
+  Provas: tests/node-smoke-tv-honesta.mjs 37/37 · smoke:arquitetura 37/37 · Chrome sem janela
+  .claude-exec/prova-tv-honesta/prova-tv-honesta.mjs 32/32 (fotos tv-1920-*.png, tv-960-*.png); CONTROLE contra o backup = 26 falhas de 32.
+  Fica para depois (não é E1): import() dos outros blocos sem nova tentativa → resolvido pela recarga de 15 s; texto pequeno
+  da camada GPS (6 px → 9 px com a escala 1,5); "não vem do RaceBox" agora quebra linha.
+  PRÓXIMO: E2 (envio do notebook, C#) — avisar a janela «P1FAST - GPS TV modo RaceBox» antes de mexer em MainWindow.Live.cs.
