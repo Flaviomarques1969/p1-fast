@@ -274,3 +274,12 @@ Segue do PRÓXIMO (1) da seção E5: ensaio em canal só dele (cockpit-bubi-dev-
 - CATRACA tests/node-smoke-montar-p1box-tv.mjs 17/17 (1 régua errada consertada: nome fixo da lista p1box-tv-LISTA.sha256). Controles dentro dela:
   base com 1 byte trocado, arquivo a mais, ar já com tv/, montador sem isolar → todos RECUSADOS saída 1. Somada ao npm run smoke
   (+ smoke:montar-p1box-tv). Smoke um a um 84/85 (só schema-parity, anterior). arquitetura 39/0.
+- (RETOMADA 1027-1847) MAPA: p1box gravado em ~/.claude/skills/migrar-producao/mapa-publicacao-p1fast.md (backup .bak-antes-p1box-20261027):
+  projeto prj_EE2vFPmwyKxRtvdmVNykAgRPtudi sem build; prévia protegida por login (robô não abre) → roteiro deploy --prod --skip-domain,
+  conferir árvore, promote. API Vercel (GET) 27/10 ~19h: produção = dpl_FNKZ (01/07 20:28). Ponte /api/room sem env nem segredo.
+- tools/conferir-p1box-no-ar.mjs (NOVO): a conferência única da skill é presa ao CDAI e pararia aqui. Provas: ar × cópia do ar APROVADO
+  41/41; ar × pacote REPROVADO; 27/06 × cópia de 01/07 REPROVADO; dpl inexistente PAROU saída 2; controles internos reprovam.
+- Ensaio: servidor em servidor-pacote.mjs; ENSAIO_URL=<site> roda contra o publicado; pedido de sala capturado pelo navegador.
+  Local 17/0, modo URL (servidor à parte) 17/0. CONTROLE: TV sem papel 'tv' = 16/1 (E7), saída 1.
+- PACOTE .claude-exec/PACOTE-tv-box-ao-vivo.md escrito (ENTRA tv/ 39 + api/room.js + package.json; NÃO ENTRA as 41 do ar etc.).
+  guarda-das-mudancas: APROVADO (nada a conferir). Nada publicado. Falta só a frase dele.

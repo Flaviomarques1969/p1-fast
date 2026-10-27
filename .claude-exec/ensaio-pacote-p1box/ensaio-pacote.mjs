@@ -7,11 +7,12 @@
 //    (SEM SINAL HÁ X s) → rajada velha (ATRASADO) → volta (AO VIVO); isolamento (a TV só pede /tv/...,
 //    /api/room e CDNs); telas do ar (menu e Vista de julho) seguem carregando as peças da RAIZ.
 // Uso: node ensaio-pacote.mjs [pasta-do-pacote] [pasta-saida]     Sai 1 se qualquer item reprovar.
+// ENSAIO_URL=https://p1box.vercel.app → mesmo ensaio contra o site PUBLICADO (validação pós-publicação): sem servidor
+// local, a sala de vídeo é a de verdade (a TV pede como espectador; a resposta tem de trazer só o acesso de espectador).
 import { createRequire } from 'node:module';
-import { createServer } from 'node:http';
-import { readFileSync, existsSync, statSync } from 'node:fs';
-import { join, extname, resolve } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { servirPacote } from './servidor-pacote.mjs';
 const reqCdai = createRequire('/Users/imac/Documents/Sistemas/cdai/frontend/package.json');
 const { chromium } = reqCdai('playwright');
 const RAIZ = new URL('../../', import.meta.url).pathname;
@@ -29,29 +30,11 @@ let ok = 0, falha = 0;
 const t = (nome, cond, extra) => { console.log((cond ? '  ok  ' : '  FAIL ') + nome + (cond ? '' : '  ' + JSON.stringify(extra))); cond ? ok++ : falha++; };
 const espera = (ms) => new Promise((r) => setTimeout(r, ms));
 
-// ── servidor "Vercel" local ────────────────────────────────────────────────
-const { default: room } = await import(pathToFileURL(join(PACOTE, 'api/room.js')).href);
-const pedidosSala = [];
-const famRacingFalso = async (url, o) => { pedidosSala.push({ url, body: JSON.parse(o.body) });
-  return { ok: true, status: 200, text: async () => JSON.stringify({ ok: true, roomName: 'ensaio', roomUrl: 'https://exemplo.invalid/ensaio', tokenPiloto: 'TP', tokenBox: 'TB' }) }; };
-const tipos = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.jpg': 'image/jpeg', '.css': 'text/css' };
-const servidor = createServer(async (req, res) => {
-  const u = new URL(req.url, 'http://x');
-  if (u.pathname === '/api/room') {
-    let corpo = ''; for await (const c of req) corpo += c;
-    let body = corpo; try { body = JSON.parse(corpo); } catch {}
-    const r = { setHeader: (k, v) => res.setHeader(k, v), status(c) { res.statusCode = c; return this; },
-      send(x) { res.end(x); }, json(x) { res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify(x)); } };
-    return room({ method: req.method, body }, r, { fetchFn: famRacingFalso });
-  }
-  let p = join(PACOTE, decodeURIComponent(u.pathname));
-  if (existsSync(p) && statSync(p).isDirectory()) p = join(p, 'index.html');
-  if (!p.startsWith(PACOTE) || !existsSync(p)) { res.statusCode = 404; return res.end('404'); }
-  res.setHeader('Content-Type', tipos[extname(p)] || 'application/octet-stream');
-  res.end(readFileSync(p));
-});
-await new Promise((r) => servidor.listen(0, '127.0.0.1', r));
-const BASE = `http://127.0.0.1:${servidor.address().port}`;
+// ── site: servidor "Vercel" local com o pacote, ou o site publicado (ENSAIO_URL) ───
+const URL_PUBLICADA = (process.env.ENSAIO_URL || '').replace(/\/$/, '');
+const local = URL_PUBLICADA ? null : await servirPacote(PACOTE);
+const BASE = URL_PUBLICADA || local.base;
+console.log('site do ensaio: ' + BASE + (URL_PUBLICADA ? ' (PUBLICADO)' : ' (pacote local, sala de vídeo falsa)'));
 
 // ── GPS de verdade pela nuvem, canal de TESTE ──────────────────────────────
 const fx = JSON.parse(readFileSync(RAIZ + 'web/command-box/fixtures/replay-hoje-2026-06-21.json', 'utf8'));
@@ -79,9 +62,10 @@ async function publicar(segundos, { atrasoMs = 0, intervaloMs = 200 } = {}) {
 // ── Chrome sem janela ──────────────────────────────────────────────────────
 const browser = await chromium.launch({ headless: true, executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' });
 const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
-const erros = [], pedidos = [], quebrados = [];
+const erros = [], pedidos = [], quebrados = [], pedidosSala = [];
 page.on('pageerror', (e) => erros.push(String(e).slice(0, 200)));
-page.on('request', (r) => pedidos.push(r.url()));
+page.on('request', (r) => { pedidos.push(r.url());
+  if (r.url() === BASE + '/api/room') { let b = null; try { b = JSON.parse(r.postData() || 'null'); } catch {} pedidosSala.push({ body: b }); } });
 page.on('response', (r) => { if (r.status() >= 400) quebrados.push(r.status() + ' ' + r.url()); });
 await page.goto(`${BASE}/tv/?canal=${CANAL}`, { waitUntil: 'load' });
 const ver = () => page.evaluate(() => {
@@ -124,7 +108,8 @@ t('E6: controle — a TV pediu peças de /tv/web/', locais.some((p) => p.startsW
 t('E7: TV pediu a sala como espectador (papel tv) e a resposta não traz o acesso do piloto',
   pedidosSala.length > 0 && pedidosSala.every((p) => p.body.papel === 'tv'), pedidosSala.map((p) => p.body));
 const resp = await page.evaluate(async () => (await fetch('/api/room', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ papel: 'tv' }) })).json());
-t('E7: /api/room do pacote devolve só tokenBox', resp.tokenBox === 'TB' && !('tokenPiloto' in resp), resp);
+t('E7: /api/room do site devolve o acesso de espectador e nunca o do piloto', !!resp.tokenBox && !('tokenPiloto' in resp),
+  { ...resp, tokenBox: resp.tokenBox ? '(presente)' : resp.tokenBox });
 const locaisQuebrados = quebrados.filter((q) => q.includes(BASE) && !q.includes('/favicon.ico'));
 t('E8: nenhum arquivo do pacote deu 404 na TV', locaisQuebrados.length === 0, locaisQuebrados);
 t('E8: nenhum erro de script na TV', erros.length === 0, erros);
@@ -141,6 +126,6 @@ for (const tela of ['/', '/mockup-command-box-vista-piloto.html', '/mockup-comma
 
 console.log(`\nmensagens publicadas no canal ${CANAL}: ${enviadas} aceitas pela nuvem, ${recusadas} recusadas`);
 t('nuvem aceitou todas as mensagens do ensaio', recusadas === 0 && enviadas > 0, { enviadas, recusadas });
-await browser.close(); await nuvem.removeAllChannels(); servidor.close();
+await browser.close(); await nuvem.removeAllChannels(); if (local) local.servidor.close();
 console.log(`\nensaio do pacote: ${ok} ok / ${falha} falha`);
 process.exit(falha ? 1 : 0);
