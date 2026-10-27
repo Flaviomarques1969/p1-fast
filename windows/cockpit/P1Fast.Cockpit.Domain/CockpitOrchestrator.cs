@@ -39,6 +39,10 @@ public sealed class CockpitOrchestrator
     // verdade (port do "conserto 11/06" web, retagSubsPorEventos/acharVminBuffer) — e pra
     // (M2) congelar o ângulo do ápice NO cruzamento, não no instante da saída.
     private double? _freadaT, _apiceT;
+    // Item 4 (ordem de 27/10): ápice REAL = pico do G lateral (evento "apice-pelo-g"). Quando existe, é ele que
+    // separa freio/ápice no H4; sem G segue o cruzamento geométrico. A bolinha (_apiceAngulo/_apiceDist) não muda.
+    private double? _apiceGT;
+    private TrechoEvento? _saidaComResumo; // "saida-cruzou" da passagem (traz o resumo da curva pelo G)
     private double? _apiceAngulo, _apiceDist;
 
     // Velocidades/medidas reais de referência por curva (da melhor passagem), pra comparar e colorir.
@@ -318,7 +322,12 @@ public sealed class CockpitOrchestrator
                 // sobrescrevia o estado da bolinha (distância) pelo estado de VELOCIDADE no
                 // cruzamento → cor errada. A velocidade do ápice vira só _pApi (referência).
                 break;
+            case "apice-pelo-g":
+                _subAtual = "apice";
+                _apiceGT ??= ev.T;
+                break;
             case "saida-cruzou":
+                _saidaComResumo = ev;
                 _pSai = ev.Kmh;
                 PontoVelocidade("saida", ev.Kmh, r => r.Sai);
                 FecharPassagem(ev.SegmentId);
@@ -355,7 +364,8 @@ public sealed class CockpitOrchestrator
         _cumDist = 0;
         _buf.Clear();
         _pEnt = _pFre = _pApi = _pSai = null;
-        _freadaT = _apiceT = _apiceAngulo = _apiceDist = null;
+        _freadaT = _apiceT = _apiceAngulo = _apiceDist = _apiceGT = null;
+        _saidaComResumo = null;
         _vminCorrente = double.PositiveInfinity;
         _bolinhaMinDist = double.PositiveInfinity; // registro da bolinha zera POR PASSAGEM (mesma curva re-entrada inclusa)
     }
@@ -437,7 +447,8 @@ public sealed class CockpitOrchestrator
         var pontosRaw = _buf.Select(b => new PontoPassagem(
             b.Lat, b.Lng, b.Kmh, b.T, Math.Min(1, Math.Max(0, b.CumDist / total)), b.Sub)).ToList();
         // H4: os subs viram entrada/freio/apice/saida pelos marcos reais ANTES do delta.
-        var pontos = RetagSubs(pontosRaw, _freadaT, _apiceT);
+        var apiceMarco = _apiceGT ?? _apiceT;
+        var pontos = RetagSubs(pontosRaw, _freadaT, apiceMarco);
         var passagem = new Passagem(segId, pontos);
 
         if (_referencias.TryGetValue(segId, out var referencia) && _refTempos.TryGetValue(segId, out var tempoRefS))
@@ -496,7 +507,10 @@ public sealed class CockpitOrchestrator
         // dado cada, independentes. A UI decide se bateu recorde e persiste (o cérebro não faz I/O).
         PassagemFechada?.Invoke(new DadosPassagem(
             segId, tempoAtualS, _pEnt, _pFre, _pApi, _pSai,
-            double.IsInfinity(_vminCorrente) ? null : _vminCorrente));
+            double.IsInfinity(_vminCorrente) ? null : _vminCorrente,
+            ApiceT: apiceMarco, ApicePeloG: _apiceGT is not null,
+            GLatPico: _saidaComResumo?.GLatPico, FreioNaCurvaS: _saidaComResumo?.FreioNaCurvaS,
+            FreioNaCurvaM: _saidaComResumo?.FreioNaCurvaM, GCombinadoMax: _saidaComResumo?.GCombinadoMax));
 
         _segAtual = null;
         _buf.Clear();

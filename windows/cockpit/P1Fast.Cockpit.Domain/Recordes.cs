@@ -37,7 +37,16 @@ public sealed record DadosPassagem(
     double? FrenagemM,
     double? ApiceKmh,
     double? SaidaKmh,
-    double? VminKmh);
+    double? VminKmh,
+    // Item 4 (ordem de 27/10) — NÃO são recordes (AplicarPassagem lê só os campos acima): ApiceT = instante do
+    // ápice usado nas fases (pico do G lateral quando ApicePeloG; senão o cruzamento geométrico); o resto é o
+    // resumo da curva pelo G (null sem G do carro com zero).
+    double? ApiceT = null,
+    bool ApicePeloG = false,
+    double? GLatPico = null,
+    double? FreioNaCurvaS = null,
+    double? FreioNaCurvaM = null,
+    double? GCombinadoMax = null);
 
 /// <summary>
 /// Armazém de recordes de um carro. Coleção de itens chaveados (ver <see cref="ChaveVolta"/> /
