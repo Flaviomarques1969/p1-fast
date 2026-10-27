@@ -570,6 +570,10 @@ public sealed partial class MainWindow
         // qualquer jeito). Chaves EXATAS do cloudSend('gps',…) de web/teste-aparelhos — não
         // quebrar consumidor. (O web amostra a 5 Hz; aqui vai o full 25 Hz, agora SEM perder fix.)
         if (_liveNuvem is not null)
+        {
+            // Item 5 (27/10): G do CARRO (zero do box + eixos provados) pela MESMA peça do cérebro
+            // (_gpsFiltro.Acel), sem aprender de novo — a TV do box só exibe, não refaz a conta.
+            var gCarro = _gpsFiltro.Acel.Converter(f.GX, f.GY);
             _liveCloudGps.Enqueue(new Dictionary<string, object?>
             {
                 ["lat"]   = f.Lat,
@@ -585,7 +589,13 @@ public sealed partial class MainWindow
                 // Fonte única de posição no canal = RaceBox (Flávio 27/10, painel
                 // p1fast-gps-fonte-unica-0911 = C) — chave aditiva; o painel descarta 'iphone…'.
                 ["source"] = "racebox",
+                // Item 5: chaves ADITIVAS (docs/CONTRATO_DADOS.md §1). gLong + acelera / − freia;
+                // gLat = lado; zeroOk = já descontou o zero do box (false = orientado, não zerado).
+                ["gLong"]  = gCarro is { } gc ? (object?)Math.Round(gc.Long, 3) : null,
+                ["gLat"]   = gCarro is { } gl ? (object?)Math.Round(gl.Lat, 3) : null,
+                ["zeroOk"] = gCarro?.ZeroOk ?? false,
             });
+        }
 
         // Fix FRACO para AQUI: disco e nuvem já o guardaram (marcado); tela, LED e cérebro
         // não o veem — o LED de GPS degrada honesto se só chegar fraco (gpsMudo em 5 s).

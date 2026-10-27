@@ -7074,7 +7074,7 @@ html,body{
           var _txt = _selo.querySelector('.cb-txt');
           if(_txt) _txt.textContent =
               _modo === 'nuvem'  ? 'AO VIVO · posição da nuvem'
-            : _modo === 'replay' ? 'DEV · VOLTA GRAVADA 23/05 (não é ao vivo)'
+            : _modo === 'replay' ? ((window.__cbPos && window.__cbPos.rotuloReplay) || 'DEV · VOLTA GRAVADA 23/05 (não é ao vivo)')
             :                      'GPS local (provisório, sem nuvem)';
         }
       }
@@ -7111,6 +7111,9 @@ html,body{
       updateLiveCoach(liveT);
       updateLiveTermica(liveT);
 
+      // ITEM 5 do GPS (27/10): com o cérebro da TV recebendo o carro (ou a volta gravada DEV),
+      // os tempos do canto são DELE (camada TV-GPS no fim do body) — a demonstração não escreve.
+      if(window.__tvGps && window.__tvGps.ativo) return;
       var liveSec  = MAP_CFG.liveLapSec  * liveT;
       var ghostSec = MAP_CFG.ghostLapSec * liveT;
       var delta    = liveSec - ghostSec;
@@ -7802,7 +7805,15 @@ html,body{
         el.classList.remove('cb-sem-real');
       });
       AGUARDA_SENSOR.forEach(function(id){ var el=document.querySelector('[data-block-id="'+id+'"]'); if(el){ el.classList.add('cb-aguardando'); el.classList.remove('cb-vivo','cb-sem-real'); } });
-      DEP_LIGACAO.forEach(function(id){ var el=document.querySelector('[data-block-id="'+id+'"]'); if(el){ el.classList.add('cb-sem-real'); el.classList.remove('cb-aguardando','cb-vivo'); } });
+      DEP_LIGACAO.forEach(function(id){ var el=document.querySelector('[data-block-id="'+id+'"]'); if(!el) return;
+        // ITEM 5 do GPS (27/10): o mapa mostra o pacote REAL do cérebro da TV (camada TV-GPS no fim do
+        // body) → sai do cinza; "ao vivo" só com o carro mandando agora (a volta gravada DEV nunca acende).
+        if(id==='mapa' && window.__tvGps && window.__tvGps.ativo){
+          el.classList.remove('cb-sem-real','cb-aguardando');
+          el.classList.toggle('cb-vivo', !window.__tvGps.dev && !!window.__tvGps.fresco);
+          return;
+        }
+        el.classList.add('cb-sem-real'); el.classList.remove('cb-aguardando','cb-vivo'); });
     }
     setInterval(atualizarBlocos, 1000);
     atualizarBlocos();
@@ -8255,6 +8266,230 @@ html,body{
     }
   }
   iniciar();
+</script>
+<!-- TV-GPS item 5 (Flávio 27/10/2026, painel p1fast-gps-funcoes-0850): TV do box com mapa ao vivo
+     (velocidade e G), círculo de G, tempos de volta e setores. A CONTA mora no cérebro
+     web/command-box/cerebro/cerebro-gps-tv.js (docs/CONTRATO_DADOS.md §2); esta camada SÓ DESENHA o
+     pacote dele. Entrada = ponte única cloud-bridge.js (evento gps do RaceBox, com gLong/gLat/zeroOk
+     calculados no notebook). DEV: ?replay-gps=21-06 (&speed=N, padrão 4×; &fim=parar segura a última tela) toca a sessão REAL de pista
+     de 21/06 — rótulo "volta gravada", nunca "ao vivo". Sem GPS e sem o parâmetro, nada muda. -->
+<style>
+  .tv-rastro path{fill:none;stroke-linecap:round;stroke-linejoin:round;}
+  .tv-rastro .tv-ultima{stroke:#FFFFFF;stroke-opacity:.30;stroke-width:3;}
+  .tv-setores{position:absolute;top:34px;right:12px;display:flex;gap:9px;z-index:5;pointer-events:none;
+    font-family:'JetBrains Mono','SF Mono',Menlo,monospace;}
+  .tv-setores .s{display:flex;flex-direction:column;align-items:flex-end;gap:2px;padding-left:9px;
+    border-left:0.5px solid rgba(212,175,55,0.22);}
+  .tv-setores .s:first-child{border-left:none;padding-left:0;}
+  .tv-setores .k{font-size:6px;letter-spacing:.26em;color:rgba(212,175,55,0.50);text-transform:uppercase;line-height:1;}
+  .tv-setores .v{font-size:10px;color:var(--text-1);font-variant-numeric:tabular-nums;line-height:1;}
+  .tv-setores .v.melhor{color:#3FE08C;}
+  .tv-setores .v.vazio{color:rgba(255,255,255,0.28);}
+  .tv-setores .s.atual .k{color:#FF5A4E;}
+  .tv-g{position:absolute;right:8px;bottom:8px;width:100px;z-index:5;pointer-events:none;
+    font-family:'JetBrains Mono','SF Mono',Menlo,monospace;}
+  .tv-g svg{width:100px;height:100px;display:block;margin-left:auto;}
+  .tv-g .tv-g-txt{font-size:6px;letter-spacing:.12em;color:rgba(212,175,55,0.62);text-align:right;
+    text-transform:uppercase;line-height:1.5;font-variant-numeric:tabular-nums;}
+  .tv-legenda{position:absolute;left:12px;bottom:10px;z-index:5;pointer-events:none;display:flex;gap:10px;
+    font-family:'JetBrains Mono','SF Mono',Menlo,monospace;font-size:7px;letter-spacing:.14em;
+    text-transform:uppercase;color:rgba(255,255,255,0.55);}
+  .tv-legenda i{display:inline-block;width:12px;height:2px;margin-right:4px;vertical-align:middle;}
+  /* com o cérebro da TV ligado, some o que é demonstração no mapa (deltas fictícios por trecho,
+     linha branca fictícia e o "fantasma" de volta de referência que este cérebro não calcula) */
+  .b-map.tv-on [data-trechos],.b-map.tv-on [data-traj-live],.b-map.tv-on [data-marker^="ghost"]{display:none;}
+  .b-map.tv-parado .tv-setores,.b-map.tv-parado .tv-g,.b-map.tv-parado .tv-rastro{opacity:.45;}
+</style>
+<script type="module">
+  import { criarCerebroGpsTv } from '/web/command-box/cerebro/cerebro-gps-tv.js';
+
+  var COR = { freio:'#FF5A4E', acel:'#3FE08C', embalo:'#D4AF37' };
+  var G_ESCALA = 1.5;   // borda do círculo = 1,5 G
+  var NS = 'http://www.w3.org/2000/svg';
+
+  function fmt(s){
+    if(s == null) return '—';
+    var m = Math.floor(s / 60), r = s - m * 60;
+    return m + ':' + (r < 10 ? '0' : '') + r.toFixed(3);
+  }
+  function fmtS(s){ return s == null ? '—' : (s >= 60 ? fmt(s) : s.toFixed(2)); }
+  function fmtG(v){ return v == null ? '—' : (v > 0 ? '+' : '') + v.toFixed(2).replace('.', ','); }
+  // velocidade → cor (lento azul, médio dourado, rápido vermelho); só quando o ponto não tem G
+  function corKmh(k){
+    if(k == null) return '#9AA3B2';
+    if(k < 60) return '#38BCFF';
+    if(k < 100) return '#7DD3FC';
+    if(k < 130) return '#D4AF37';
+    return '#FF8C66';
+  }
+  function corPonto(p){ return p.fase ? COR[p.fase] : corKmh(p.kmh); }
+
+  function montar(){
+    var mapa = document.querySelector('.b-map');
+    var grupo = document.querySelector('.b-map .track-transformed');
+    if(!mapa || !grupo) return null;
+    var g = document.createElementNS(NS, 'g'); g.setAttribute('class', 'tv-rastro'); g.setAttribute('data-tv-rastro', '');
+    grupo.appendChild(g);
+    var set = document.createElement('div'); set.className = 'tv-setores'; set.setAttribute('data-tv-setores', '');
+    var circ = document.createElement('div'); circ.className = 'tv-g'; circ.setAttribute('data-tv-g', '');
+    circ.innerHTML = '<svg viewBox="-60 -60 120 120"></svg><div class="tv-g-txt" data-tv-g-txt></div>';
+    var leg = document.createElement('div'); leg.className = 'tv-legenda'; leg.setAttribute('data-tv-legenda', '');
+    [set, circ, leg].forEach(function(el){ el.style.display = 'none'; mapa.appendChild(el); });
+    return { mapa: mapa, rastro: g, set: set, circ: circ, circSvg: circ.querySelector('svg'),
+      circTxt: circ.querySelector('[data-tv-g-txt]'), leg: leg };
+  }
+
+  // pontos do rastro → um path por trecho de mesma cor
+  function desenharRastro(el, volta, ultima){
+    var h = '';
+    if(ultima.length > 1){
+      h += '<path class="tv-ultima" d="M' + ultima.map(function(p){ return p.x + ' ' + p.y; }).join(' L') + '"/>';
+    }
+    var i = 0;
+    while(i < volta.length - 1){
+      var cor = corPonto(volta[i]), d = 'M' + volta[i].x + ' ' + volta[i].y, j = i + 1;
+      while(j < volta.length){ d += ' L' + volta[j].x + ' ' + volta[j].y; if(corPonto(volta[j]) !== cor) break; j++; }
+      h += '<path d="' + d + '" stroke="' + cor + '" stroke-width="6"/>';
+      i = j;
+    }
+    el.innerHTML = h;
+  }
+
+  function desenharCirculo(ui, cg){
+    // eixo vertical = longitudinal (acelera para cima, freia para baixo); horizontal = lateral
+    var k = 55 / G_ESCALA;
+    function px(p){ return (p.a * k).toFixed(1) + ',' + (-p.l * k).toFixed(1); }
+    var h = '';
+    [0.5, 1.0, 1.5].forEach(function(r){
+      h += '<circle r="' + (r * k).toFixed(1) + '" fill="none" stroke="rgba(212,175,55,' + (r === 1 ? .38 : .16) + ')" stroke-width="0.6"/>';
+    });
+    h += '<line x1="-56" y1="0" x2="56" y2="0" stroke="rgba(212,175,55,.16)" stroke-width="0.5"/>';
+    h += '<line x1="0" y1="-56" x2="0" y2="56" stroke="rgba(212,175,55,.16)" stroke-width="0.5"/>';
+    h += '<text x="0" y="-48" fill="rgba(63,224,140,.6)" font-size="6" text-anchor="middle">ACEL</text>';
+    h += '<text x="0" y="53" fill="rgba(255,90,78,.6)" font-size="6" text-anchor="middle">FREIO</text>';
+    cg.ultima.forEach(function(p){ var c = px(p).split(','); h += '<circle cx="' + c[0] + '" cy="' + c[1] + '" r="0.9" fill="rgba(255,255,255,.18)"/>'; });
+    cg.volta.forEach(function(p){ var c = px(p).split(','); h += '<circle cx="' + c[0] + '" cy="' + c[1] + '" r="1" fill="rgba(212,175,55,.55)"/>'; });
+    if(cg.rastro.length > 1) h += '<polyline points="' + cg.rastro.map(px).join(' ') + '" fill="none" stroke="#FFFFFF" stroke-opacity=".55" stroke-width="1"/>';
+    if(cg.vivo){
+      var c = px(cg.vivo).split(',');
+      h += '<circle cx="' + c[0] + '" cy="' + c[1] + '" r="3.6" fill="' + (cg.vivo.zeroOk ? '#FF2A2A' : '#9AA3B2') + '" stroke="#FFFFFF" stroke-width="0.7"/>';
+    }
+    ui.circSvg.innerHTML = h;
+    var pk = cg.picosVolta || cg.picosUltima;
+    var linhas = [];
+    if(!cg.vivo) linhas.push('sem G nesta fonte');
+    else if(!cg.vivo.zeroOk) linhas.push('G sem zero do box');
+    if(pk) linhas.push('freio ' + fmtG(pk.freioMax) + ' · acel ' + fmtG(pk.acelMax), 'lat ' + fmtG(pk.latMax) + ' · comb ' + fmtG(pk.combinadoMax));
+    ui.circTxt.innerHTML = linhas.join('<br>');
+  }
+
+  function desenharSetores(ui, s){
+    var at = s.voltaAtual, ult = s.ultimaVolta, h = '';
+    for(var i = 0; i < s.nSetores; i++){
+      var emCurso = at && at.setoresS[i] != null;
+      var v = emCurso ? at.setoresS[i] : (ult && ult.setoresS ? ult.setoresS[i] : null);
+      var melhor = v != null && s.melhoresSetores[i] != null && Math.abs(v - s.melhoresSetores[i]) < 0.0005;
+      var cls = v == null ? 'vazio' : (melhor ? 'melhor' : '');
+      h += '<div class="s' + (at && at.setorAtual === i + 1 ? ' atual' : '') + '"><span class="k">S' + (i + 1)
+        + '</span><span class="v ' + cls + '">' + fmtS(v) + '</span></div>';
+    }
+    h += '<div class="s"><span class="k">ideal</span><span class="v' + (s.voltaIdealS == null ? ' vazio' : '') + '">'
+      + fmt(s.voltaIdealS) + '</span></div>';
+    ui.set.innerHTML = h;
+  }
+
+  function desenharTempos(s){
+    function por(sel, txt){ var e = document.querySelector(sel); if(e) e.textContent = txt; return e; }
+    por('[data-overlay-last]', fmt(s.ultimaVolta && s.ultimaVolta.tempoS));
+    por('[data-overlay-best-stint]', fmt(s.melhorVolta && s.melhorVolta.tempoS));
+    por('[data-overlay-best-ever]', '—');   // recorde histórico não vem deste cérebro: não inventa
+    por('[data-overlay-live]', s.voltaAtual ? fmt(s.voltaAtual.decorridoS) : 'saída');
+    var d = por('[data-overlay-delta]', s.deltaUltimaS == null ? '—'
+      : (s.deltaUltimaS >= 0 ? '+' : '−') + Math.abs(s.deltaUltimaS).toFixed(3));
+    if(d){ d.classList.toggle('pos', (s.deltaUltimaS || 0) > 0); d.classList.toggle('neg', (s.deltaUltimaS || 0) < 0); }
+  }
+
+  function desenharLegenda(ui, s){
+    var comG = s.agora && s.agora.zeroOk;
+    var itens = comG ? [['freio', COR.freio], ['acel', COR.acel], ['embalo', COR.embalo]]
+      : [['< 60', '#38BCFF'], ['60–100', '#7DD3FC'], ['100–130', '#D4AF37'], ['> 130 km/h', '#FF8C66']];
+    ui.leg.innerHTML = itens.map(function(it){ return '<span><i style="background:' + it[1] + '"></i>' + it[0] + '</span>'; }).join('');
+  }
+
+  var ui = null, cerebro = criarCerebroGpsTv(), relogio = function(){ return Date.now(); }, rotuloDev = null;
+  window.__tvGps = { ativo: false, feed: function(p){ return cerebro.feedGps(p); }, snapshot: function(){ return cerebro.snapshot(relogio()); } };
+
+  function quadro(){
+    if(!ui) ui = montar();
+    if(!ui) return;
+    var s = cerebro.snapshot(relogio());
+    if(!s.agora) return;                       // nada do carro ainda: a tela segue como estava
+    if(!window.__tvGps.ativo){
+      window.__tvGps.ativo = true;
+      ui.mapa.classList.add('tv-on');
+      [ui.set, ui.circ, ui.leg].forEach(function(el){ el.style.display = ''; });
+    }
+    ui.mapa.classList.toggle('tv-parado', !s.fresco);
+    window.__tvGps.fresco = s.fresco; window.__tvGps.dev = !!rotuloDev;
+    if(rotuloDev){   // demonstração: o selo nunca pode dizer "ao vivo" com dado gravado na tela
+      var selo = document.getElementById('cb-live-selo'), txt = selo && selo.querySelector('.cb-txt');
+      if(txt && txt.textContent !== rotuloDev){ selo.className = 'cb-wait'; txt.textContent = rotuloDev; }
+    }
+    desenharRastro(ui.rastro, s.mapa.volta, s.mapa.ultima);
+    desenharCirculo(ui, s.circuloG);
+    desenharSetores(ui, s);
+    desenharTempos(s);
+    desenharLegenda(ui, s);
+  }
+  setInterval(quadro, 250);
+
+  var mRep = /(?:\?|&)replay-gps=([\w-]+)/.exec(location.search);
+  if(mRep){
+    // ── DEV: sessão REAL gravada tocada de novo (não é ao vivo). Fixture: pontos 'gps' do RaceBox.
+    var speed = (function(){ var m = /(?:\?|&)speed=([\d.]+)/.exec(location.search); return m ? Math.max(0.25, +m[1]) : 4; })();
+    var pararNoFim = /(?:\?|&)fim=parar/.test(location.search);
+    var nomeData = mRep[1] === '21-06' ? '2026-06-21' : mRep[1];
+    fetch('/web/command-box/fixtures/replay-hoje-' + nomeData + '.json')
+      .then(function(r){ return r.json(); })
+      .then(function(j){
+        // A gravação de 21/06 tem o km/h 3,6× maior que o real (leitor antigo do RaceBox; medido 27/10:
+        // mediana 3,61 contra a distância andada em 412 janelas de 1 s). O leitor de hoje está certo
+        // (gravação 27/10: razão 1,00) — a correção vale SÓ para esta gravação de demonstração.
+        var FATOR_KMH = { '21-06': 3.6 }[mRep[1]] || 1;
+        var pts = ((j && j.amostras) || []).filter(function(a){ return a.tipo === 'gps'; })
+          .map(function(a){ return FATOR_KMH === 1 || typeof a.kmh !== 'number' ? a : Object.assign({}, a, { kmh: a.kmh / FATOR_KMH }); });
+        if(!pts.length){ console.warn('[TV-GPS replay] gravação sem pontos de GPS'); return; }
+        var t0 = pts[0].tWall, dur = pts[pts.length - 1].tWall - t0, inicio = performance.now(), idx = 0, rodada = 0;
+        var tAgora = t0;
+        relogio = function(){ return tAgora; };
+        rotuloDev = 'DEV · VOLTA GRAVADA ' + mRep[1].replace('-', '/') + ' (não é ao vivo)';
+        if(window.__cbPos) window.__cbPos.rotuloReplay = rotuloDev;
+        (function passo(){
+          var dec = (performance.now() - inicio) * speed;
+          if(pararNoFim && dec >= dur) dec = dur;                  // &fim=parar: segura a última tela
+          var r = pararNoFim ? 0 : Math.floor(dec / dur);
+          if(r !== rodada){ rodada = r; idx = 0; cerebro = criarCerebroGpsTv(); }   // recomeça a gravação do zero
+          tAgora = t0 + (pararNoFim ? dec : dec % dur);
+          while(idx < pts.length && pts[idx].tWall <= tAgora){
+            var p = pts[idx++];
+            cerebro.feedGps(p);
+            if(idx % 5 === 0 && window.__cbPos) window.__cbPos.pushGps(p.lat, p.lon, 'replay');
+          }
+          requestAnimationFrame(passo);
+        })();
+      })
+      .catch(function(e){ console.warn('[TV-GPS replay] gravação indisponível:', e); });
+  } else {
+    // AO VIVO: a MESMA ponte da tela (uma entrada, todos consomem) — startCloudBridge é idempotente.
+    import('/web/cockpit/cloud-bridge.js').then(function(cb){
+      // "fresco" mede pelo carimbo do PRÓPRIO ponto + tempo desde que chegou (relógio do notebook
+      // e da TV podem divergir; comparar Date.now() com tWall acusaria parado à toa).
+      var ultTw = null, chegou = 0;
+      relogio = function(){ return ultTw == null ? Date.now() : ultTw + (performance.now() - chegou); };
+      cb.onGpsPoint(function(p){ if(cerebro.feedGps(p)){ ultTw = p.tWall; chegou = performance.now(); } });
+      cb.startCloudBridge().catch(function(){});
+    }).catch(function(e){ console.warn('[TV-GPS] ponte indisponível:', e); });
+  }
 </script>
 </body>
 </html>

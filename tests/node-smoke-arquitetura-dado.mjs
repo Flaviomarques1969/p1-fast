@@ -131,6 +131,7 @@ const CASAS = [
   'web/cockpit/cloud-bridge.js',
   'web/command-box/cerebro/cerebro-painel.js',
   'web/command-box/cerebro/cerebro-vivo.js',
+  'web/command-box/cerebro/cerebro-gps-tv.js',
   'web/command-box/frenagem-real.js',
   'web/command-box/passagem-real.js',
   'web/command-box/vmin-curvas-reais.js',

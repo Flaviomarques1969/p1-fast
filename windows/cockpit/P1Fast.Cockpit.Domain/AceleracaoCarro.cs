@@ -75,6 +75,15 @@ public sealed class AceleracaoCarro
             _somaX = _somaY = 0;
         }
 
-        return new GCarro(_sinalLong * (x - ZeroX), _sinalLat * (y - ZeroY), ZeroOk);
+        return Orientar(x, y);
     }
+
+    /// <summary>Item 5 (27/10): G do carro com o zero VIGENTE, SEM aprender — é o que o notebook publica
+    /// no canal (gLong/gLat/zeroOk) para a TV do box. Mesma conta do <see cref="Ler"/> (uma conta, um
+    /// lugar), mas não alimenta o zero: quem aprende é só o fluxo do filtro. null sem aceleração.</summary>
+    public GCarro? Converter(double? gx, double? gy)
+        => gx is { } x && gy is { } y && double.IsFinite(x) && double.IsFinite(y) ? Orientar(x, y) : null;
+
+    private GCarro Orientar(double x, double y)
+        => new(_sinalLong * (x - ZeroX), _sinalLat * (y - ZeroY), ZeroOk);
 }
