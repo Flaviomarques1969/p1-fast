@@ -36,13 +36,19 @@ public sealed record TrechoEvento(
 
 public sealed class TrechoDetector
 {
-    private const double FreadaLimiarG = 0.5;
+    public const double FreadaLimiarPadraoG = 0.5;
     private const int    FreadaJanela  = 5;
+    // Item 3 (ordem de 27/10): com o G do carro (zero aprendido) a freada é lida no acelerômetro —
+    // mesmo limiar de 0,5 G para CONFIRMAR, e o ponto marcado é onde a desaceleração COMEÇOU
+    // (1ª amostra da sequência contínua abaixo de −0,10 G; ruído do aparelho ~0,015 G, análise 27/10).
+    // Sem G confiável (replay antigo, iPhone, zero ainda não aprendido) segue a conta pela velocidade.
+    private const double FreadaInicioG = 0.10;
     private const double HeadingMinDistM = 1.0;
     private const double ApiceDistMaxM = 60;
 
     private readonly IReadOnlyList<TrechoSegmento> _segments;
     private readonly Action<TrechoEvento> _onEvent;
+    private readonly double _freadaLimiarG;
 
     private int _currentIdx;
     private TrechoFase _phase;
@@ -54,9 +60,15 @@ public sealed class TrechoDetector
     private double _lastApiceDist;
     private bool _apiceCrossed;
     private readonly List<double> _decelWindow = new();
+    private bool? _decelPeloG;          // fonte da janela (true = acelerômetro); trocou → janela limpa
+    private AmostraGps? _inicioFreada;  // onde a desaceleração atual começou (só pelo G)
 
-    public TrechoDetector(IReadOnlyList<TrechoSegmento> segments, Action<TrechoEvento>? onEvent = null)
+    /// <param name="freadaLimiarG">limiar de confirmação da freada (g). Padrão 0,5 G (o de sempre);
+    /// outro valor só em prova de bancada (ex.: volta de rua, onde a freada não passa de 0,3 G).</param>
+    public TrechoDetector(IReadOnlyList<TrechoSegmento> segments, Action<TrechoEvento>? onEvent = null,
+        double freadaLimiarG = FreadaLimiarPadraoG)
     {
+        _freadaLimiarG = freadaLimiarG;
         if (segments is null || segments.Count == 0)
             throw new ArgumentException("TrechoDetector: segments é obrigatório (não-vazio)");
         _segments = segments;
@@ -77,6 +89,8 @@ public sealed class TrechoDetector
         _lastApiceDist = double.PositiveInfinity;
         _apiceCrossed = false;
         _decelWindow.Clear();
+        _decelPeloG = null;
+        _inicioFreada = null;
     }
 
     private void Advance()
@@ -89,6 +103,7 @@ public sealed class TrechoDetector
         _lastApiceDist = double.PositiveInfinity;
         _apiceCrossed = false;
         _decelWindow.Clear();
+        _inicioFreada = null;
     }
 
     public (int Idx, string? Id, TrechoFase Fase) GetState() => (_currentIdx, _segments[_currentIdx]?.Id, _phase);
@@ -131,8 +146,16 @@ public sealed class TrechoDetector
                 headingDeg = Ghost.BearingDeg(P(_last), P(sample));
         }
 
-        // deceleração desde a última amostra (g)
-        if (_last is not null)
+        // deceleração (g): pelo acelerômetro quando há G do carro com zero; senão desde a última amostra
+        var peloG = sample.AccelLongG is { } gLong && double.IsFinite(gLong) && sample.ZeroOk;
+        if (_decelPeloG is { } fonteAnt && fonteAnt != peloG) { _decelWindow.Clear(); _inicioFreada = null; }
+        _decelPeloG = peloG;
+        if (peloG)
+        {
+            _decelWindow.Add(sample.AccelLongG!.Value);
+            if (_decelWindow.Count > FreadaJanela) _decelWindow.RemoveAt(0);
+        }
+        else if (_last is not null)
         {
             var dt = Math.Max(0.001, (t - _last.T) / 1000.0);
             var dv = (kmh - _last.Kmh) / 3.6;
@@ -152,16 +175,24 @@ public sealed class TrechoDetector
         {
             _phase = TrechoFase.EntradaFreio;
             _entradaPos = P(sample);
+            _inicioFreada = null;
             _onEvent(new TrechoEvento("entrada-cruzou", seg.Id, t, kmh));
         }
         _lastEntradaSide = entradaSide;
 
         // ── Início da freada ──
-        if (_phase == TrechoFase.EntradaFreio && avgDecel <= -FreadaLimiarG)
+        // Pelo G: acompanha onde a desaceleração começou depois da entrada (sequência contínua).
+        if (_phase == TrechoFase.EntradaFreio && peloG)
         {
-            var distFromEntradaM = _entradaPos is { } ep ? Ghost.DistMeters(ep, P(sample)) : 0;
+            if (sample.AccelLongG!.Value <= -FreadaInicioG) _inicioFreada ??= sample;
+            else _inicioFreada = null;
+        }
+        if (_phase == TrechoFase.EntradaFreio && avgDecel <= -_freadaLimiarG)
+        {
+            var ponto = peloG && _inicioFreada is { } ini ? ini : sample;
+            var distFromEntradaM = _entradaPos is { } ep ? Ghost.DistMeters(ep, P(ponto)) : 0;
             _phase = TrechoFase.FreioApice;
-            _onEvent(new TrechoEvento("freada-iniciou", seg.Id, t, kmh, DistFromEntradaM: distFromEntradaM));
+            _onEvent(new TrechoEvento("freada-iniciou", seg.Id, ponto.T, ponto.Kmh, DistFromEntradaM: distFromEntradaM));
         }
 
         // ── Ápice (mínimo de distância ao ponto ideal) ──
@@ -214,6 +245,7 @@ public sealed class TrechoDetector
             _lastApiceDist = double.PositiveInfinity;
             _apiceCrossed = false;
             _decelWindow.Clear();
+            _inicioFreada = null;
             _onEvent(new TrechoEvento("resync", novo.Id, t, kmh, DeSegmentId: de, ParaSegmentId: novo.Id));
             _onEvent(new TrechoEvento("entrada-cruzou", novo.Id, t, kmh));
         }
