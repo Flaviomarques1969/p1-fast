@@ -103,3 +103,22 @@ FALTA NA E2: (1) conferência de sintaxe do MainWindow.Live.cs (WinUI não compi
 (3) npm run smoke:arquitetura + node tests/node-smoke-tv-honesta.mjs + prova Chrome tv-honesta com mensagens em LOTE;
 (4) docs/CONTRATO_DADOS.md: chave "lote" no evento gps; (5) cota Supabase (leitura); (6) rebase em 1d7a32ffc, commit final, push;
 (7) responder imac-9c que o achado do buffer foi tratado no GPS (reenvio 10 s + filtro de repetidos na TV) e no motor só a janela.
+
+## RETOMADA 1027-1657 (27/10, conversa nova após /clear) — fechar a E2
+Começo pelo FALTA NA E2 (1)→(7) acima; nada refeito. Servidor 5199 no ar (200).
+- (1) Sintaxe MainWindow.Live.cs: Roslyn do SDK (csc.dll, só erros CS1xxx) = 0; controle (uma chave a menos) = 1 erro CS1513. Nomes usados conferidos por grep.
+- (2) Catraca tests/node-smoke-tv-envio-lote.mjs 18/18 (5 controles por mutação); contra a base 194934a81 = 11 regras reprovam. Entrou no `npm run smoke` (+ tv-honesta).
+- (3) smoke:arquitetura 37/37 · tv-honesta 37/37 · gps-fonte-unica 28/28 · gps-tv 91/91 · nuvem-posicao 7/7.
+  Prova Chrome com a PONTE REAL e só o supabase-js falsificado: .claude-exec/prova-tv-honesta/prova-tv-lote.mjs 13/13
+  (50 msgs em lote → 250 pontos; reenvio de 10 s → 250 repetidos descartados, só os 75 novos; Cockpit antigo segue).
+  CONTROLE com a ponte de 194934a81: 3 falhas (só 50 de 250 pontos; repetidos passam).
+- (4) docs/CONTRATO_DADOS.md: parágrafo "Lote" no evento gps.
+- (5) Cota: organização do p1-fast está no plano PRO (GET api.supabase.com/v1/organizations, 27/10; o checklist dizia Free).
+  Doc oficial: Pro = 500 conexões, 500 msg/s, 5 M msg/mês incluídas, US$ 2,50/milhão extra; broadcast conta 1 envio + 1 por receptor.
+  ESTIMATIVA com 2 espectadores (TV + 1 celular): antes 30 msg/s enviadas → 90 contadas/s ≈ 324 mil/h; agora 10 → 30/s ≈ 108 mil/h
+  (≈ 46 h de ao vivo/mês dentro do incluído; excedente ≈ US$ 0,27/h).
+- PEDIDO NOVO DELE (27/10 ~17h20, no meio da E2): "trail braking, freio, aceleração, tempo de volta, quantidade de voltas, comparativos
+  de gráfico de frenagem e aceleração, etc. tudo dá para ver no tv box a partir do gps." → a E1 cobriu como "não vem do RaceBox" todo
+  bloco fora de mapa/hud/header; isso está ERRADO para os blocos que o GPS alimenta. Nova etapa E2b (antes da câmera): mapear bloco a
+  bloco da Vista Piloto o que sai do GPS (gLong/gLat/kmh/posição → freio, aceleração, trail, voltas, tempos, gráficos) e ligar pelo
+  cérebro (cerebro-gps-tv.js / frenagem-real / forma-trail-tipo), cobrindo só o que depende do motor (rpm, temperatura etc.).

@@ -39,6 +39,7 @@ documentação e ainda NÃO foi conferido em gravação (conferir pela 1ª grava
 **Fonte única de posição = RaceBox** (publicado pelo Cockpit com `source: 'racebox'`; Flávio 27/10/2026,
 painel `p1fast-gps-fonte-unica-0911` = C). O iPhone não publica mais `gps`; ponto `source: 'iphone…'`
 é descartado na ponte (`web/cockpit/gps-fonte-unica.js`, catraca `tests/node-smoke-gps-fonte-unica.mjs`).
+**Lote** (E2 da obra TV do box ao vivo, 27/10/2026): o Cockpit publica 1 mensagem `gps` a cada ~200 ms (5/s, contra a cota do Supabase). O TOPO é o fix mais novo, com as chaves acima (consumidor antigo vê 5 Hz e não quebra); a chave aditiva `lote` = lista dos fixes anteriores do intervalo, em ordem de tempo (fidelidade 25 Hz). Só a ponte desmonta (`pontosDoGps`) e entrega ponto a ponto a cada ouvinte; reenvio do Cockpit depois de queda repete pontos — a ponte descarta o repetido pelo `tWall` (`criarFiltroRepetidos`). O ao vivo leva só os últimos ~10 s; o passado sobe pela gravação (`sessao_dumps`). Provas: `GpsLivePublisherTests`, `tests/node-smoke-tv-envio-lote.mjs`, `tests/node-smoke-gps-fonte-unica.mjs`.
 
 > Se um dado NÃO está nesta lista, o carro não transmite hoje → nenhuma tela pode mostrá-lo
 > como real (ex.: temperatura de pneu, curso de amortecedor — sensor não existe).
