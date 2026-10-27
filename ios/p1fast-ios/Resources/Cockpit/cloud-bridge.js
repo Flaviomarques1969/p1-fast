@@ -12,6 +12,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './supabase-config.js';
 import { leituraPlausivel } from './t3000-usb-parser.js';
+import { pontoGpsAceito } from './gps-fonte-unica.js';
 
 const SUPABASE_ANON = SUPABASE_ANON_KEY;
 
@@ -23,7 +24,7 @@ let _client = null;
 let _channel = null;
 let _status = 'off';
 let _lastPublishTs = 0;
-let _stats = { sent: 0, dropped: 0, errors: 0, lastError: null };
+let _stats = { sent: 0, dropped: 0, errors: 0, lastError: null, gpsIphoneDescartados: 0 };
 let _onStatusChange = () => {};
 // Vários consumidores podem ouvir a MESMA conexão (uma fonte só, todos consomem).
 // Ex.: na Vista Piloto, o HUD e o "cérebro" ouvem juntos sem abrir 2 conexões.
@@ -99,9 +100,14 @@ export async function startCloudBridge() {
       config: { broadcast: { ack: false, self: false } },
     });
     // Listeners do canal — UMA fonte só, distribuída a TODOS os ouvintes registrados.
-    // RaceBox via Central / iPhone (gps), transmissor/simulador (sample), aviso de
+    // RaceBox via Cockpit (gps — fonte ÚNICA de posição desde 27/10; ponto do iPhone é
+    // descartado em pontoGpsAceito), transmissor/simulador (sample), aviso de
     // volta (evento) e posição já calculada na nuvem (posicao).
-    _channel.on('broadcast', { event: 'gps' },     (msg) => { if (msg && msg.payload) _fan(_onGpsPoint, msg.payload); });
+    _channel.on('broadcast', { event: 'gps' },     (msg) => {
+      if (!msg || !msg.payload) return;
+      if (!pontoGpsAceito(msg.payload)) { _stats.gpsIphoneDescartados += 1; return; }
+      _fan(_onGpsPoint, msg.payload);
+    });
     _channel.on('broadcast', { event: 'sample' },  (msg) => { if (msg && msg.payload) _fan(_onSample,   msg.payload); });
     _channel.on('broadcast', { event: 'evento' },  (msg) => { if (msg && msg.payload) _fan(_onEvento,   msg.payload); });
     _channel.on('broadcast', { event: 'posicao' }, (msg) => { if (msg && msg.payload) _fan(_onPosicao,  msg.payload); });

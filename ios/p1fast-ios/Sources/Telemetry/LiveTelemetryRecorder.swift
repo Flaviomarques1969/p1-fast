@@ -71,11 +71,11 @@ final class LiveTelemetryRecorder: NSObject, ObservableObject {
     private let location = CLLocationManager()
     /// Publisher GPS pro canal Realtime cockpit-bubi-live (consumido pelo
     /// painel do piloto pra detecção automática de entrada/saída de curva).
-    /// Opcional — só ativa quando SupabaseManager.shared está disponível.
-    private let cockpitGpsPublisher: CockpitGpsPublisher? = {
-        guard let client = SupabaseManager.shared else { return nil }
-        return CockpitGpsPublisher(client: client)
-    }()
+    /// DESLIGADO em 27/10/2026 (Flávio, painel p1fast-gps-fonte-unica-0911 = C): a posição
+    /// no canal vem SÓ do RaceBox (Cockpit do notebook); o iPhone não publica mais, sem
+    /// reserva. O iPhone continua gravando o próprio GPS no aparelho. A classe
+    /// CockpitGpsPublisher fica preservada; religar = voltar a criá-la aqui.
+    private let cockpitGpsPublisher: CockpitGpsPublisher? = nil
     private let opQueue: OperationQueue = {
         let q = OperationQueue()
         q.qualityOfService = .userInteractive

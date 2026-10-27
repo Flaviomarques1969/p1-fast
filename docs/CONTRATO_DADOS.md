@@ -27,7 +27,10 @@ Motor: `rpm`, `batteryV`, `mapBar`, `tpsPct`, `airTempC`, `waterTempC`, **`lambd
 Pilotagem: `pedalAceleradorPct`, `pedalFreioPct`, `pressaoFreioBar`, `speedKmh`, `accelXg/Yg/Zg`.
 Cilindros: `fuelInjectionBalanced`, `fuelInjectionSpread`, `fuelTimeA`.
 Status: `alarmes`, `statusSinais`, `cronometroParcialS`, `cronometroTotalS`.
-GPS (evento `gps`): `lat`, `lng`, `kmh`, `tWall`.
+GPS (evento `gps`): `lat`, `lng`, `kmh`, `tWall` (+ `numSV`, `fix`, `accM`, `gx/gy/gz`, `source`).
+**Fonte única de posição = RaceBox** (publicado pelo Cockpit com `source: 'racebox'`; Flávio 27/10/2026,
+painel `p1fast-gps-fonte-unica-0911` = C). O iPhone não publica mais `gps`; ponto `source: 'iphone…'`
+é descartado na ponte (`web/cockpit/gps-fonte-unica.js`, catraca `tests/node-smoke-gps-fonte-unica.mjs`).
 
 > Se um dado NÃO está nesta lista, o carro não transmite hoje → nenhuma tela pode mostrá-lo
 > como real (ex.: temperatura de pneu, curso de amortecedor — sensor não existe).

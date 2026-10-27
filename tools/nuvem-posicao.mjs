@@ -11,6 +11,7 @@ import { fileURLToPath } from 'node:url';
 import { realpathSync } from 'node:fs';
 import { geoParaCommandBox } from '../web/cockpit/pista-brasilia-commandbox.js';
 import { fracDe } from '../web/command-box/pista-cb-polyline.js';
+import { pontoGpsAceito } from '../web/cockpit/gps-fonte-unica.js';
 
 const CANAL_PRODUCAO = 'cockpit-bubi-live';
 
@@ -19,6 +20,7 @@ export function emFaixaBrasilia(lat, lng) { return lat < -15.7 && lat > -15.8 &&
 // CÁLCULO PURO: GPS cru -> posição pronta (ou null se inválido/fora da pista). Sem rede.
 export function calcularPosicao(g) {
   if (!g || typeof g.lat !== 'number' || typeof g.lng !== 'number') return null;
+  if (!pontoGpsAceito(g)) return null; // fonte única = RaceBox (27/10); iPhone não vira posição
   if (!emFaixaBrasilia(g.lat, g.lng)) return null;
   const p = geoParaCommandBox(g.lat, g.lng);
   const frac = fracDe(p.x, p.y);

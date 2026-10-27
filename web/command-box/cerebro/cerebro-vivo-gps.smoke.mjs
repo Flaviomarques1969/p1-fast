@@ -62,5 +62,17 @@ const snap2 = orq2.snapshot();
 console.log('\n[dedup] voltas após GPS+injeção na mesma passagem:', snap2._geradoComVoltas);
 checa('injeção não duplica a volta que o GPS já fechou', snap2._geradoComVoltas === 1);
 
+// ---- 3) Precisão pelo nome do CANAL (accM): ponto impreciso não entra no detector ----
+// Antes de 27/10 o gate só lia 'hacc' (nome do arquivo); o canal manda 'accM' e nada era barrado.
+const voltasCom = (accM) => {
+  const o = criarOrquestradorVivo({ marcoChegada: marco, plano: { voltas: 5 }, pbEverSec: 90.0, stintNumero: 1, stintTotal: 1 });
+  let t3 = 0;
+  const f = (lat, lng, dt) => { t3 += dt; o.feedSample({ lat, lng, tWall: t3, accM }); };
+  f(-0.0003, LNG, 1000); f(-0.00005, LNG, 1000); f(+0.00005, LNG, 1000);
+  return o._detectorChegada.getVoltas();
+};
+checa('accM 80 m (impreciso) NÃO cruza a linha', voltasCom(80) === 0);
+checa('controle: accM 2 m cruza a linha', voltasCom(2) === 1);
+
 console.log(ok ? '\nTUDO VERDE — detecção de volta por GPS no cérebro vivo\n' : '\nFALHOU\n');
 process.exit(ok ? 0 : 1);

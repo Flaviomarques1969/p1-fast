@@ -63,7 +63,9 @@ export function criarOrquestradorVivo(opts = {}) {
       const lat = s.lat;
       const lng = typeof s.lng === 'number' ? s.lng : s.lon;
       const fixOk = (s.fix == null) || (s.fix >= 3);
-      const haccOk = (s.hacc == null) || (s.hacc < 50);
+      // precisão: o canal manda 'accM' (Cockpit/RaceBox); 'hacc' é o nome do arquivo gravado.
+      const hacc = s.hacc != null ? s.hacc : s.accM;
+      const haccOk = (hacc == null) || (hacc < 50);
       if (typeof lat === 'number' && typeof lng === 'number' && fixOk && haccOk) {
         detectorChegada.ingestGps({ lat, lng, t: lastSampleT });
       }

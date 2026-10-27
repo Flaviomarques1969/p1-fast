@@ -582,6 +582,9 @@ public sealed partial class MainWindow
                 ["gy"]    = f.GY,
                 ["gz"]    = f.GZ,
                 ["tWall"] = tWall,
+                // Fonte única de posição no canal = RaceBox (Flávio 27/10, painel
+                // p1fast-gps-fonte-unica-0911 = C) — chave aditiva; o painel descarta 'iphone…'.
+                ["source"] = "racebox",
             });
 
         // Fix FRACO para AQUI: disco e nuvem já o guardaram (marcado); tela, LED e cérebro
