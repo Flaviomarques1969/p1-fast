@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Voltas gravadas</title>
+<!-- PÁGINA DA VOLTA — item 6 do GPS (Flávio 27/10/2026, painel p1fast-gps-funcoes-0850):
+     "Celular: página da volta dentro do app e comparação entre duas voltas".
+     Tela de EXIBIÇÃO (docs/CONTRATO_DADOS.md §3): a gravação vem do arquivo durável pela porta
+     única web/cockpit/arquivo-sessoes.js; TODA conta mora no cérebro
+     web/command-box/cerebro/cerebro-pagina-volta.js; aqui só se desenha o pacote.
+     No app do iPhone esta página roda embutida (Resources/Cockpit/web/volta, cópia idêntica).
+     DEV: ?gravacao=21-06 abre a sessão REAL de pista de 21/06 do arquivo local (rótulo "DEV"). -->
+<style>
+  :root{
+    --bg:#08090B; --bg-2:#101216; --line:rgba(255,255,255,0.08); --line-2:rgba(255,255,255,0.14);
+    --text-1:#F2F3F5; --text-2:rgba(242,243,245,0.62); --text-3:rgba(242,243,245,0.38);
+    --ouro:#D4AF37; --ouro-2:rgba(212,175,55,0.55); --verde:#3FE08C; --verm:#FF5A4E; --azul:#38BCFF;
+    --mono:'SF Mono','JetBrains Mono',Menlo,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{background:var(--bg);color:var(--text-1);}
+  body{font-family:-apple-system,'SF Pro Text','Helvetica Neue',Arial,sans-serif;font-size:15px;line-height:1.35;
+    padding:calc(env(safe-area-inset-top) + 14px) 16px calc(env(safe-area-inset-bottom) + 28px);
+    -webkit-text-size-adjust:100%;max-width:760px;margin:0 auto;}
+  button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.24em;color:var(--ouro);text-transform:uppercase;}
+  h1{font-size:22px;font-weight:700;letter-spacing:-.01em;margin:4px 0 2px;}
+  .sub{color:var(--text-2);font-size:13px;}
+  .topo{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:16px;}
+  .voltar{font-size:14px;color:var(--text-2);padding:6px 0;margin-bottom:6px;display:inline-flex;gap:6px;}
+  .selo-dev{display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:.16em;color:var(--azul);
+    border:1px solid rgba(56,188,255,.4);padding:3px 7px;border-radius:4px;margin-top:6px;}
+  .aviso{border-left:2px solid var(--ouro);padding:8px 10px;color:var(--text-2);font-size:13px;margin:10px 0 14px;background:var(--bg-2);}
+  .estado{color:var(--text-2);padding:28px 0;text-align:center;font-size:14px;}
+  .lista{border-top:1px solid var(--line);}
+  .linha{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:14px 2px;border-bottom:1px solid var(--line);}
+  .linha .a{flex:1;min-width:0;}
+  .linha .t1{font-size:15px;font-weight:600;}
+  .linha .t2{font-size:12px;color:var(--text-2);font-family:var(--mono);margin-top:2px;}
+  .linha .seta{color:var(--text-3);font-size:18px;}
+  .tira{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin:12px 0 18px;}
+  .tira > div{padding:10px 6px;border-left:1px solid var(--line);min-width:0;}
+  .tira .v{font-size:14px;}
+  .tira > div:first-child{border-left:0;padding-left:2px;}
+  .k{font-family:var(--mono);font-size:9.5px;letter-spacing:.2em;color:var(--ouro-2);text-transform:uppercase;}
+  .v{font-family:var(--mono);font-size:15px;font-variant-numeric:tabular-nums;margin-top:3px;white-space:nowrap;}
+  .secao{margin:22px 0 8px;display:flex;justify-content:space-between;align-items:baseline;gap:8px;}
+  .secao .k{font-size:10.5px;}
+  .secao .nota{font-size:12px;color:var(--text-3);}
+  .volta{display:grid;grid-template-columns:44px 1fr auto;align-items:center;gap:10px;width:100%;text-align:left;padding:12px 2px;border-bottom:1px solid var(--line);}
+  .volta .n{font-family:var(--mono);font-size:13px;color:var(--text-2);}
+  .volta .tempo{font-family:var(--mono);font-size:17px;font-variant-numeric:tabular-nums;}
+  .volta .sets{font-family:var(--mono);font-size:11.5px;color:var(--text-2);margin-top:3px;display:flex;gap:10px;flex-wrap:wrap;}
+  .volta .dl{font-family:var(--mono);font-size:12.5px;text-align:right;min-width:74px;}
+  .melhor{color:var(--verde);}
+  .pior{color:var(--verm);}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 4px;}
+  .chip{font-family:var(--mono);font-size:13px;padding:8px 12px;border:1px solid var(--line-2);border-radius:999px;color:var(--text-2);}
+  .chip.on{border-color:var(--ouro);color:var(--text-1);background:rgba(212,175,55,.10);}
+  svg{display:block;width:100%;height:auto;}
+  .mapa{background:var(--bg-2);border-radius:10px;padding:6px;}
+  .graf{background:var(--bg-2);border-radius:10px;padding:8px 6px 4px;}
+  .graf text,.mapa text{font-family:var(--mono);font-size:9px;fill:var(--text-3);}
+  .legenda{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--text-2);margin-top:8px;font-family:var(--mono);}
+  .legenda i{display:inline-block;width:14px;height:2px;vertical-align:middle;margin-right:5px;}
+  table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:13px;font-variant-numeric:tabular-nums;}
+  th{font-weight:400;font-size:9.5px;letter-spacing:.2em;color:var(--ouro-2);text-align:right;padding:6px 4px;border-bottom:1px solid var(--line);}
+  th:first-child,td:first-child{text-align:left;}
+  td{text-align:right;padding:9px 4px;border-bottom:1px solid var(--line);}
+  .trecho{display:flex;justify-content:space-between;gap:10px;padding:9px 2px;border-bottom:1px solid var(--line);font-size:13.5px;}
+  .trecho .m{color:var(--text-2);font-family:var(--mono);font-size:12px;}
+  .trecho .d{font-family:var(--mono);}
+  .duas{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .g-wrap{display:grid;grid-template-columns:140px 1fr;gap:14px;align-items:center;}
+  .g-nums div{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--line);font-size:13px;}
+  .g-nums span:last-child{font-family:var(--mono);}
+</style>
+</head>
+<body>
+<main id="app"><div class="estado">Carregando…</div></main>
+
+<script type="module">
+  import { montarPaginaVolta, compararVoltas } from '../command-box/cerebro/cerebro-pagina-volta.js';
+  import { listarSessoes, baixarSessao } from '../cockpit/arquivo-sessoes.js';
+  import { POLILINHA } from '../command-box/pista-cb-polyline.js';
+
+  const app = document.getElementById('app');
+  const busca = new URLSearchParams(location.search);
+  const DEV = busca.get('gravacao');
+  const estado = { sessoes: null, sessao: null, pacote: null, voltaN: null, refN: null, origem: null };
+  window.__paginaVolta = estado;   // prova pelo robô (lê o que a tela desenhou)
+
+  // ── formatação (só texto; nenhuma conta de pista aqui) ──
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+  function fmtT(s){ if(s == null) return '—'; const m = Math.floor(s / 60), r = s - m * 60;
+    return (m ? m + ':' + (r < 10 ? '0' : '') : '') + r.toFixed(3).replace('.', ','); }
+  function fmtD(s){ if(s == null) return '—'; return (s > 0 ? '+' : s < 0 ? '−' : '') + Math.abs(s).toFixed(3).replace('.', ','); }
+  function fmtG(v){ return v == null ? '—' : (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(2).replace('.', ',') + ' G'; }
+  function fmtKm(v){ return v == null ? '—' : Math.round(v) + ' km/h'; }
+  function fmtData(ms){ if(ms == null) return '—'; const d = new Date(ms);
+    return d.toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit' }) + ' ' + d.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' }); }
+  function fmtDur(s){ if(!s) return '—'; const m = Math.floor(s / 60); return m ? m + ' min ' + Math.round(s - m * 60) + ' s' : Math.round(s) + ' s'; }
+  const corDif = d => d == null ? '' : d < 0 ? 'melhor' : d > 0 ? 'pior' : '';
+
+  // ── 1) sessões ──
+  async function telaSessoes(){
+    app.innerHTML = '<div class="eyebrow">P1 Fast · GPS</div><h1>Voltas gravadas</h1>' +
+      '<div class="sub">Cada sessão que o notebook guardou na nuvem.</div><div class="estado">Buscando sessões…</div>';
+    try {
+      estado.sessoes = estado.sessoes || await listarSessoes();
+    } catch(e) {
+      app.querySelector('.estado').textContent = 'Não consegui buscar as sessões (' + e.message + '). Sem internet, as gravações não chegam ao celular.';
+      return;
+    }
+    const itens = estado.sessoes.map((s, i) => '<button class="linha" data-sessao="' + i + '"><div class="a">' +
+      '<div class="t1">' + esc(fmtData(s.inicioT ?? Date.parse(s.criadoEm))) + '</div>' +
+      '<div class="t2">' + esc(fmtDur(s.inicioT && s.fimT ? (s.fimT - s.inicioT) / 1000 : 0)) + ' · ' +
+        (s.nGps != null ? s.nGps.toLocaleString('pt-BR') + ' pontos de GPS' : 'sem contagem') + '</div></div><span class="seta">›</span></button>').join('');
+    app.innerHTML = '<div class="eyebrow">P1 Fast · GPS</div><h1>Voltas gravadas</h1>' +
+      '<div class="sub">Cada sessão que o notebook guardou na nuvem.</div>' +
+      (itens ? '<div class="lista" style="margin-top:14px">' + itens + '</div>' : '<div class="estado">Nenhuma sessão guardada ainda.</div>');
+    app.querySelectorAll('[data-sessao]').forEach(b => b.onclick = () => abrirSessao(estado.sessoes[+b.dataset.sessao]));
+  }
+
+  async function abrirSessao(s){
+    estado.sessao = s; estado.voltaN = null; estado.refN = null;
+    app.innerHTML = '<button class="voltar" data-voltar>‹ Sessões</button><div class="estado" data-prog>Baixando a gravação…</div>';
+    app.querySelector('[data-voltar]').onclick = telaSessoes;
+    let linhas;
+    try {
+      linhas = await baixarSessao(s.sessaoId, { aoProgresso: (f, t) => {
+        const el = app.querySelector('[data-prog]'); if(el) el.textContent = 'Baixando a gravação… ' + f + ' de ' + t + ' blocos'; } });
+    } catch(e) {
+      const el = app.querySelector('[data-prog]'); if(el) el.textContent = 'Não consegui baixar esta sessão (' + e.message + ').';
+      return;
+    }
+    estado.origem = 'nuvem';
+    estado.pacote = montarPaginaVolta(linhas);
+    telaSessao();
+  }
+
+  // ── 2) uma sessão: resumo + lista de voltas ──
+  function telaSessao(){
+    const p = estado.pacote, se = p.sessao;
+    const dev = estado.origem === 'dev';
+    const melhorSet = p.melhoresSetores || [];
+    const voltas = p.voltas.map(v => {
+      const sets = (v.setoresS || []).map((x, i) => '<span class="' + (x === melhorSet[i] ? 'melhor' : '') + '">S' + (i + 1) + ' ' + esc(fmtT(x)) + '</span>').join('');
+      return '<button class="volta" data-volta="' + v.n + '"><span class="n">V' + v.n + '</span><div>' +
+        '<div class="tempo ' + (v.melhor ? 'melhor' : '') + '">' + esc(fmtT(v.tempoS)) + '</div>' +
+        '<div class="sets">' + (sets || '<span>setores incompletos</span>') + '</div></div>' +
+        '<span class="dl ' + (v.melhor ? 'melhor' : 'pior') + '">' + (v.melhor ? 'MELHOR' : esc(fmtD(v.deltaMelhorS))) + '</span></button>';
+    }).join('');
+    app.innerHTML = (dev ? '' : '<button class="voltar" data-voltar>‹ Sessões</button>') +
+      '<div class="eyebrow">Sessão</div><h1>' + esc(fmtData(se.inicioT)) + '</h1>' +
+      '<div class="sub">' + esc(fmtDur(se.duracaoS)) + ' · ' + se.nPontos.toLocaleString('pt-BR') + ' pontos de GPS</div>' +
+      (dev ? '<span class="selo-dev">DEV · GRAVAÇÃO LOCAL ' + esc(DEV.replace('-', '/')) + ' (NÃO VEIO DA NUVEM)</span>' : '') +
+      (se.avisoKmh ? '<div class="aviso" data-aviso-kmh>' + esc(se.avisoKmh) + '</div>' : '') +
+      '<div class="tira"><div><div class="k">Voltas</div><div class="v" data-n-voltas>' + p.voltas.length + '</div></div>' +
+      '<div><div class="k">Melhor</div><div class="v melhor" data-melhor>' + esc(fmtT(p.melhorVolta && p.melhorVolta.tempoS)) + '</div></div>' +
+      '<div><div class="k">Ideal</div><div class="v" data-ideal>' + esc(fmtT(p.voltaIdealS)) + '</div></div>' +
+      '<div><div class="k">Máxima</div><div class="v">' + esc(fmtKm(se.kmhMax)) + '</div></div></div>' +
+      (p.voltas.length
+        ? '<div class="secao"><span class="k">Voltas</span><span class="nota">toque numa volta</span></div><div>' + voltas + '</div>'
+        : '<div class="estado" data-sem-volta>Esta gravação não cruzou a linha de chegada de Brasília — não há volta para mostrar.</div>');
+    const vb = app.querySelector('[data-voltar]'); if(vb) vb.onclick = telaSessoes;
+    app.querySelectorAll('[data-volta]').forEach(b => b.onclick = () => {
+      const n = +b.dataset.volta;
+      estado.voltaN = n;
+      // referência padrão = a melhor volta (se a escolhida não é ela)
+      estado.refN = p.melhorVolta && p.melhorVolta.n !== n ? p.melhorVolta.n : null;
+      telaVolta();
+    });
+  }
+
+  // ── 3) a página da volta (+ comparação) ──
+  const VB = (() => { let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    for (const [x, y] of POLILINHA) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }
+    const f = 14; return [x0 - f, y0 - f, x1 - x0 + 2 * f, y1 - y0 + 2 * f]; })();
+  function corKmh(k){ if(k == null) return '#9AA3B2'; if(k < 60) return '#38BCFF'; if(k < 100) return '#7DD3FC'; if(k < 130) return '#D4AF37'; return '#FF8C66'; }
+  const COR_FASE = { freio:'#FF5A4E', acel:'#3FE08C', embalo:'#D4AF37' };
+
+  function svgMapa(v, cmp){
+    const pista = '<polyline points="' + POLILINHA.map(p => p.join(',')).join(' ') + '" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="9" stroke-linejoin="round"/>';
+    let rastro = '', ant = null, cor = null, d = '';
+    for (const p of v.rastro) {
+      const c = p.fase ? COR_FASE[p.fase] : corKmh(p.kmh);
+      if (c !== cor) { if (d) rastro += '<path d="' + d + '" stroke="' + cor + '"/>'; d = ant ? 'M' + ant.x + ' ' + ant.y : ''; cor = c; }
+      d += (d ? ' L' : 'M') + p.x + ' ' + p.y; ant = p;
+    }
+    if (d) rastro += '<path d="' + d + '" stroke="' + cor + '"/>';
+    let marcas = '';
+    if (cmp) {
+      const marca = (t, c, k) => t.x == null ? '' : '<circle cx="' + t.x + '" cy="' + t.y + '" r="9" fill="none" stroke="' + c + '" stroke-width="2.5" data-marca="' + k + '"/>' +
+        '<text x="' + (t.x + 12) + '" y="' + (t.y + 4) + '" style="font-size:13px;fill:' + c + '">' + t.i + '</text>';
+      marcas = cmp.perdeu.map(t => marca(t, '#FF5A4E', 'perdeu')).join('') + cmp.ganhou.map(t => marca(t, '#3FE08C', 'ganhou')).join('');
+    }
+    return '<svg viewBox="' + VB.join(' ') + '" data-mapa>' + pista +
+      '<g fill="none" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" data-rastro>' + rastro + '</g>' + marcas + '</svg>';
+  }
+
+  // gráfico simples por distância (0..1 da volta) — eixo y fixo informado
+  function svgLinhas(series, yMin, yMax, ticks, extras){
+    const W = 360, H = 150, L = 30, R = 6, T = 8, B = 18;
+    const X = q => L + q * (W - L - R), Y = y => T + (1 - (y - yMin) / (yMax - yMin)) * (H - T - B);
+    let s = '';
+    for (const t of ticks) s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(t) + '" y2="' + Y(t) + '" stroke="rgba(255,255,255,' + (t === 0 ? '0.25' : '0.07') + ')"/>' +
+      '<text x="' + (L - 4) + '" y="' + (Y(t) + 3) + '" text-anchor="end">' + String(t).replace('.', ',') + '</text>';
+    for (const se of series) {
+      const pts = se.pts.filter(p => p[1] != null).map(p => X(p[0]).toFixed(1) + ',' + Y(Math.max(yMin, Math.min(yMax, p[1]))).toFixed(1)).join(' ');
+      s += '<polyline points="' + pts + '" fill="none" stroke="' + se.cor + '" stroke-width="' + (se.w || 1.6) + '"' + (se.tra ? ' stroke-dasharray="4 3"' : '') + ' stroke-linejoin="round"' + (se.attr || '') + '/>';
+    }
+    if (extras && extras.metros) {
+      s += '<text x="' + L + '" y="' + (H - 4) + '">0 m</text><text x="' + (W - R) + '" y="' + (H - 4) + '" text-anchor="end">' +
+        extras.metros.toLocaleString('pt-BR') + ' m</text>';
+    }
+    return '<svg viewBox="0 0 ' + W + ' ' + H + '">' + s + '</svg>';
+  }
+
+  function svgCirculoG(v){
+    const R = 60, esc = R / 1.5;
+    let s = '<circle r="' + R + '" fill="none" stroke="rgba(255,255,255,0.14)"/><circle r="' + (esc * 1) + '" fill="none" stroke="rgba(255,255,255,0.08)"/>' +
+      '<circle r="' + (esc * 0.5) + '" fill="none" stroke="rgba(255,255,255,0.06)"/>' +
+      '<line x1="-' + R + '" x2="' + R + '" stroke="rgba(255,255,255,0.08)"/><line y1="-' + R + '" y2="' + R + '" stroke="rgba(255,255,255,0.08)"/>';
+    let ultimoT = -1;
+    for (const p of v.perfil) {
+      if (!p.z || p.gl == null || p.t - ultimoT < 0.1) continue;   // nuvem a 10 Hz
+      ultimoT = p.t;
+      s += '<circle cx="' + (p.ga * esc).toFixed(1) + '" cy="' + (-p.gl * esc).toFixed(1) + '" r="1.3" fill="' + (p.gl <= -0.1 ? '#FF5A4E' : p.gl >= 0.1 ? '#3FE08C' : '#D4AF37') + '" fill-opacity=".55"/>';
+    }
+    s += '<text x="0" y="-' + (R - 10) + '" text-anchor="middle">acelera</text><text x="0" y="' + (R - 4) + '" text-anchor="middle">freia</text>';
+    return '<svg viewBox="-64 -64 128 128" data-circulo-g>' + s + '</svg>';
+  }
+
+  function telaVolta(){
+    const p = estado.pacote;
+    const v = p.voltas.find(x => x.n === estado.voltaN);
+    const ref = estado.refN != null ? p.voltas.find(x => x.n === estado.refN) : null;
+    // comparação: a volta escolhida (V) contra a referência (R); dif > 0 = V mais lenta ali
+    const cmp = ref ? compararVoltas(ref, v) : null;
+    estado.cmp = cmp;
+    const chips = '<button class="chip ' + (ref ? '' : 'on') + '" data-ref="">nenhuma</button>' +
+      p.voltas.filter(x => x.n !== v.n).map(x => '<button class="chip ' + (ref && ref.n === x.n ? 'on' : '') + '" data-ref="' + x.n + '">V' + x.n + ' ' + esc(fmtT(x.tempoS)) + '</button>').join('');
+
+    let html = '<button class="voltar" data-voltar>‹ Voltas</button>' +
+      '<div class="eyebrow">Volta ' + v.n + (v.melhor ? ' · melhor da sessão' : '') + '</div>' +
+      '<h1 class="' + (v.melhor ? 'melhor' : '') + '" data-tempo-volta>' + esc(fmtT(v.tempoS)) + '</h1>' +
+      '<div class="sub">' + (v.distM ? v.distM.toLocaleString('pt-BR') + ' m · ' : '') + 'máx ' + esc(fmtKm(v.kmhMax)) + ' · mín ' + esc(fmtKm(v.kmhMin)) + '</div>' +
+      '<div class="secao"><span class="k">Comparar com</span></div><div class="chips">' + chips + '</div>';
+
+    if (cmp) {
+      html += '<div class="tira" style="grid-template-columns:1fr 1fr"><div><div class="k">V' + v.n + ' contra V' + ref.n + '</div>' +
+        '<div class="v ' + corDif(cmp.deltaFinalS) + '" data-delta-final>' + esc(fmtD(cmp.deltaFinalS)) + ' s</div></div>' +
+        '<div><div class="k">Leitura</div><div class="v" style="font-family:inherit;font-size:13px;white-space:normal;color:var(--text-2)">' +
+        (cmp.deltaFinalS > 0 ? 'V' + v.n + ' mais lenta' : cmp.deltaFinalS < 0 ? 'V' + v.n + ' mais rápida' : 'empate') + '</div></div></div>';
+    }
+
+    html += '<div class="secao"><span class="k">Mapa</span><span class="nota">' + (p.sessao.temG ? 'cor = freio, embalo e aceleração' : 'cor = velocidade') + '</span></div>' +
+      '<div class="mapa">' + svgMapa(v, cmp) + '</div>' +
+      '<div class="legenda">' + (p.sessao.temG
+        ? '<span><i style="background:#FF5A4E"></i>freio</span><span><i style="background:#D4AF37"></i>embalo</span><span><i style="background:#3FE08C"></i>aceleração</span>'
+        : '<span><i style="background:#38BCFF"></i>&lt; 60</span><span><i style="background:#7DD3FC"></i>60–100</span><span><i style="background:#D4AF37"></i>100–130</span><span><i style="background:#FF8C66"></i>&gt; 130 km/h</span>') +
+      (cmp ? '<span><i style="background:#FF5A4E;height:8px;width:8px;border-radius:50%"></i>perdeu</span><span><i style="background:#3FE08C;height:8px;width:8px;border-radius:50%"></i>ganhou</span>' : '') + '</div>';
+
+    // velocidade ao longo da volta (pela distância)
+    const ptsV = cmp ? cmp.serie.map(s => [s.q, s.kmhB]) : perfilPorFracao(v);
+    const series = [{ pts: ptsV, cor: '#D4AF37', w: 1.8, attr: ' data-serie="kmh-volta"' }];
+    if (cmp) series.unshift({ pts: cmp.serie.map(s => [s.q, s.kmhA]), cor: 'rgba(255,255,255,0.55)', tra: true, attr: ' data-serie="kmh-ref"' });
+    html += '<div class="secao"><span class="k">Velocidade</span><span class="nota">km/h ao longo da volta</span></div>' +
+      '<div class="graf">' + svgLinhas(series, 0, 180, [0, 50, 100, 150], { metros: cmp ? cmp.distRefM : v.distM }) + '</div>' +
+      '<div class="legenda"><span><i style="background:#D4AF37"></i>V' + v.n + '</span>' + (cmp ? '<span><i style="background:rgba(255,255,255,.55)"></i>V' + ref.n + '</span>' : '') + '</div>';
+
+    if (cmp) {
+      let lo = 0, hi = 0; for (const s of cmp.serie) { lo = Math.min(lo, s.deltaS); hi = Math.max(hi, s.deltaS); }
+      const lim = Math.max(1, Math.ceil(Math.max(-lo, hi)));
+      html += '<div class="secao"><span class="k">Diferença</span><span class="nota">acima de 0 = V' + v.n + ' atrás</span></div>' +
+        '<div class="graf">' + svgLinhas([{ pts: cmp.serie.map(s => [s.q, s.deltaS]), cor: cmp.deltaFinalS > 0 ? '#FF5A4E' : '#3FE08C', w: 1.8, attr: ' data-serie="delta"' }],
+          -lim, lim, [-lim, 0, lim], { metros: cmp.distRefM }) + '</div>';
+      if (cmp.setores) {
+        html += '<div class="secao"><span class="k">Setores</span></div><table data-setores><tr><th>Setor</th><th>V' + v.n + '</th><th>V' + ref.n + '</th><th>Dif.</th></tr>' +
+          cmp.setores.map(s => '<tr><td>S' + s.s + '</td><td>' + esc(fmtT(s.b)) + '</td><td>' + esc(fmtT(s.a)) + '</td><td class="' + corDif(s.difS) + '">' + esc(fmtD(s.difS)) + '</td></tr>').join('') + '</table>';
+      }
+      const lista = (arr, vazio) => arr.length ? arr.map(t => '<div class="trecho"><span>Trecho ' + t.i + ' <span class="m">' +
+        t.mDe.toLocaleString('pt-BR') + '–' + t.mAte.toLocaleString('pt-BR') + ' m</span></span><span class="d ' + corDif(t.difS) + '">' + esc(fmtD(t.difS)) + ' s</span></div>').join('')
+        : '<div class="trecho"><span class="m">' + vazio + '</span></div>';
+      html += '<div class="duas"><div><div class="secao"><span class="k">Onde perdeu</span></div><div data-perdeu>' + lista(cmp.perdeu, 'nenhum trecho') + '</div></div>' +
+        '<div><div class="secao"><span class="k">Onde ganhou</span></div><div data-ganhou>' + lista(cmp.ganhou, 'nenhum trecho') + '</div></div></div>';
+    } else if (v.setoresS) {
+      html += '<div class="secao"><span class="k">Setores</span></div><table data-setores><tr><th>Setor</th><th>V' + v.n + '</th><th>Melhor</th></tr>' +
+        v.setoresS.map((s, i) => '<tr><td>S' + (i + 1) + '</td><td class="' + (s === p.melhoresSetores[i] ? 'melhor' : '') + '">' + esc(fmtT(s)) + '</td><td>' + esc(fmtT(p.melhoresSetores[i])) + '</td></tr>').join('') + '</table>';
+    }
+
+    html += '<div class="secao"><span class="k">Força G</span></div>';
+    if (v.picosG) {
+      html += '<div class="g-wrap"><div>' + svgCirculoG(v) + '</div><div class="g-nums" data-picos-g>' +
+        '<div><span>Freada mais forte</span><span>' + esc(fmtG(v.picosG.freioMax)) + '</span></div>' +
+        '<div><span>Aceleração máxima</span><span>' + esc(fmtG(v.picosG.acelMax)) + '</span></div>' +
+        '<div><span>Curva mais forte</span><span>' + esc(fmtG(v.picosG.latMax != null ? Math.abs(v.picosG.latMax) : null)) + '</span></div>' +
+        '<div><span>Freio + curva juntos</span><span>' + esc(fmtG(v.picosG.combinadoMax)) + '</span></div></div></div>';
+    } else {
+      html += '<div class="aviso" data-sem-g>Esta gravação não tem a força G do carro (com o zero do box). Ela passa a vir nas sessões gravadas pelo notebook a partir desta versão.</div>';
+    }
+
+    app.innerHTML = html;
+    app.querySelector('[data-voltar]').onclick = telaSessao;
+    app.querySelectorAll('[data-ref]').forEach(b => b.onclick = () => { estado.refN = b.dataset.ref === '' ? null : +b.dataset.ref; telaVolta(); window.scrollTo(0, 0); });
+  }
+
+  // perfil sem comparação: os próprios pontos da volta (fração já desenrolada pelo cérebro na comparação;
+  // aqui basta a ordem — uma volta só, eixo = distância andada ÷ distância da volta)
+  function perfilPorFracao(v){
+    const tot = v.distM || 1;
+    return v.perfil.map(s => [Math.min(1, s.d / tot), s.kmh]);
+  }
+
+  // ── início ──
+  if (DEV) {
+    const nome = DEV === '21-06' ? '2026-06-21' : DEV;
+    fetch('../command-box/fixtures/replay-hoje-' + encodeURIComponent(nome) + '.json')
+      .then(r => { if(!r.ok) throw new Error(String(r.status)); return r.json(); })
+      .then(j => { estado.origem = 'dev'; estado.pacote = montarPaginaVolta(j.amostras || []); estado.sessao = { sessaoId: 'dev-' + DEV }; telaSessao(); })
+      .catch(e => { app.innerHTML = '<div class="estado">Gravação DEV indisponível (' + esc(e.message) + ').</div>'; });
+  } else {
+    telaSessoes();
+  }
+</script>
+</body>
+</html>

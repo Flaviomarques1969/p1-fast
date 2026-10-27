@@ -74,6 +74,9 @@ enum HomeNavTarget: Hashable {
     /// Detalhe da melhor volta (tempo; mapa + por trecho quando houver volta
     /// real). Aberto pelo número "Melhor" da Home.
     case melhorVolta
+    /// Voltas gravadas (item 6 do GPS, Flávio 27/10/2026): página da volta e
+    /// comparação entre 2 voltas, lidas do arquivo da nuvem (sessao_dumps).
+    case voltasGravadas
 }
 
 /// Dados necessários para renderizar o estado cheio. Por enquanto vêm
@@ -222,6 +225,10 @@ struct HomeView: View {
                 TesteAoVivoButton(onAbrir: {
                     router.path.append(HomeNavTarget.testeAoVivo)
                 })
+                // VOLTAS GRAVADAS — página da volta + comparar 2 voltas (item 6 do GPS).
+                VoltasGravadasButton(onAbrir: {
+                    router.path.append(HomeNavTarget.voltasGravadas)
+                })
             }
             // Atalho dev pra captura rápida em test drive — fica embaixo
             // do conteúdo canônico. Só renderiza quando o caller injetou
@@ -292,6 +299,9 @@ struct HomeView: View {
                             onClose: { voltarUmaTela() })
         case .melhorVolta:
             MelhorVoltaView(onClose: { voltarUmaTela() })
+        case .voltasGravadas:
+            PaginaVoltaView(onClose: { voltarUmaTela() })
+                .navigationBarBackButtonHidden(true)
         }
     }
 
@@ -944,6 +954,41 @@ private struct AssistirButton: View {
             .overlay(
                 RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
                     .stroke(Color.red.opacity(0.55), lineWidth: 1.5)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+/// Abre as voltas gravadas (item 6 do GPS): sessões da nuvem → página da
+/// volta → comparar 2 voltas. Mesmo molde do AssistirButton, borda neutra.
+private struct VoltasGravadasButton: View {
+    let onAbrir: () -> Void
+
+    var body: some View {
+        Button(action: onAbrir) {
+            HStack(spacing: 10) {
+                Circle()
+                    .fill(Color.textMuted)
+                    .frame(width: 10, height: 10)
+                Text("VOLTAS GRAVADAS")
+                    .font(.system(size: 16, weight: .bold))
+                    .tracking(0.4)
+                    .foregroundStyle(Color.text)
+                Spacer(minLength: 0)
+                Text("›")
+                    .font(.system(size: 18, weight: .regular))
+                    .foregroundStyle(Color.textMuted)
+            }
+            .padding(.horizontal, Spacing.md)
+            .padding(.vertical, 16)
+            .background(
+                RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                    .fill(Color.surfaceRaised)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                    .stroke(Color.white.opacity(0.18), lineWidth: 1)
             )
         }
         .buttonStyle(.plain)

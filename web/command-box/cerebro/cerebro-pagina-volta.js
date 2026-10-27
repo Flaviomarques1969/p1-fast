@@ -56,13 +56,15 @@ export function pontosDaGravacao(linhas) {
     });
   }
   out.sort((a, b) => a.t - b.t);
-  const limpos = [];
-  for (const p of out) {
-    const u = limpos[limpos.length - 1];
-    if (u && u.t === p.t && u.lat === p.lat && u.lng === p.lng && u.kmh === p.kmh) continue;   // linha repetida de verdade
-    limpos.push(p);
-  }
-  return limpos;
+  // linha repetida de verdade (bloco reenviado): mesmo instante, lugar e velocidade — mesmo que
+  // outra linha do mesmo milissegundo tenha ficado no meio
+  const vistos = new Set();
+  return out.filter(p => {
+    const k = p.t + '|' + p.lat + '|' + p.lng + '|' + p.kmh;
+    if (vistos.has(k)) return false;
+    vistos.add(k);
+    return true;
+  });
 }
 
 /**

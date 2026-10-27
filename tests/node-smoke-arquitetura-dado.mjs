@@ -30,6 +30,8 @@ const TELAS = [
   '_design-reference/mockup-command-box-engenharia-saude-carro.html',
   'ios/p1fast-ios/Resources/Cockpit/cockpit-app.html',
   'web/cockpit/checar-antes-de-rodar.html',
+  'web/volta/pagina-volta.html',
+  'ios/p1fast-ios/Resources/Cockpit/web/volta/pagina-volta.html',
 ];
 
 // ── As regras (cada uma = um jeito de "espalhar" que a arquitetura proíbe) ──
@@ -132,6 +134,8 @@ const CASAS = [
   'web/command-box/cerebro/cerebro-painel.js',
   'web/command-box/cerebro/cerebro-vivo.js',
   'web/command-box/cerebro/cerebro-gps-tv.js',
+  'web/command-box/cerebro/cerebro-pagina-volta.js',
+  'web/cockpit/arquivo-sessoes.js',
   'web/command-box/frenagem-real.js',
   'web/command-box/passagem-real.js',
   'web/command-box/vmin-curvas-reais.js',

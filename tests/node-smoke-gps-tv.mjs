@@ -141,7 +141,7 @@ const live = ler('windows/cockpit/P1Fast.Cockpit.UI/MainWindow.Live.cs');
 const dic = (live.match(/_liveCloudGps\.Enqueue\(new Dictionary[\s\S]{0,1800}?\}\);/) || [''])[0];
 t('Cockpit: canal leva gLong/gLat/zeroOk', /\["gLong"\]/.test(dic) && /\["gLat"\]/.test(dic) && /\["zeroOk"\]/.test(dic));
 t('Cockpit: G do canal sai da MESMA peça do cérebro (Acel.Converter), sem aprender de novo',
-  /_gpsFiltro\.Acel\.Converter\(f\.GX, f\.GY\)/.test(live) && !/_gpsFiltro\.Acel\.Ler\(/.test(live));
+  /_gpsFiltro\.Acel\.Converter\(f\.GX, f\.GY(, f\.GZ)?\)/.test(live) && !/_gpsFiltro\.Acel\.Ler\(/.test(live));
 const contrato = ler('docs/CONTRATO_DADOS.md');
 t('contrato: gLong/gLat/zeroOk registrados e casa do cérebro da TV listada',
   /gLong/.test(contrato) && /zeroOk/.test(contrato) && /cerebro-gps-tv\.js/.test(contrato));

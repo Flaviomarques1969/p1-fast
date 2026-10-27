@@ -53,6 +53,7 @@ Cada cálculo tem UMA casa. Telas usam a casa; **proibido** recriar a conta dent
 | Alerta preditivo (temperatura) | `web/command-box/cerebro/cerebro-preditivo.js` |
 | Chegada / linha por GPS | `web/command-box/cerebro/chegada-gps.js` |
 | TV do box: mapa com km/h e G, círculo de G, voltas e setores (item 5 do GPS) | `web/command-box/cerebro/cerebro-gps-tv.js` |
+| Página da volta e comparação entre 2 voltas no celular (item 6 do GPS; volta/setor vêm da MESMA peça da TV) | `web/command-box/cerebro/cerebro-pagina-volta.js` |
 | Frenagem | `web/command-box/frenagem-real.js` · `frenagem-curvas-reais.js` |
 | Passagem (tempo por trecho) | `web/command-box/passagem-real.js` · `passagem-curvas-reais.js` |
 | Mínima de curva (vmin) | `web/command-box/vmin-curvas-reais.js` · `vmin-aprendizado.js` |
@@ -71,7 +72,8 @@ Cada cálculo tem UMA casa. Telas usam a casa; **proibido** recriar a conta dent
 
 Telas cobertas pela trava (lista `TELAS` em `tests/node-smoke-arquitetura-dado.mjs`):
 Vista Piloto, Vista Engenheiro, Engenharia Lambda, Engenharia PAce, Engenharia Motor-Saúde,
-Engenharia Saúde-do-Carro, Cockpit do app (iOS), Checar-antes-de-rodar.
+Engenharia Saúde-do-Carro, Cockpit do app (iOS), Checar-antes-de-rodar, Página da volta do celular
+(`web/volta/pagina-volta.html` e a cópia idêntica do app iOS).
 
 Cada tela: **lê o pacote do cérebro**. Não conecta. Não calcula. Não inventa dado.
 
@@ -117,8 +119,15 @@ durável **NÃO** é um 2º feed ao vivo nem uma 2ª conexão de tela.
 | Upload da gravação `.jsonl` completa | `p1fast-upload` → tabela `sessao_dumps` | ✅ Parte B (produtor) |
 | Disparo automático no fim da sessão | `MainWindow.Live.cs` `StopLive` (processo destacado, só `--producao`) | ✅ §7.4 feito (2026-06-30) |
 | Consumidor: lê o dump → calcula → grava | nuvem (iMac): `cerebro-coach vminKmh` → `segment_executions.vmin_*` / `padroes_telemetria_por_volta` | ⏳ lado do iMac |
+| Porta ÚNICA de leitura do arquivo (GET com a chave pública, sessão inteira ou erro) | `web/cockpit/arquivo-sessoes.js` | ✅ item 6 do GPS (27/10/2026) |
 
 **Regra que NÃO muda:** as telas continuam só EXIBINDO (seção 3). O arquivo durável é lido pelo
 **consumidor da nuvem** (não por uma tela), que grava o resultado nas tabelas que já existem; a tela
 do app lê o **resultado pronto**. O uploader sobe **RAW** (fidelidade total); a nuvem normaliza/calcula.
+**Exceção registrada (item 6 do GPS, 27/10/2026):** a página da volta do celular
+(`web/volta/pagina-volta.html`) ainda lê o arquivo pela porta única `arquivo-sessoes.js` e roda o
+cérebro `cerebro-pagina-volta.js` no próprio aparelho — mesma situação dos módulos da seção 2 que
+"ainda rodam no navegador". A página não calcula nada (a trava `npm run smoke:pagina-volta` reprova
+quem pôr conta nela). Passo definitivo: o consumidor da nuvem roda o MESMO cérebro e a página lê o
+pacote pronto — sem mudar a casa da conta.
 Visibilidade: o `.exe` avisa no `StatusText` se está em PRODUÇÃO ou TESTE (lição do bug de 28/06).

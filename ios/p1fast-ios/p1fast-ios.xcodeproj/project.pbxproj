@@ -60,6 +60,7 @@
 		81D2590E20F42F5E8634D88B /* CarroHubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA34E80FDFC9B17B68632F35 /* CarroHubView.swift */; };
 		82318A9F1DB6BFFD6D20BB07 /* SummaryStats.swift in Sources */ = {isa = PBXBuildFile; fileRef = B17051FF421D051EE979161D /* SummaryStats.swift */; };
 		878C19864476206B162D941B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9AF697E035B2E094B09108F9 /* Assets.xcassets */; };
+		89892191A8A5BB9B59DA0F54 /* PaginaVoltaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F411CE6D57DC7F3F4D5F9A8D /* PaginaVoltaView.swift */; };
 		8E31E4CDC675BA24DA6E323C /* StintCaptureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 771504D0E86F29E7E1F615E2 /* StintCaptureView.swift */; };
 		8E3DAF8B6F3BE8E346213A37 /* StintRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52184FDD398B02FA4752681B /* StintRepository.swift */; };
 		8FB6DBD08681434559524D83 /* CarroModalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0390017441A8A36F834BDC25 /* CarroModalView.swift */; };
@@ -208,6 +209,7 @@
 		EC43A445C874747C1D6C3A8D /* CombustivelRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CombustivelRepository.swift; sourceTree = "<group>"; };
 		F057E5C739BCFEF58D4DC92A /* EventoDetalheView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventoDetalheView.swift; sourceTree = "<group>"; };
 		F1B65222D51333D963A315CB /* EtiquetaOCR.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EtiquetaOCR.swift; sourceTree = "<group>"; };
+		F411CE6D57DC7F3F4D5F9A8D /* PaginaVoltaView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaginaVoltaView.swift; sourceTree = "<group>"; };
 		FA34E80FDFC9B17B68632F35 /* CarroHubView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarroHubView.swift; sourceTree = "<group>"; };
 		FAC883E1802B405F4ABE798C /* StintPlanoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StintPlanoView.swift; sourceTree = "<group>"; };
 		FB39A40546360156F076C762 /* OrientationGate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrientationGate.swift; sourceTree = "<group>"; };
@@ -338,6 +340,7 @@
 				409F50C780B13E771E4147CB /* HubMockLauncher.swift */,
 				B004900D5C1698CE0C161937 /* LicaoListaView.swift */,
 				ACAB3545025A5E78E5DE8AEE /* ManutencaoConsumiveisView.swift */,
+				F411CE6D57DC7F3F4D5F9A8D /* PaginaVoltaView.swift */,
 				929E850CB75095F3CADEF4B6 /* PassageiroCadastroView.swift */,
 				CBF64001749C7FEA85FB9446 /* PecaViews.swift */,
 				66A7DAC9991956973DAAD4E9 /* PendenciasView.swift */,
@@ -575,6 +578,7 @@
 				045B0DAA04747481A02E31B5 /* ManutencaoConsumiveisView.swift in Sources */,
 				0EDB3438099590EA2C6963EE /* OrientationGate.swift in Sources */,
 				B39DBE85EA240E9F1B6698FE /* P1FastApp.swift in Sources */,
+				89892191A8A5BB9B59DA0F54 /* PaginaVoltaView.swift in Sources */,
 				5E4293E8007960583EF0C9F6 /* PassageiroCadastroView.swift in Sources */,
 				C49AFE1839DB6C37AF4DB487 /* PassageiroRepository.swift in Sources */,
 				5D927FC61EC51388C98939C9 /* PecaRepository.swift in Sources */,

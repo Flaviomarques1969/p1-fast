@@ -70,7 +70,7 @@ public sealed class GpsFiltroAoVivo
         double? kmhAp = kmhAparelho is { } ka && double.IsFinite(ka) && ka >= 0 && ka <= KmhTetoPlausivel
             ? ka : null;
         // G do carro ANTES da decimação: é com o carro parado (decimado) que o zero aprende.
-        var g = _acel.Ler(kmhAp, ax, ay);
+        var g = _acel.Ler(kmhAp, ax, ay, az);
 
         if (_prev is { } prev && Ghost.DistMeters(prev, p) < MovimentoMinM) return null;
 

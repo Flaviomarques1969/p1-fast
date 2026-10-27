@@ -553,12 +553,22 @@ public sealed partial class MainWindow
         // vários fixes de um mesmo notify BLE não colam no mesmo ms (dt~0 → km/h absurdo no
         // cérebro). Fallback pra chegada só se o espaçador não informou (TWallMs == 0).
         long tWall = f.TWallMs > 0 ? f.TWallMs : DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        // Item 5 (27/10): G do CARRO (zero do box + eixos provados) pela MESMA peça do cérebro
+        // (_gpsFiltro.Acel), sem aprender de novo — a TV do box só exibe, não refaz a conta.
+        // Item 6 (27/10): calculado UMA vez, ANTES do disco, e gravado também no .jsonl (chaves
+        // aditivas) — a página da volta do celular lê do arquivo e não refaz G.
+        // Item 7 (27/10): + gVert (batida vertical: zebra/buraco), mesma peça, mesmo zero da parada.
+        var gCarro = _gpsFiltro.Acel.Converter(f.GX, f.GY, f.GZ);
+        double? gLong = gCarro is { } gc ? Math.Round(gc.Long, 3) : null;
+        double? gLat = gCarro is { } gl ? Math.Round(gl.Lat, 3) : null;
+        bool zeroOk = gCarro?.ZeroOk ?? false;
+        double? gVert = gCarro?.Vert is { } gv ? Math.Round(gv, 3) : null;
         lock (_liveRecLock)
             _liveRecorder?.Gps(
                 // gx/gy/gz = aceleração crua do RaceBox (g), gravada pro dia de bancada calibrar
-                // o eixo + verificar os offsets. Ainda não alimenta a lógica da tela.
+                // o eixo + verificar os offsets. gLong/gLat/zeroOk = G do carro (item 6).
                 new { lat = f.Lat, lon = f.Lng, kmh = f.Kmh, fix = f.Fix, numSV = f.NumSV, hacc = f.HaccM,
-                      gx = f.GX, gy = f.GY, gz = f.GZ, heading = f.HeadingDeg },
+                      gx = f.GX, gy = f.GY, gz = f.GZ, heading = f.HeadingDeg, gLong, gLat, zeroOk, gVert },
                 // rawHex = o quadro UBX inteiro (Flávio 26/10, painel p1fast-gps-pacote-bruto-1631 = A).
                 rawHex: f.RawHex,
                 // Velocidade de fix fraco é lixo: não pode ABRIR nem SEGURAR a captura
@@ -571,9 +581,6 @@ public sealed partial class MainWindow
         // quebrar consumidor. (O web amostra a 5 Hz; aqui vai o full 25 Hz, agora SEM perder fix.)
         if (_liveNuvem is not null)
         {
-            // Item 5 (27/10): G do CARRO (zero do box + eixos provados) pela MESMA peça do cérebro
-            // (_gpsFiltro.Acel), sem aprender de novo — a TV do box só exibe, não refaz a conta.
-            var gCarro = _gpsFiltro.Acel.Converter(f.GX, f.GY);
             _liveCloudGps.Enqueue(new Dictionary<string, object?>
             {
                 ["lat"]   = f.Lat,
@@ -591,9 +598,11 @@ public sealed partial class MainWindow
                 ["source"] = "racebox",
                 // Item 5: chaves ADITIVAS (docs/CONTRATO_DADOS.md §1). gLong + acelera / − freia;
                 // gLat = lado; zeroOk = já descontou o zero do box (false = orientado, não zerado).
-                ["gLong"]  = gCarro is { } gc ? (object?)Math.Round(gc.Long, 3) : null,
-                ["gLat"]   = gCarro is { } gl ? (object?)Math.Round(gl.Lat, 3) : null,
-                ["zeroOk"] = gCarro?.ZeroOk ?? false,
+                ["gLong"]  = gLong,
+                ["gLat"]   = gLat,
+                ["zeroOk"] = zeroOk,
+                // Item 7: G vertical (+ para cima, sem a gravidade) — pancadas e zebras na TV do box.
+                ["gVert"]  = gVert,
             });
         }
 
