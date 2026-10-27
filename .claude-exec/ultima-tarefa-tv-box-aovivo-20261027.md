@@ -218,3 +218,24 @@ Segue do PRÓXIMO (1) do CONSERTO DO HEARTBEAT: testes → dotnet test + control
   Provas: 11 testes novos (7 publisher, 4 canal); Domain.Tests 636/636 (DOTNET_ROLL_FORWARD=Major); 4 mutações reprovam cada uma
   o seu teste (rótulo depois do envio; publisher ignora confirmação = 6 FAIL; confirma sem conferir ref/status; religação não zera);
   smoke um a um 82/83 (só schema-parity, anterior).
+- (RETOMADA 1027-1821) heartbeat: commit d56b7b74d no GitHub; SendMessage entregue à imac-9c (arquivos liberados).
+### E4 — EM ANDAMENTO, SEM COMMIT. Backup: .claude-exec/backup-e4-teste-ao-vivo-20261027/ (index.html + INSTALAR-ICONE.cmd)
+Achado: web/teste-aparelhos/index.html ouvia FIXO cockpit-bubi-live → no ensaio (cockpit sem --producao publica em cockpit-bubi-dev-teste)
+o GPS nunca chegava ao vídeo. Só OUVE produção (publica só no simulador manual, marcado sim). Exe sem T4000 segue com GPS ("esperando a T4000").
+Escrito: (a) index.html: canalDaPagina(search) entre marcadores CANAL-DA-PAGINA:INICIO/FIM (regra /^cockpit-bubi-[a-z0-9-]{1,40}$/, padrão live),
+CANAL_TESTE, selo "NUVEM · TESTE ✓ (canal)", log com o canal; (b) windows/cockpit/TESTE-AO-VIVO.cmd NOVO (trava 2ª cópia, dotnet build -c Release
+incremental, falhou = mostra data do Release anterior e pergunta, vídeo em localhost:8765/?canal=cockpit-bubi-dev-teste, exe --live sem --producao);
+(c) INSTALAR-ICONE.cmd cria os 2 ícones (AO VIVO estilo 7 / TESTE AO VIVO estilo 1, ícone do Release ou Debug).
+gps.cmd mora na ponte ~/Projetos/p1fast-ponte-notebook/pagina/ (território LIVRE, mas é a ferramenta da imac-9c e puxa a branch gps-base-g):
+"compila Release" passa para a E5, junto com a troca de branch do notebook, combinada por SendMessage com a imac-9c.
+PRÓXIMO: (1) catraca tests/node-smoke-teste-ao-vivo.mjs (molde tests/node-smoke-tv-video.mjs): TESTE-AO-VIVO.cmd ASCII, sem --producao fora
+de REM, exe com --live, caminho \Release\ e sem \Debug\, tasklist antes do 1º start, build -c Release, ?canal=%CANAL% e CANAL == LiveCanalTeste
+lido de MainWindow.Live.cs (fonte); canalDaPagina extraído pelos marcadores e rodado em node:vm ('' → live, dev-teste → dev-teste, 'outro' → live,
+'cockpit-bubi-LIVE' → live); CHANNEL_NAME = canalDaPagina(location.search); todo .cmd citado no INSTALAR-ICONE existe; parênteses fora de aspas
+balanceados no .cmd; CONTROLE: o detector de --producao ACHA em P1FAST-AO-VIVO.cmd; controle contra o backup (index.html velho reprova).
+(2) somar ao npm run smoke + script smoke:teste-ao-vivo; smoke um a um (esperado 83/84, só schema-parity); arquitetura (createClient da página já existia).
+(3) commit+push na branch -e2-; (4) E5.
+PONTO DE PARADA 1027-1834 (27/10 ~18h34): heartbeat commitado (d56b7b74d); E4 escrita sem commit — seguir do PRÓXIMO (1) da seção E4.
+
+### RETOMADA 1027-1834 (27/10, depois do /clear)
+Segue do PRÓXIMO (1) da seção E4: catraca node-smoke-teste-ao-vivo.mjs (+ controles) → smoke um a um → commit+push → E5. Produção intocada.

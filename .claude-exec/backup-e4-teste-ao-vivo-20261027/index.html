@@ -1,0 +1,771 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P1 Fast — Central de Pista (notebook)</title>
+<!-- versão FIXA (E3, 27/10/2026): sem versão, cada abertura podia pegar uma biblioteca nova não testada -->
+<script crossorigin="anonymous" src="https://unpkg.com/@daily-co/daily-js@0.93.0/dist/daily.js" integrity="sha384-DUI8LbxjuFzuplRn2yxGnk1uHo/rsLGFGzzyQbEvvzCgHmyvLq/dkkWEmtvAW8Kj"></script>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family:-apple-system,Segoe UI,Roboto,sans-serif; background:#0a0d12; color:#e8edf2; }
+  header { padding:14px 18px; background:#11161e; border-bottom:1px solid #1d2530; }
+  header h1 { margin:0; font-size:17px; letter-spacing:.5px; }
+  header p { margin:4px 0 0; font-size:12px; color:#8a97a6; }
+  .board { display:flex; gap:8px; padding:12px 16px 0; max-width:760px; margin:0 auto; flex-wrap:wrap; }
+  .board .pill { flex:1; min-width:140px; text-align:center; padding:9px 6px; }
+  .wrap { padding:16px; display:grid; gap:14px; max-width:760px; margin:0 auto; }
+  .card { background:#11161e; border:1px solid #1d2530; border-radius:12px; padding:14px; }
+  .card h2 { margin:0 0 10px; font-size:13px; color:#8a97a6; text-transform:uppercase; letter-spacing:.6px; }
+  video { width:100%; border-radius:10px; background:#000; aspect-ratio:16/9; object-fit:cover; }
+  button { font-size:15px; padding:12px 16px; border-radius:10px; border:1px solid #2a3442; background:#1b2330; color:#e8edf2; cursor:pointer; width:100%; }
+  button.primary { background:#2563eb; border-color:#2563eb; font-weight:600; }
+  button:disabled { opacity:.5; cursor:default; }
+  select { width:100%; padding:10px; border-radius:8px; background:#0e1319; color:#e8edf2; border:1px solid #2a3442; margin-top:8px; }
+  .row { display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid #161d27; font-size:14px; }
+  .row:last-child { border:0; }
+  .lbl { color:#8a97a6; } .val { font-variant-numeric:tabular-nums; font-weight:600; }
+  .pill { display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:600; }
+  .ok { background:#0d3320; color:#4ade80; } .bad { background:#3a1212; color:#f87171; } .warn { background:#3a2d0d; color:#fbbf24; } .idle{ background:#1b2330; color:#8a97a6; }
+  #log { font-family:ui-monospace,monospace; font-size:11px; color:#7e8a98; white-space:pre-wrap; max-height:140px; overflow:auto; background:#0b0f15; border-radius:8px; padding:8px; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:8px 18px; }
+  .note { font-size:12px; color:#8a97a6; margin:8px 0 0; line-height:1.5; }
+</style>
+</head>
+<body>
+<header>
+  <h1>P1 Fast — Central de Pista</h1>
+  <p>Notebook da pista · câmera + GPS + acompanhamento dos dados do carro · quem assiste abre <b>/painel</b></p>
+</header>
+
+<div class="board">
+  <span id="bVideo" class="pill idle">VÍDEO · parado</span>
+  <span id="bGps" class="pill idle">GPS · desligado</span>
+  <span id="bCarro" class="pill idle">CARRO · sem dados</span>
+  <span id="bNuvem" class="pill idle">NUVEM · desligada</span>
+</div>
+
+<div class="wrap">
+  <div class="card">
+    <h2>1 · Vídeo (câmera DJI)</h2>
+    <video id="local" autoplay muted playsinline></video>
+    <select id="cams" style="display:none"></select>
+    <div class="row"><span class="lbl">Transmissão</span><span id="vStatus" class="pill idle">parada</span></div>
+    <button id="btnStart" class="primary" style="margin-top:10px">▶ Iniciar transmissão</button>
+  </div>
+
+  <div class="card">
+    <h2>2 · GPS (RaceBox)</h2>
+    <div class="row"><span class="lbl">Aparelho</span><span id="rbConn" class="pill idle">desligado</span></div>
+    <div class="grid2" style="margin-top:6px">
+      <div class="row"><span class="lbl">Sinal</span><span id="rbVer" class="val">—</span></div>
+      <div class="row"><span class="lbl">Satélites</span><span id="rbSv" class="val">—</span></div>
+      <div class="row"><span class="lbl">Velocidade</span><span id="rbSpd" class="val">—</span></div>
+      <div class="row"><span class="lbl">Taxa</span><span id="rbHz" class="val">—</span></div>
+      <div class="row"><span class="lbl">Latitude</span><span id="rbLat" class="val">—</span></div>
+      <div class="row"><span class="lbl">Longitude</span><span id="rbLon" class="val">—</span></div>
+    </div>
+    <button id="btnRb" style="margin-top:10px">Conectar RaceBox por Bluetooth</button>
+  </div>
+
+  <div class="card">
+    <h2>3 · Dados do carro (T4000)</h2>
+    <div class="grid2">
+      <div class="row"><span class="lbl">Chegando</span><span id="t4Age" class="val">—</span></div>
+      <div class="row"><span class="lbl">Ritmo</span><span id="t4Hz" class="val">—</span></div>
+      <div class="row"><span class="lbl">RPM</span><span id="t4Rpm" class="val">—</span></div>
+      <div class="row"><span class="lbl">Água</span><span id="t4Agua" class="val">—</span></div>
+      <div class="row"><span class="lbl">Bateria</span><span id="t4Bat" class="val">—</span></div>
+      <div class="row"><span class="lbl">Fonte</span><span id="t4Fonte" class="val">—</span></div>
+    </div>
+    <p class="note">Quem lê o carro é a <b>outra aba</b> do notebook (painel do piloto, p1t4000.vercel.app),
+    que manda os dados pra nuvem. Este quadro só confirma que estão chegando.
+    Sem o carro por perto, use o simulador abaixo: ele toca uma gravação real do motor (26/05).</p>
+    <button id="btnSim" style="margin-top:10px">▶ Simular carro (gravação real do motor)</button>
+  </div>
+
+  <div class="card">
+    <h2>Registro</h2>
+    <div id="log"></div>
+  </div>
+</div>
+
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+
+const $ = id => document.getElementById(id);
+function log(m){ const t=new Date().toLocaleTimeString(); $('log').textContent = `${t}  ${m}\n` + $('log').textContent; }
+function pill(el, txt, cls){ el.textContent = txt; el.className = 'pill ' + cls; }
+const boardPill = pill;
+
+// ════════════════ NUVEM (canal canônico cockpit-bubi-live) ════════════════
+// Mesma nuvem e mesmo canal que o painel do piloto usa desde 26/05.
+// Regra do projeto: dados ao vivo trafegam SÓ por este canal (não criar fonte paralela).
+const SUPABASE_URL  = 'https://fvhwltzhytpnhlqbttmd.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2aHdsdHpoeXRwbmhscWJ0dG1kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4MTExNDAsImV4cCI6MjA5MzM4NzE0MH0._ZpxksUnuVFhLzCB5x7bBiZ_VLQQR5cH4A1T-0-mvrA';
+const CHANNEL_NAME  = 'cockpit-bubi-live';
+
+const nuvem = { client:null, channel:null, status:'off', retryMs:2000, lastSampleTs:0, lastSampleSource:'—', sampleCount:0, sampleWindow:[] , lastSample:null };
+
+function setNuvem(status){
+  nuvem.status = status;
+  const map = { off:['NUVEM · desligada','idle'], connecting:['NUVEM · conectando…','warn'], online:['NUVEM · ao vivo ✓','ok'], error:['NUVEM · religando…','bad'] };
+  const [txt, cls] = map[status] || ['NUVEM · '+status,'warn'];
+  boardPill($('bNuvem'), txt, cls);
+}
+
+async function connectCloud(){
+  if (nuvem.channel) { try { await nuvem.channel.unsubscribe(); } catch{} nuvem.channel = null; }
+  setNuvem('connecting');
+  try {
+    if (!nuvem.client) nuvem.client = createClient(SUPABASE_URL, SUPABASE_ANON, { realtime: { params: { eventsPerSecond: 10 } } });
+    const ch = nuvem.client.channel(CHANNEL_NAME, { config: { broadcast: { ack:false, self:false } } });
+    ch.on('broadcast', { event:'sample' }, msg => { if (msg && msg.payload) onCarSample(msg.payload); });
+    ch.on('broadcast', { event:'evento' }, msg => { if (msg && msg.payload) onEvento(msg.payload); });
+    // Item 3 (RaceBox dono único): o GPS agora vem do COCKPIT (.exe) pela nuvem, NÃO do
+    // RaceBox por BLE aqui. Este web só RELAIA o GPS da nuvem pro vídeo (sala) e mostra na tela.
+    ch.on('broadcast', { event:'gps' }, msg => { if (msg && msg.payload) onCloudGps(msg.payload); });
+    ch.subscribe((status, err) => {
+      if (status === 'SUBSCRIBED') { nuvem.channel = ch; nuvem.retryMs = 2000; setNuvem('online'); log('Nuvem conectada (canal do carro).'); }
+      else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+        setNuvem('error');
+        log('Nuvem caiu ('+status+'). Religando em '+(nuvem.retryMs/1000)+'s…');
+        nuvem.channel = null;
+        setTimeout(connectCloud, nuvem.retryMs);
+        nuvem.retryMs = Math.min(nuvem.retryMs * 2, 15000);
+      }
+    });
+  } catch(e){
+    setNuvem('error'); log('Falha na nuvem: '+e.message+'. Religando…');
+    setTimeout(connectCloud, nuvem.retryMs);
+    nuvem.retryMs = Math.min(nuvem.retryMs * 2, 15000);
+  }
+}
+
+function cloudSend(event, payload){
+  if (!nuvem.channel || nuvem.status !== 'online') return false;
+  try { nuvem.channel.send({ type:'broadcast', event, payload }); return true; }
+  catch(e){ return false; }
+}
+
+// ════════════════ DADOS DO CARRO (recebidos do canal) ════════════════
+function onCarSample(s){
+  const now = performance.now();
+  nuvem.lastSampleTs = now;
+  nuvem.lastSample = s;
+  nuvem.lastSampleSource = s.source === 'sim-replay' ? 'simulador' : 'carro real';
+  nuvem.sampleWindow.push(now);
+  while (nuvem.sampleWindow.length && now - nuvem.sampleWindow[0] > 5000) nuvem.sampleWindow.shift();
+  // Simulador não pode misturar com carro real: se chegou amostra REAL, desliga o replay.
+  if (s.source !== 'sim-replay' && sim.rodando) {
+    pararSim();
+    log('Carro REAL detectado na nuvem — simulador desligado automaticamente.');
+  }
+}
+
+// ════════════════ VOLTA / TRECHO (eventos do painel do piloto) ════════════════
+// O painel do piloto publica eventos 'volta' / 'trecho' / 'delta' no canal.
+// A Central guarda o estado e repassa 1x/segundo pra sala de vídeo (tela ASSISTIR).
+const painel = { voltaN:null, voltaInicioTs:null, ultimaS:null, melhorS:null,
+                 trechoSeg:null, deltaS:null, sim:false };
+
+function onEvento(ev){
+  if (!ev || !ev.tipo) return;
+  painel.sim = ev.source === 'sim-replay';
+  if (ev.tipo === 'volta') {
+    const agora = ev.tWall ?? Date.now();
+    if (painel.voltaInicioTs) {
+      const dur = (agora - painel.voltaInicioTs) / 1000;
+      if (dur > 20 && dur < 1200) { // descarta lixo (volta de 20s ou de 20min não é volta)
+        painel.ultimaS = dur;
+        if (painel.melhorS == null || dur < painel.melhorS) painel.melhorS = dur;
+      }
+    }
+    painel.voltaN = (typeof ev.n === 'number') ? ev.n : ((painel.voltaN ?? 0) + 1);
+    painel.voltaInicioTs = agora;
+  }
+  if (ev.tipo === 'trecho') painel.trechoSeg = ev.segmentId ?? painel.trechoSeg;
+  if (ev.tipo === 'delta' && typeof ev.deltaS === 'number') painel.deltaS = ev.deltaS;
+}
+
+// Repasse pra sala de vídeo: dados do carro (2x/s) + volta/trecho (1x/s).
+setInterval(()=>{
+  if (!call) return;
+  const age = nuvem.lastSampleTs ? (performance.now() - nuvem.lastSampleTs) : Infinity;
+  if (age < 3000 && nuvem.lastSample) {
+    const s = nuvem.lastSample;
+    try { call.sendAppMessage({ t:'carro', rpm:s.rpm ?? null, kmh:s.speedKmh ?? null,
+      agua:s.waterTempC ?? null, lam:(typeof s.lambda==='number'? s.lambda : null),
+      bat:s.batteryV ?? null, sim:s.source==='sim-replay' }, '*'); } catch(e){}
+  }
+}, 500);
+setInterval(()=>{
+  if (!call || painel.voltaN == null && painel.trechoSeg == null) return;
+  const voltaS = painel.voltaInicioTs ? (Date.now() - painel.voltaInicioTs)/1000 : null;
+  try { call.sendAppMessage({ t:'painel',
+    voltaN: painel.voltaN, voltaS,
+    ultimaS: painel.ultimaS, melhorS: painel.melhorS,
+    trecho: painel.trechoSeg ? String(painel.trechoSeg).slice(0,8) : null,
+    deltaS: painel.deltaS, sim: painel.sim }, '*'); } catch(e){}
+}, 1000);
+
+function renderCarro(){
+  const age = nuvem.lastSampleTs ? (performance.now() - nuvem.lastSampleTs) : Infinity;
+  const s = nuvem.lastSample;
+  if (age < 3000 && s) {
+    boardPill($('bCarro'), 'CARRO · ao vivo ✓' + (s.source==='sim-replay' ? ' (sim)' : ''), 'ok');
+    $('t4Age').textContent = (age/1000).toFixed(1)+'s atrás';
+    $('t4Hz').textContent = (nuvem.sampleWindow.length/5).toFixed(1)+'/s';
+    $('t4Rpm').textContent = (s.rpm ?? '—');
+    $('t4Agua').textContent = (s.waterTempC != null ? s.waterTempC+'°C' : '—');
+    $('t4Bat').textContent = (s.batteryV != null ? s.batteryV.toFixed(1)+'V' : '—');
+    $('t4Fonte').textContent = nuvem.lastSampleSource;
+  } else {
+    boardPill($('bCarro'), 'CARRO · sem dados', nuvem.lastSampleTs ? 'bad' : 'idle');
+    $('t4Age').textContent = nuvem.lastSampleTs ? 'parou' : '—';
+    $('t4Hz').textContent = '—';
+  }
+}
+setInterval(renderCarro, 500);
+
+// ════════════════ SIMULADOR (gravação real do motor 26/05) ════════════════
+const sim = { rodando:false, amostras:null, idx:0, timer:null,
+              evTimer:null, voltaN:0, trechoN:0,
+              gpsPts:null, gpsIdx:0, gpsTimer:null };
+
+// Eventos de mentira (claramente marcados como simulador): trecho a cada 4s,
+// volta a cada ~60s — só pra exercitar a tela ASSISTIR sem o carro.
+function simEmitirEvento(ev){
+  const payload = { ...ev, source:'sim-replay', tWall: Date.now() };
+  cloudSend('evento', payload);
+  onEvento(payload); // canal não devolve pra quem enviou
+}
+async function ligarSimEventos(){
+  sim.voltaN = 0; sim.trechoN = 0; sim.gpsIdx = 0;
+  simEmitirEvento({ tipo:'volta', n: ++sim.voltaN });
+  sim.evTimer = setInterval(() => {
+    sim.trechoN = (sim.trechoN % 14) + 1;
+    simEmitirEvento({ tipo:'trecho', segmentId: 'Curva ' + sim.trechoN });
+    simEmitirEvento({ tipo:'delta', segmentId: 'Curva ' + sim.trechoN,
+                      deltaS: Math.round((Math.random()-0.45)*100)/100 });
+  }, 4000);
+  // GPS do simulador: replay do trajeto canônico de Brasília (volta ~61 s).
+  // Quando o ponteiro dá a volta completa, fecha a volta — tempos coerentes.
+  try {
+    if (!sim.gpsPts) {
+      const r = await fetch('./sim-gps.json?v=5520b');
+      if (r.ok) sim.gpsPts = await r.json();
+    }
+  } catch(e) { log('GPS do simulador indisponível: '+e.message); }
+  if (sim.gpsPts && sim.gpsPts.length) {
+    sim.gpsTimer = setInterval(() => {
+      // RaceBox real mandando? Então o GPS real manda e o sim não interfere.
+      if (gps.lastPktTs && performance.now() - gps.lastPktTs < 2000) return;
+      const p = sim.gpsPts[sim.gpsIdx % sim.gpsPts.length];
+      sim.gpsIdx++;
+      if (sim.gpsIdx % sim.gpsPts.length === 0) simEmitirEvento({ tipo:'volta', n: ++sim.voltaN });
+      const pkt = { t:'gps', fix:3, numSV:0, spd:(p.v||0), lat:p.lat, lon:p.lng,
+                    hz:5, hacc:2, ver:'simulador', sim:true };
+      if (call) { try { call.sendAppMessage(pkt, '*'); } catch(e){} }
+      cloudSend('gps', { lat:p.lat, lng:p.lng, kmh:(p.v||0), numSV:0, fix:3, accM:2, sim:true, tWall:Date.now() });
+    }, 200);
+  }
+}
+function desligarSimEventos(){
+  if (sim.evTimer) { clearInterval(sim.evTimer); sim.evTimer = null; }
+  if (sim.gpsTimer) { clearInterval(sim.gpsTimer); sim.gpsTimer = null; }
+}
+
+async function toggleSim(){
+  if (sim.rodando) { pararSim(); return; }
+  // Carro real mandando agora? Não liga o simulador por cima.
+  if (nuvem.lastSampleTs && performance.now() - nuvem.lastSampleTs < 3000 && nuvem.lastSample?.source !== 'sim-replay') {
+    log('Carro REAL está mandando dados — simulador bloqueado pra não misturar.');
+    return;
+  }
+  $('btnSim').disabled = true;
+  try {
+    if (!sim.amostras) {
+      log('Baixando a gravação real do motor (26/05)…');
+      const r = await fetch('./sim-amostras.json?v=saudavel');
+      if (!r.ok) throw new Error('gravação respondeu '+r.status);
+      sim.amostras = await r.json();
+      log(sim.amostras.length+' amostras reais carregadas.');
+    }
+    sim.rodando = true; sim.idx = 0;
+    $('btnSim').textContent = '⏹ Parar simulação';
+    log('Simulador LIGADO — motor real de 26/05 em loop + voltas/trechos de mentira (marcados sim).');
+    ligarSimEventos();
+    sim.timer = setInterval(() => {
+      if (!sim.rodando) return;
+      const s = sim.amostras[sim.idx % sim.amostras.length];
+      sim.idx++;
+      const payload = { ...s, source:'sim-replay', tWall: Date.now() };
+      cloudSend('sample', payload);
+      // O canal não devolve pra quem enviou — alimenta o quadro local direto.
+      onCarSample(payload);
+    }, 200);
+  } catch(e){
+    log('Simulador falhou: '+e.message);
+  } finally {
+    $('btnSim').disabled = false;
+  }
+}
+function pararSim(){
+  sim.rodando = false;
+  if (sim.timer) { clearInterval(sim.timer); sim.timer = null; }
+  desligarSimEventos();
+  $('btnSim').textContent = '▶ Simular carro (gravação real do motor)';
+  log('Simulador desligado.');
+}
+
+// ════════════════ VÍDEO (Daily.co) com religação automática ════════════════
+let call = null;
+let videoQuero = false;      // intenção: a transmissão deve estar no ar
+let videoRetryMs = 3000;
+
+async function getRoom(){
+  const r = await fetch('/api/room', { method:'POST' });
+  if(!r.ok){
+    const err = new Error('servidor de vídeo respondeu ' + r.status);
+    err.status = r.status;
+    throw err;
+  }
+  return r.json();
+}
+
+async function startVideo(){
+  videoQuero = true;
+  $('btnStart').disabled = true;
+  try {
+    pill($('vStatus'),'conectando…','warn'); boardPill($('bVideo'),'VÍDEO · conectando…','warn');
+    log('Pedindo sala de vídeo…');
+    const room = await getRoom();
+    log('Sala: ' + room.roomName);
+    if (call) { try { await call.destroy(); } catch{} call = null; }
+    call = window.DailyIframe.createCallObject();
+    salaAtual = room.roomName;
+    // chamada NOVA começa na câmera padrão: zera a marca para listCams() fixar de novo a escolhida
+    // (antes a marca velha dizia "já fixada" e a religação ficava na câmera errada).
+    camAtualId = null;
+    // Câmera com erro NÃO fica no chão: agenda a auto-cura (repicarCamera) — antes só
+    // logava. Guarda de timer: uma rajada de camera-error agenda UMA cura, não N.
+    call.on('camera-error', e => {
+      log('Erro de câmera: ' + (e.errorMsg||e.error) + ' — vou re-tentar sozinho.');
+      if (camCuraTimer) return;
+      camCuraTimer = setTimeout(() => { camCuraTimer = null; repicarCamera('erro de câmera', true); }, 2500);
+    });
+    call.on('joined-meeting', () => {
+      videoNaSala = true;
+      pill($('vStatus'),'NO AR ✓','ok'); boardPill($('bVideo'),'VÍDEO · no ar ✓','ok');
+      videoRetryMs = 3000; log('Transmissão no ar.');
+    });
+    call.on('participant-updated', renderLocal);
+    call.on('left-meeting', onVideoDown);
+    call.on('error', e => { log('Vídeo deu erro: ' + (e.errorMsg||'desconhecido')); onVideoDown(); });
+    call.on('network-connection', e => { if (e.event === 'interrupted') log('Internet do vídeo oscilou…'); });
+    await call.join({ url: room.roomUrl, token: room.tokenPiloto });
+    await call.setLocalVideo(true);
+    await call.setLocalAudio(false);
+    await aplicarQualidade();
+    await listCams();
+    renderLocal();
+  } catch(e){
+    pill($('vStatus'),'falhou','bad'); boardPill($('bVideo'),'VÍDEO · falhou','bad');
+    log('FALHA no vídeo: ' + e.message);
+    // 429 = o servidor de vídeo está LIMITANDO (pedidos demais em pouco tempo). Insistir
+    // rápido só prolonga o bloqueio — espera bem mais antes de tentar de novo.
+    if (e && e.status === 429) { videoRetryMs = 60000; log('Servidor de vídeo limitou (429, pedidos demais). Aguardando 60s — não adianta insistir agora.'); }
+    onVideoDown();
+  }
+}
+
+function onVideoDown(){
+  videoNaSala = false;
+  if (!videoQuero) return;
+  pill($('vStatus'),'religando…','warn'); boardPill($('bVideo'),'VÍDEO · religando…','warn');
+  log('Vídeo caiu. Religando em '+(videoRetryMs/1000)+'s…');
+  const wait = videoRetryMs;
+  // teto de 60s (antes 15s): em queda persistente, espaça as tentativas pra NÃO martelar
+  // o servidor de sala (era isso que estourava o 429 e travava no "religando").
+  videoRetryMs = Math.min(videoRetryMs * 2, 60000);
+  setTimeout(() => { if (videoQuero) startVideo(); }, wait);
+}
+
+// TETO DE QUALIDADE (E3, 27/10/2026): 720p, 24 quadros, 1 camada de no máx. 1 Mbps (~450 MB/h
+// no 5G — estimativa pela taxa, não medição). Sem teto a biblioteca subia até 1080p/várias camadas.
+const VIDEO_ENTRADA = { width: { ideal: 1280, max: 1280 }, height: { ideal: 720, max: 720 }, frameRate: { ideal: 24, max: 24 } };
+const VIDEO_ENVIO = { maxQuality: 'low', encodings: { low: { maxBitrate: 1000000, maxFramerate: 24, scaleResolutionDownBy: 1 } } };
+async function aplicarQualidade(){
+  try { await call.updateInputSettings({ video: { settings: VIDEO_ENTRADA } }); }
+  catch(e){ log('Não consegui limitar a resolução da câmera: ' + (e.message||e.errorMsg||e)); }
+  try { await call.updateSendSettings({ video: VIDEO_ENVIO }); }
+  catch(e){ log('Não consegui limitar a taxa do vídeo: ' + (e.message||e.errorMsg||e)); }
+}
+
+// RENOVAR A SALA (E3): a sala vence 2 h depois do último pedido e EXPULSA todo mundo (room.js,
+// eject_at_room_exp). A cada 30 min esta aba pede a sala de novo — o backend estende o prazo.
+// Virou o dia em Brasília (sala nova) → religa na sala nova, onde a TV também vai estar.
+let salaAtual = null;
+const RENOVAR_SALA_MS = 30 * 60 * 1000;
+setInterval(async () => {
+  if (!call || !videoQuero || !videoNaSala) return;
+  try {
+    const room = await getRoom();
+    if (room.roomName !== salaAtual) { log('Sala do dia mudou ('+room.roomName+') — religando nela.'); startVideo(); }
+  } catch(e){ log('Renovar a sala falhou ('+e.message+') — tento de novo em 30 min; a sala atual vale até 2 h.'); }
+}, RENOVAR_SALA_MS);
+
+// TELA ACESA (E3): com a página visível, o Windows não apaga a tela nem dorme (Wake Lock).
+// O servidor local (servidor-video-local.ps1) também segura o notebook acordado.
+let travaTela = null;
+async function manterAcordado(){
+  try {
+    if (!('wakeLock' in navigator) || document.visibilityState !== 'visible' || travaTela) return;
+    travaTela = await navigator.wakeLock.request('screen');
+    travaTela.addEventListener('release', () => { travaTela = null; });
+  } catch(e){ travaTela = null; }
+}
+document.addEventListener('visibilitychange', manterAcordado);
+manterAcordado();
+
+function renderLocal(){
+  if(!call) return;
+  const p = call.participants().local;
+  const tr = p && p.tracks && p.tracks.video && p.tracks.video.persistentTrack;
+  if(tr && $('local').srcObject == null){ $('local').srcObject = new MediaStream([tr]); }
+}
+// Escolha da câmera (E3, 27/10/2026), nesta ordem:
+//  1. a que alguém ESCOLHEU no seletor (guardada no navegador: vale em toda religação e reabertura);
+//  2. a DJI/Osmo pelo nome;
+//  3. qualquer uma que NÃO seja a interna do notebook.
+// Antes a regra 3 recusava "webcam"/"hd camera" — nomes comuns de câmera USB (a Osmo em modo webcam
+// pode aparecer assim) — e a página caía na câmera interna. Os nomes de câmera interna ficaram.
+const CAM_GUARDADA = 'p1fast-video-camera';
+const CAM_INTERNA = /integrated|built.?in|internal|facetime|user.?facing|front|truevision|wide vision|ir camera|camera interna|câmera interna/i;
+function camGuardada(){ try { return JSON.parse(localStorage.getItem(CAM_GUARDADA) || 'null'); } catch(e){ return null; } }
+function guardarCam(d){ try { localStorage.setItem(CAM_GUARDADA, JSON.stringify({ id: d.deviceId, label: d.label || '' })); } catch(e){} }
+function escolherOsmo(devs){
+  const g = camGuardada();
+  return (g && (devs.find(d=>d.deviceId===g.id) || (g.label && devs.find(d=>d.label===g.label))))
+      || devs.find(d=>/dji|osmo|action/i.test(d.label||''))
+      || devs.find(d=>!CAM_INTERNA.test(d.label||''))
+      || null;
+}
+async function listCams(){
+  try {
+    const devs = (await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput');
+    if(devs.length === 0) return;
+    // FIXA a Osmo automaticamente (e a cada religação, pois listCams roda em todo startVideo).
+    // Só re-fixa se MUDOU (camAtualId) — a vigia periódica chama isto e re-fixar a mesma
+    // câmera em loop piscaria a imagem.
+    const osmo = escolherOsmo(devs);
+    if(osmo){
+      camAvisouSemOsmo = false;
+      if (osmo.deviceId !== camAtualId) {
+        // Log de sucesso SÓ quando fixou de verdade (bug visto em bancada 11/07: dizia
+        // "fixada" com a fixação falhando). Falha avisa UMA vez por sequência de falhas.
+        try {
+          await call.setInputDevicesAsync({ videoDeviceId: osmo.deviceId });
+          camAtualId = osmo.deviceId; $('local').srcObject=null; setTimeout(renderLocal,400);
+          camAvisouFalhaFixar = false;
+          log('Câmera fixada: ' + (osmo.label||'externa'));
+        } catch(e){
+          if (!camAvisouFalhaFixar) { camAvisouFalhaFixar = true; log('Não consegui fixar a câmera ('+(e.message||e.errorMsg||'câmera bloqueada?')+') — sigo re-tentando sozinho.'); }
+        }
+      }
+    } else if (!camAvisouSemOsmo) {
+      camAvisouSemOsmo = true;   // avisa UMA vez por ausência (a vigia repete a checagem sozinha)
+      log('ATENÇÃO: não achei a DJI/Osmo — usando a câmera padrão. Ao plugar a Osmo, troco pra ela SOZINHO.');
+    }
+    // seletor manual fica só de reserva (já vem na Osmo selecionada)
+    if(devs.length >= 2){
+      const sel = $('cams'); sel.innerHTML=''; sel.style.display='block';
+      devs.forEach(d=>{ const o=document.createElement('option'); o.value=d.deviceId; o.textContent=d.label||'Câmera'; if(osmo&&d.deviceId===osmo.deviceId)o.selected=true; sel.appendChild(o); });
+      sel.onchange = async ()=>{
+        const d = devs.find(x=>x.deviceId===sel.value);
+        if (d) guardarCam(d);   // a escolha vale nas próximas religações e reaberturas
+        await call.setInputDevicesAsync({ videoDeviceId: sel.value }); camAtualId = sel.value; $('local').srcObject=null; setTimeout(renderLocal,400);
+        log('Câmera trocada e guardada: '+sel.selectedOptions[0].textContent);
+      };
+    }
+  } catch(e){ log('Não consegui listar câmeras: '+e.message); }
+}
+
+// ════════ VIGIA DA CÂMERA (2026-07-11): religa e troca SOZINHA, sem clique ════════
+// Reforço pedido pelo Flávio: (1) Osmo plugada DEPOIS da página abrir → troca pra ela
+// sozinho (devicechange); (2) Osmo caiu/erro no MEIO da transmissão → re-tenta até voltar.
+// A sala/Daily já se cura pelo onVideoDown; isto aqui cura a CÂMERA dentro da sala.
+let videoNaSala = false;     // true entre joined-meeting e onVideoDown (gate da vigia)
+let camAtualId = null;       // deviceId em uso (evita re-fixar a mesma câmera em loop)
+let camAvisouSemOsmo = false;// avisa "sem Osmo" uma vez só, não a cada checagem
+let camAvisouFalhaFixar = false; // avisa falha de fixação uma vez por sequência de falhas
+let camRepicando = false;    // trava de reentrada da cura
+let camCuraTimer = null;     // guarda: rajada de camera-error agenda UMA cura só
+let camLogMotivo = '', camLogRepetes = 0;  // throttle do log da cura (sem Osmo = re-tenta pra sempre)
+
+// forcar=true (câmera DOENTE: erro/trilha morta) religa o vídeo e re-fixa mesmo que o
+// deviceId não mude. forcar=false (devicechange) só TROCA se a câmera-alvo mudou —
+// plugar um fone Bluetooth não pode piscar uma imagem saudável (auditoria 2026-07-11).
+async function repicarCamera(motivo, forcar){
+  if (!call || !videoQuero || !videoNaSala || camRepicando) return;
+  camRepicando = true;
+  try {
+    if (motivo === camLogMotivo) camLogRepetes++; else { camLogMotivo = motivo; camLogRepetes = 1; }
+    if (camLogRepetes === 1 || camLogRepetes % 10 === 0)
+      log('Câmera: religando/re-escolhendo sozinho ('+motivo+(camLogRepetes>1?', tentativa '+camLogRepetes:'')+')…');
+    if (forcar) {
+      camAtualId = null;
+      try { await call.setLocalVideo(true); } catch(e){}
+    }
+    await listCams();
+  } finally { camRepicando = false; }
+}
+
+// Windows re-enumera a USB: quando a lista de câmeras muda (Osmo plugada/tirada),
+// re-escolhe sozinho. Debounce: uma plugada dispara vários eventos seguidos.
+let camDevChangeT = null;
+try {
+  navigator.mediaDevices.addEventListener('devicechange', () => {
+    clearTimeout(camDevChangeT);
+    camDevChangeT = setTimeout(() => repicarCamera('câmeras mudaram na USB', false), 1200);
+  });
+} catch(e){ /* navegador sem devicechange: a vigia periódica abaixo cobre */ }
+
+// Vigia periódica: na sala mas com vídeo local doente (câmera caiu/bloqueada/sem
+// trilha) → cura. Espaçada (mín. 8 s entre curas) pra não piscar imagem saudável.
+let camUltimaCura = 0;
+setInterval(() => {
+  if (!call || !videoQuero || !videoNaSala) return;
+  let st = null;
+  try {
+    const p = call.participants().local;
+    st = p && p.tracks && p.tracks.video ? p.tracks.video.state : null;
+  } catch(e){ return; }
+  if (st === 'playable' || st === 'sendable' || st === 'loading') return;  // saudável
+  const agora = performance.now();
+  if (agora - camUltimaCura < 8000) return;
+  camUltimaCura = agora;
+  repicarCamera('vídeo local ' + (st || 'sem trilha'), true);
+}, 3000);
+
+// ════════════════ GPS (RaceBox) com religação automática ════════════════
+const NUS_SVC = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+const NUS_RX  = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
+const gps = { fix:0, numSV:0, spd:0, lat:null, lon:null, hz:0, hacc:null, ver:'—', lastPktTs:0 };
+const rb = { device:null, quero:false, religando:false };
+let buf = new Uint8Array(0); let pkts=0, t0=null;
+
+function append(a,b){ const c=new Uint8Array(a.length+b.length); c.set(a); c.set(b,a.length); return c; }
+function onNotify(ev){
+  const v = new Uint8Array(ev.target.value.buffer);
+  buf = append(buf, v);
+  let i = 0;
+  while(i + 8 <= buf.length){
+    if(buf[i]!==0xB5 || buf[i+1]!==0x62){ i++; continue; }
+    const len = buf[i+4] | (buf[i+5]<<8);
+    const tot = 6 + len + 2;
+    if(i + tot > buf.length) break;
+    let a=0,b=0; for(let k=i+2;k<i+6+len;k++){ a=(a+buf[k])&0xFF; b=(b+a)&0xFF; }
+    const ok = (a===buf[i+6+len] && b===buf[i+7+len]);
+    const cls=buf[i+2], id=buf[i+3], p=buf.subarray(i+6, i+6+len);
+    if(ok && cls===0xFF && id===0x01 && p.length>=80) decode(p);
+    i += tot;
+  }
+  buf = buf.subarray(i);
+}
+const dv = b => new DataView(b.buffer, b.byteOffset, b.byteLength);
+function decode(p){
+  const d = dv(p);
+  gps.fix = p[20]; gps.numSV = p[23];
+  gps.hacc = d.getUint32(40,true)/1000;
+  gps.spd = d.getInt32(48,true)/1000*3.6;
+  gps.lat = d.getInt32(28,true)/1e7;
+  gps.lon = d.getInt32(24,true)/1e7;
+  gps.lastPktTs = performance.now();
+  const now = performance.now()/1000;
+  if(t0===null) t0=now; pkts++;
+  if(now-t0>0) gps.hz = pkts/(now-t0);
+  gps.ver = gps.fix===0 ? 'sem sinal' : (gps.numSV<4 ? 'fraco' : (gps.numSV<6?'ok':'travado ✓'));
+  renderGps();
+}
+function renderGps(){
+  $('rbVer').textContent = gps.ver;
+  $('rbSv').textContent = gps.numSV;
+  $('rbSpd').textContent = gps.spd.toFixed(1)+' km/h';
+  $('rbHz').textContent = gps.hz.toFixed(1)+' Hz';
+  $('rbLat').textContent = gps.lat!=null ? gps.lat.toFixed(6) : '—';
+  $('rbLon').textContent = gps.lon!=null ? gps.lon.toFixed(6) : '—';
+}
+
+// Item 3 (RaceBox dono único): GPS vindo da NUVEM (publicado pelo .exe, ~25 Hz). Popula o
+// MESMO objeto gps que o RaceBox populava → o loop de 200ms repassa pro vídeo e renderGps
+// mostra na tela. Chaves do .exe: lat, lng, kmh, numSV, fix, accM, tWall.
+function onCloudGps(g){
+  if (g == null || g.lat == null || g.lng == null) return;
+  gps.fix = g.fix ?? 0; gps.numSV = g.numSV ?? 0;
+  gps.hacc = g.accM ?? 0; gps.spd = g.kmh ?? 0;
+  gps.lat = g.lat; gps.lon = g.lng;
+  gps.lastPktTs = performance.now();
+  const now = performance.now()/1000;
+  if(t0===null) t0=now; pkts++;
+  if(now-t0>0) gps.hz = pkts/(now-t0);
+  gps.ver = gps.fix===0 ? 'sem sinal' : (gps.numSV<4 ? 'fraco' : (gps.numSV<6?'ok':'travado ✓'));
+  renderGps();
+}
+
+async function assinarRaceBox(device){
+  const gatt = await device.gatt.connect();
+  const svc = await gatt.getPrimaryService(NUS_SVC);
+  const ch = await svc.getCharacteristic(NUS_RX);
+  await ch.startNotifications();
+  ch.addEventListener('characteristicvaluechanged', onNotify);
+}
+
+async function religarRaceBox(){
+  if (!rb.quero || !rb.device || rb.religando) return;
+  rb.religando = true;
+  pill($('rbConn'),'religando…','warn'); boardPill($('bGps'),'GPS · religando…','warn');
+  log('RaceBox caiu. Religando automaticamente…');
+  let tent = 0;
+  while (rb.quero) {
+    tent++;
+    try {
+      await assinarRaceBox(rb.device);
+      pill($('rbConn'),'ligado ✓','ok');
+      log('RaceBox religado (tentativa '+tent+').');
+      rb.religando = false;
+      return;
+    } catch(e){
+      if (tent === 1 || tent % 10 === 0) log('Religando RaceBox… (tentativa '+tent+')');
+      await new Promise(r => setTimeout(r, 3000));
+    }
+  }
+  rb.religando = false;
+}
+
+async function connectRaceBox(){
+  if(!navigator.bluetooth){ log('Este navegador não tem Bluetooth (use Chrome ou Edge).'); return; }
+  try {
+    pill($('rbConn'),'procurando…','warn'); boardPill($('bGps'),'GPS · procurando…','warn');
+    const dev = await navigator.bluetooth.requestDevice({ filters:[{ namePrefix:'RaceBox' }], optionalServices:[NUS_SVC] });
+    dev.addEventListener('gattserverdisconnected', religarRaceBox);
+    rb.device = dev; rb.quero = true;
+    await assinarRaceBox(dev);
+    pill($('rbConn'),'ligado ✓','ok'); log('RaceBox conectado: '+dev.name);
+  } catch(e){ pill($('rbConn'),'falhou','bad'); boardPill($('bGps'),'GPS · falhou','bad'); log('Falha no RaceBox: '+e.message); }
+}
+
+// Luz do GPS no quadro de cima: agora baseada na chegada do GPS pela NUVEM (item 3 — o
+// .exe é o dono do RaceBox e publica o GPS). Verde com pacote fresco; "aguardando cockpit"
+// quando não chega. Status honesto pro operador, sem depender de Bluetooth local.
+setInterval(() => {
+  const age = gps.lastPktTs ? performance.now() - gps.lastPktTs : Infinity;
+  if (age < 2000) {
+    boardPill($('bGps'), 'GPS · '+(gps.fix===0?'sem céu':'travado ✓')+' ('+gps.numSV+' sat)', gps.fix===0?'warn':'ok');
+  } else {
+    boardPill($('bGps'), 'GPS · aguardando cockpit…', 'warn');
+  }
+}, 1000);
+
+// ════════════════ RELAY DO GPS PRA SALA DE VÍDEO ════════════════
+// Item 3 (RaceBox dono único): o GPS agora chega da NUVEM (publicado pelo .exe) via
+// onCloudGps, que popula o objeto gps. Aqui só REPASSAMOS pro vídeo (overlay no app do
+// celular — caminho provado 09/06). NÃO publicamos GPS na nuvem aqui: o .exe é o dono
+// único e já publica (senão teria duas fontes do mesmo GPS no canal).
+setInterval(()=>{
+  // Só repassa quando há GPS fresco (senão mandaria dado congelado).
+  if (!gps.lastPktTs || performance.now() - gps.lastPktTs > 2000) return;
+  if(call) try{ call.sendAppMessage({ t:'gps', fix:gps.fix, numSV:gps.numSV, spd:gps.spd, lat:gps.lat, lon:gps.lon, hz:gps.hz, hacc:gps.hacc, ver:gps.ver }, '*'); }catch(e){}
+}, 200);
+
+// ════════ LÍDER ÚNICO ENTRE ABAS (auditoria 2026-07-11) ════════
+// A vigia do notebook pode reabrir esta página (religações) — e duas abas transmitindo
+// seriam DOIS participantes na sala Daily. Eleição por BroadcastChannel: só a aba LÍDER
+// chama startVideo(); reservas vigiam o batimento do líder e assumem se ele sumir.
+// Desempate por antiguidade (liderDesde): num raro empate, a aba mais antiga vence e a
+// outra abdica sozinha (destrói a call).
+const bcAbas = ('BroadcastChannel' in window) ? new BroadcastChannel('p1fast-central-pista') : null;
+const abaId = Math.random().toString(36).slice(2);
+let souLider = false, liderDesde = 0, liderBateuEm = 0, reservaVigiando = false;
+
+if (bcAbas) {
+  bcAbas.onmessage = ev => {
+    const m = ev.data || {};
+    if (m.t === 'quem-e-o-lider' && souLider) bcAbas.postMessage({ t:'lider-no-ar', desde: liderDesde, id: abaId });
+    if (m.t === 'lider-no-ar') {
+      if (souLider && (m.desde < liderDesde || (m.desde === liderDesde && m.id < abaId))) { abdicar(); return; }
+      if (!souLider) liderBateuEm = performance.now();
+    }
+  };
+  setInterval(() => { if (souLider) bcAbas.postMessage({ t:'lider-no-ar', desde: liderDesde, id: abaId }); }, 2000);
+}
+
+function assumirLider(motivo){
+  if (souLider) return;
+  souLider = true; liderDesde = Date.now();
+  if (bcAbas) bcAbas.postMessage({ t:'lider-no-ar', desde: liderDesde, id: abaId });
+  log('Esta aba assume a transmissão ('+motivo+').');
+  startVideo();
+}
+
+function abdicar(){
+  if (!souLider) return;
+  souLider = false; videoQuero = false; videoNaSala = false;
+  if (call) { try { call.destroy(); } catch(e){} call = null; }
+  log('Outra aba mais antiga já está no ar — esta vira RESERVA.');
+  vigiarReserva();
+}
+
+function vigiarReserva(){
+  pill($('vStatus'),'reserva (outra aba no ar)','warn'); boardPill($('bVideo'),'VÍDEO · reserva (outra aba)','warn');
+  if (reservaVigiando) return;
+  reservaVigiando = true;
+  liderBateuEm = performance.now();
+  setInterval(() => {
+    if (souLider) return;
+    if (performance.now() - liderBateuEm > 8000) {
+      // jitter anti-empate: duas reservas não assumem juntas
+      setTimeout(() => {
+        if (!souLider && performance.now() - liderBateuEm > 8000) assumirLider('a aba líder sumiu');
+      }, 300 + Math.random()*1500);
+    }
+  }, 3000);
+}
+
+function eleger(){
+  if (!bcAbas) { assumirLider('navegador sem eleição entre abas'); return; }
+  bcAbas.postMessage({ t:'quem-e-o-lider' });
+  // jitter também na eleição inicial: duas abas abertas juntas não assumem as duas
+  setTimeout(() => {
+    if (liderBateuEm > 0) { log('Outra aba já transmite — esta fica de RESERVA (assume sozinha se a outra sumir).'); vigiarReserva(); }
+    else assumirLider('nenhuma outra aba no ar');
+  }, 1500 + Math.random()*700);
+}
+
+// ════════ BATIMENTO PRA VIGIA DO NOTEBOOK (auditoria 2026-07-11) ════════
+// Qualquer aba viva (líder OU reserva) avisa o servidor local a cada 5 s; a
+// VIGIA-T4000 pergunta a idade e reabre a página se ninguém bater (aba fechada/
+// navegador caiu). Na página publicada na nuvem o endpoint não existe — silêncio.
+try { fetch('/api/vivo', { method:'POST' }).catch(()=>{}); } catch(e){}
+setInterval(() => { try { fetch('/api/vivo', { method:'POST' }).catch(()=>{}); } catch(e){} }, 5000);
+
+// ════════════════ boot ════════════════
+$('btnStart').onclick = () => { if (souLider) startVideo(); else assumirLider('botão manual'); };
+// Item 3 (RaceBox dono único): este botão NÃO abre mais o Bluetooth daqui — senão brigaria
+// com o cockpit (.exe) pelo mesmo aparelho. O RaceBox é lido SÓ pelo .exe; o GPS chega aqui
+// pela nuvem (onCloudGps) e é repassado pro vídeo.
+$('btnRb').onclick = () => { boardPill($('bGps'),'GPS · vem do cockpit pela nuvem','ok'); log('O RaceBox é lido pelo cockpit (.exe). O GPS chega aqui pela nuvem — não conecto o Bluetooth por aqui.'); };
+$('btnSim').onclick = toggleSim;
+connectCloud();
+// A Central de Pista LIGA SOZINHA (sem clique). connectCloud() já cuida do GPS/nuvem;
+// eleger() decide quem liga a câmera (só a aba líder chama startVideo). O navegador pede
+// permissão de câmera UMA vez (depois lembra; ou zere o clique com o
+// PERMITIR-CAMERA-SEM-CLIQUE.cmd) e startVideo se re-tenta sozinho (onVideoDown).
+// O botão "Iniciar transmissão" fica só de reserva, caso o navegador bloqueie o auto-início.
+eleger();
+log('Central de pista: ligando sozinha (vídeo + GPS pela nuvem). Se o navegador pedir, permita a câmera uma vez — depois liga automático.');
+</script>
+</body>
+</html>

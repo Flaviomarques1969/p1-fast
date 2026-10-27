@@ -104,13 +104,25 @@ const boardPill = pill;
 // Regra do projeto: dados ao vivo trafegam SÓ por este canal (não criar fonte paralela).
 const SUPABASE_URL  = 'https://fvhwltzhytpnhlqbttmd.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2aHdsdHpoeXRwbmhscWJ0dG1kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4MTExNDAsImV4cCI6MjA5MzM4NzE0MH0._ZpxksUnuVFhLzCB5x7bBiZ_VLQQR5cH4A1T-0-mvrA';
-const CHANNEL_NAME  = 'cockpit-bubi-live';
+// CANAL-DA-PAGINA:INICIO
+// Canal pelo endereço (?canal=cockpit-bubi-*), mesma regra da ponte web/cockpit/cloud-bridge.js
+// (E4, 27/10/2026): o atalho TESTE AO VIVO abre esta página no canal de TESTE, onde o cockpit
+// sem --producao publica — antes ela ouvia só produção e o GPS do ensaio nunca chegava ao vídeo.
+// Sem ?canal (ou nome fora da regra) = produção, como sempre (P1FAST-AO-VIVO.cmd não muda).
+function canalDaPagina(search) {
+  const pedido = new URLSearchParams(search || '').get('canal');
+  return (pedido && /^cockpit-bubi-[a-z0-9-]{1,40}$/.test(pedido)) ? pedido : 'cockpit-bubi-live';
+}
+// CANAL-DA-PAGINA:FIM
+const CHANNEL_NAME  = canalDaPagina(location.search);
+const CANAL_TESTE   = CHANNEL_NAME !== 'cockpit-bubi-live';
 
 const nuvem = { client:null, channel:null, status:'off', retryMs:2000, lastSampleTs:0, lastSampleSource:'—', sampleCount:0, sampleWindow:[] , lastSample:null };
 
 function setNuvem(status){
   nuvem.status = status;
-  const map = { off:['NUVEM · desligada','idle'], connecting:['NUVEM · conectando…','warn'], online:['NUVEM · ao vivo ✓','ok'], error:['NUVEM · religando…','bad'] };
+  const map = { off:['NUVEM · desligada','idle'], connecting:['NUVEM · conectando…','warn'],
+                online:[CANAL_TESTE ? 'NUVEM · TESTE ✓ ('+CHANNEL_NAME+')' : 'NUVEM · ao vivo ✓', 'ok'], error:['NUVEM · religando…','bad'] };
   const [txt, cls] = map[status] || ['NUVEM · '+status,'warn'];
   boardPill($('bNuvem'), txt, cls);
 }
@@ -127,7 +139,7 @@ async function connectCloud(){
     // RaceBox por BLE aqui. Este web só RELAIA o GPS da nuvem pro vídeo (sala) e mostra na tela.
     ch.on('broadcast', { event:'gps' }, msg => { if (msg && msg.payload) onCloudGps(msg.payload); });
     ch.subscribe((status, err) => {
-      if (status === 'SUBSCRIBED') { nuvem.channel = ch; nuvem.retryMs = 2000; setNuvem('online'); log('Nuvem conectada (canal do carro).'); }
+      if (status === 'SUBSCRIBED') { nuvem.channel = ch; nuvem.retryMs = 2000; setNuvem('online'); log('Nuvem conectada (canal '+CHANNEL_NAME+(CANAL_TESTE ? ' — TESTE' : '')+').'); }
       else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
         setNuvem('error');
         log('Nuvem caiu ('+status+'). Religando em '+(nuvem.retryMs/1000)+'s…');
