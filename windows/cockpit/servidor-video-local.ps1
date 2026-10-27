@@ -14,7 +14,15 @@ $EVENT_ID = 'p1-teste-aparelhos'
 # NOVO acha a porta ocupada por um VELHO (sem /api/vivo ou ver menor), ele encerra o velho
 # e assume — senao um servidor de dias atras seguraria a porta com codigo antigo pra sempre
 # (aconteceu de verdade: servidor de 07/07 vivo na auditoria de 11/07).
-$VERSAO = 2
+$VERSAO = 3
+
+# Notebook acordado (E3 da TV do box ao vivo, 27/10/2026): enquanto este servidor roda, o Windows
+# NAO dorme nem apaga a tela (ES_CONTINUOUS | ES_SYSTEM_REQUIRED | ES_DISPLAY_REQUIRED). Vale so
+# para esta thread (o laco abaixo): fechou a janela do servidor, o Windows volta ao normal.
+try {
+  Add-Type -Namespace P1Fast -Name Energia -MemberDefinition '[DllImport("kernel32.dll")] public static extern uint SetThreadExecutionState(uint esFlags);'
+  [void][P1Fast.Energia]::SetThreadExecutionState([uint32]2147483651)  # 0x80000003
+} catch { Write-Output "Aviso: nao consegui impedir o notebook de dormir ($($_.Exception.Message))." }
 
 $listener = New-Object System.Net.HttpListener
 $listener.Prefixes.Add($prefix)
@@ -87,7 +95,10 @@ while ($listener.IsListening) {
       # porta de room.js: cria/recupera a sala do dia no backend de video (server-to-server).
       # Backend inacessivel = 502 com corpo claro (a pagina ja trata como falha e religa
       # com backoff) — antes a excecao derrubava a resposta no meio (reset sem status).
-      $dateISO = (Get-Date).ToString('yyyy-MM-dd')
+      # Data da sala em BRASILIA (UTC-3, sem horario de verao), a mesma conta da ponte do site
+      # (web/teste-aparelhos/api/room.js) — antes o relogio local x UTC da ponte separava as salas
+      # das 21h as 24h. Nao depende do fuso configurado no notebook.
+      $dateISO = [DateTime]::UtcNow.AddHours(-3).ToString('yyyy-MM-dd')
       $payload = (@{ eventId=$EVENT_ID; dateISO=$dateISO } | ConvertTo-Json -Compress)
       $content = New-Object System.Net.Http.StringContent($payload, [System.Text.Encoding]::UTF8, 'application/json')
       $code = 502

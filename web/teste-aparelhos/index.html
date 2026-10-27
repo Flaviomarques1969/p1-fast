@@ -4,7 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>P1 Fast — Central de Pista (notebook)</title>
-<script crossorigin src="https://unpkg.com/@daily-co/daily-js"></script>
+<!-- versão FIXA (E3, 27/10/2026): sem versão, cada abertura podia pegar uma biblioteca nova não testada -->
+<script crossorigin="anonymous" src="https://unpkg.com/@daily-co/daily-js@0.93.0/dist/daily.js" integrity="sha384-DUI8LbxjuFzuplRn2yxGnk1uHo/rsLGFGzzyQbEvvzCgHmyvLq/dkkWEmtvAW8Kj"></script>
 <style>
   :root { color-scheme: dark; }
   * { box-sizing: border-box; }
@@ -344,6 +345,10 @@ async function startVideo(){
     log('Sala: ' + room.roomName);
     if (call) { try { await call.destroy(); } catch{} call = null; }
     call = window.DailyIframe.createCallObject();
+    salaAtual = room.roomName;
+    // chamada NOVA começa na câmera padrão: zera a marca para listCams() fixar de novo a escolhida
+    // (antes a marca velha dizia "já fixada" e a religação ficava na câmera errada).
+    camAtualId = null;
     // Câmera com erro NÃO fica no chão: agenda a auto-cura (repicarCamera) — antes só
     // logava. Guarda de timer: uma rajada de camera-error agenda UMA cura, não N.
     call.on('camera-error', e => {
@@ -363,6 +368,7 @@ async function startVideo(){
     await call.join({ url: room.roomUrl, token: room.tokenPiloto });
     await call.setLocalVideo(true);
     await call.setLocalAudio(false);
+    await aplicarQualidade();
     await listCams();
     renderLocal();
   } catch(e){
@@ -387,16 +393,64 @@ function onVideoDown(){
   setTimeout(() => { if (videoQuero) startVideo(); }, wait);
 }
 
+// TETO DE QUALIDADE (E3, 27/10/2026): 720p, 24 quadros, 1 camada de no máx. 1 Mbps (~450 MB/h
+// no 5G — estimativa pela taxa, não medição). Sem teto a biblioteca subia até 1080p/várias camadas.
+const VIDEO_ENTRADA = { width: { ideal: 1280, max: 1280 }, height: { ideal: 720, max: 720 }, frameRate: { ideal: 24, max: 24 } };
+const VIDEO_ENVIO = { maxQuality: 'low', encodings: { low: { maxBitrate: 1000000, maxFramerate: 24, scaleResolutionDownBy: 1 } } };
+async function aplicarQualidade(){
+  try { await call.updateInputSettings({ video: { settings: VIDEO_ENTRADA } }); }
+  catch(e){ log('Não consegui limitar a resolução da câmera: ' + (e.message||e.errorMsg||e)); }
+  try { await call.updateSendSettings({ video: VIDEO_ENVIO }); }
+  catch(e){ log('Não consegui limitar a taxa do vídeo: ' + (e.message||e.errorMsg||e)); }
+}
+
+// RENOVAR A SALA (E3): a sala vence 2 h depois do último pedido e EXPULSA todo mundo (room.js,
+// eject_at_room_exp). A cada 30 min esta aba pede a sala de novo — o backend estende o prazo.
+// Virou o dia em Brasília (sala nova) → religa na sala nova, onde a TV também vai estar.
+let salaAtual = null;
+const RENOVAR_SALA_MS = 30 * 60 * 1000;
+setInterval(async () => {
+  if (!call || !videoQuero || !videoNaSala) return;
+  try {
+    const room = await getRoom();
+    if (room.roomName !== salaAtual) { log('Sala do dia mudou ('+room.roomName+') — religando nela.'); startVideo(); }
+  } catch(e){ log('Renovar a sala falhou ('+e.message+') — tento de novo em 30 min; a sala atual vale até 2 h.'); }
+}, RENOVAR_SALA_MS);
+
+// TELA ACESA (E3): com a página visível, o Windows não apaga a tela nem dorme (Wake Lock).
+// O servidor local (servidor-video-local.ps1) também segura o notebook acordado.
+let travaTela = null;
+async function manterAcordado(){
+  try {
+    if (!('wakeLock' in navigator) || document.visibilityState !== 'visible' || travaTela) return;
+    travaTela = await navigator.wakeLock.request('screen');
+    travaTela.addEventListener('release', () => { travaTela = null; });
+  } catch(e){ travaTela = null; }
+}
+document.addEventListener('visibilitychange', manterAcordado);
+manterAcordado();
+
 function renderLocal(){
   if(!call) return;
   const p = call.participants().local;
   const tr = p && p.tracks && p.tracks.video && p.tracks.video.persistentTrack;
   if(tr && $('local').srcObject == null){ $('local').srcObject = new MediaStream([tr]); }
 }
-// Escolhe SEMPRE a DJI/Osmo, nunca a câmera interna do notebook.
+// Escolha da câmera (E3, 27/10/2026), nesta ordem:
+//  1. a que alguém ESCOLHEU no seletor (guardada no navegador: vale em toda religação e reabertura);
+//  2. a DJI/Osmo pelo nome;
+//  3. qualquer uma que NÃO seja a interna do notebook.
+// Antes a regra 3 recusava "webcam"/"hd camera" — nomes comuns de câmera USB (a Osmo em modo webcam
+// pode aparecer assim) — e a página caía na câmera interna. Os nomes de câmera interna ficaram.
+const CAM_GUARDADA = 'p1fast-video-camera';
+const CAM_INTERNA = /integrated|built.?in|internal|facetime|user.?facing|front|truevision|wide vision|ir camera|camera interna|câmera interna/i;
+function camGuardada(){ try { return JSON.parse(localStorage.getItem(CAM_GUARDADA) || 'null'); } catch(e){ return null; } }
+function guardarCam(d){ try { localStorage.setItem(CAM_GUARDADA, JSON.stringify({ id: d.deviceId, label: d.label || '' })); } catch(e){} }
 function escolherOsmo(devs){
-  return devs.find(d=>/dji|osmo|action/i.test(d.label||''))
-      || devs.find(d=>!/integrated|built.?in|internal|facetime|webcam|hd camera|camera interna/i.test(d.label||''))
+  const g = camGuardada();
+  return (g && (devs.find(d=>d.deviceId===g.id) || (g.label && devs.find(d=>d.label===g.label))))
+      || devs.find(d=>/dji|osmo|action/i.test(d.label||''))
+      || devs.find(d=>!CAM_INTERNA.test(d.label||''))
       || null;
 }
 async function listCams(){
@@ -416,7 +470,7 @@ async function listCams(){
           await call.setInputDevicesAsync({ videoDeviceId: osmo.deviceId });
           camAtualId = osmo.deviceId; $('local').srcObject=null; setTimeout(renderLocal,400);
           camAvisouFalhaFixar = false;
-          log('Câmera fixada na DJI/Osmo: ' + (osmo.label||'externa'));
+          log('Câmera fixada: ' + (osmo.label||'externa'));
         } catch(e){
           if (!camAvisouFalhaFixar) { camAvisouFalhaFixar = true; log('Não consegui fixar a câmera ('+(e.message||e.errorMsg||'câmera bloqueada?')+') — sigo re-tentando sozinho.'); }
         }
@@ -429,7 +483,12 @@ async function listCams(){
     if(devs.length >= 2){
       const sel = $('cams'); sel.innerHTML=''; sel.style.display='block';
       devs.forEach(d=>{ const o=document.createElement('option'); o.value=d.deviceId; o.textContent=d.label||'Câmera'; if(osmo&&d.deviceId===osmo.deviceId)o.selected=true; sel.appendChild(o); });
-      sel.onchange = async ()=>{ await call.setInputDevicesAsync({ videoDeviceId: sel.value }); camAtualId = sel.value; $('local').srcObject=null; setTimeout(renderLocal,400); log('Câmera trocada: '+sel.selectedOptions[0].textContent); };
+      sel.onchange = async ()=>{
+        const d = devs.find(x=>x.deviceId===sel.value);
+        if (d) guardarCam(d);   // a escolha vale nas próximas religações e reaberturas
+        await call.setInputDevicesAsync({ videoDeviceId: sel.value }); camAtualId = sel.value; $('local').srcObject=null; setTimeout(renderLocal,400);
+        log('Câmera trocada e guardada: '+sel.selectedOptions[0].textContent);
+      };
     }
   } catch(e){ log('Não consegui listar câmeras: '+e.message); }
 }

@@ -210,6 +210,7 @@ export const videoRoomPayload = schema({
   eventId: field('string', { min: 1, max: 128, regex: /^[a-zA-Z0-9_-]+$/ }),
   dateISO: field('string', { regex: /^\d{4}-\d{2}-\d{2}$/ }),
   sessionId: optional(field('string', { min: 1, max: 128 })),
+  papel: optional(field('string', { regex: /^(piloto|box|tv)$/ })),
 });
 
 // Helper de resposta padronizada

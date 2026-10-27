@@ -8702,7 +8702,8 @@ html,body{
     }
     function cobrir(){
       document.querySelectorAll('[data-block-id]').forEach(function(el){
-        el.classList.toggle('tv-nao-racebox', !DO_RACEBOX[el.getAttribute('data-block-id')]);
+        // E3: bloco com fonte própria (vídeo da TV, .tvv) não é coberto — ele mesmo diz se tem imagem
+        el.classList.toggle('tv-nao-racebox', !DO_RACEBOX[el.getAttribute('data-block-id')] && !el.querySelector(':scope > .tvv'));
       });
     }
     function ligar(){
@@ -8969,6 +8970,16 @@ html,body{
       setTimeout(function(){ location.reload(); }, 15000);
     });
   })();
+</script>
+<!-- VÍDEO NA TV (E3 da obra TV do box ao vivo, 27/10/2026): no modo TV o bloco de vídeo mostra a câmera
+     do carro (USB do notebook) pela casa única web/command-box/video-tv.js — só assiste, sem botão, religa sozinho.
+     Fora do modo TV (atelier) o desenho de exemplo continua, e a camada RaceBox o cobre. -->
+<script type="module">
+  if (window.__modoTv) {
+    import('/web/command-box/video-tv.js')
+      .then(function(m){ m.ligarVideoTv({ bloco: document.querySelector('[data-block-id="video"]') }); })
+      .catch(function(e){ console.warn('[TV-VIDEO] peça indisponível:', e); });
+  }
 </script>
 </body>
 </html>

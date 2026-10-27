@@ -30,6 +30,9 @@ const ROOM_TTL_SECONDS = 2 * 60 * 60;  // 2h
 // eventId+dateISO (mas client novo SEMPRE envia, ou não cria sala).
 const FALLBACK_ROOM_NAME = 'fam-racing-live';
 
+// papel pedido → qual acesso volta (a TV do box pede 'tv').
+const PAPEIS = { piloto: 'piloto', box: 'box', tv: 'box' };
+
 function safeId(s) {
   return String(s || '').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 32);
 }
@@ -147,27 +150,31 @@ export default async function handler(req, res) {
           properties: {
             room_name: room.name,
             user_name: 'Box',
-            is_owner: true,
             exp,
             start_audio_off: true,
             start_video_off: true,    // box NÃO publica câmera
             enable_screenshare: false,
+            permissions: { canSend: false },
           },
         },
       }),
     ]);
 
-    return res.status(200).json({
+    // papel (opcional): quem diz quem é recebe SÓ o próprio acesso — a TV ('tv'/'box') nunca
+    // leva o tokenPiloto. Sem papel = resposta antiga com os dois (compat iPhone/p1tv).
+    const papel = PAPEIS[parsed.value.papel] || null;
+    const resposta = {
       ok: true,
       roomName: room.name,
       roomUrl: room.url,
-      tokenPiloto: tokenPiloto.token,
-      tokenBox: tokenBox.token,
       exp,
       sessionId: sessionIdInput,
       eventId: eventIdInput,
       dateISO: dateISOInput,
-    });
+    };
+    if (papel !== 'box') resposta.tokenPiloto = tokenPiloto.token;
+    if (papel !== 'piloto') resposta.tokenBox = tokenBox.token;
+    return res.status(200).json(resposta);
   } catch (err) {
     return res.status(502).json({
       error: 'Daily upstream',

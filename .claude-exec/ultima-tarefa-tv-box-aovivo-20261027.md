@@ -163,3 +163,31 @@ PONTO DE PARADA 1027-1752 (27/10 ~17h52): commit e024233cf local; seguir do PRÓ
 ## RETOMADA 1027-1752 (27/10, conversa nova após /clear) — fechar pendências da E2b
 Objetivo: (1) igualar cópia do app de web/cockpit/gps-fonte-unica.js (pagina-volta 45/1); (2) npm run smoke; (3) push da branch; (4) responder imac-9c; (5) E3.
 Território: sessão tv-box-aovivo-1027 (esta janela, ttys019). Produção intocada.
+FEITO nesta conversa (1027-1752): cópia iPhone gps-fonte-unica.js igualada (pagina-volta 46/46) + commit af07c974d + PUSH da branch
+claude/tv-box-aovivo-e2-20261027. Smoke um a um: 81/82 (único FAIL schema-parity 11/4 = ANTERIOR: branch não toca Migrations.swift nem
+supabase; checkout principal também falha 12/3). node_modules = atalho p/ "/Users/imac/Projetos/P1 Fast/node_modules" (gitignored).
+imac-9c respondida (SendMessage).
+### E3 — CÂMERA NA TV (em andamento, NADA commitado ainda) — backup em .claude-exec/backup-e3-camera-20261027/
+Escrito: api/video/room.js (tokenBox sem is_owner + permissions.canSend=false; papel piloto|box|tv filtra tokens) + api/_lib/schemas.js (papel
+opcional); web/teste-aparelhos/api/room.js (data Brasília UTC-3, papel tv tira tokenPiloto; ESTA ponte vai no p1box na E5 como api/room.js);
+servidor-video-local.ps1 (VERSAO 3, data UTC-3, SetThreadExecutionState 0x80000003 — NÃO executado: Mac sem pwsh); index.html (daily-js 0.93.0
++ SRI sha384-DUI8…W8Kj conferido no CDN, escolha guardada localStorage p1fast-video-camera, CAM_INTERNA sem webcam/hd camera, camAtualId=null em
+chamada nova [causa da religação na câmera errada], teto 720p/24fps/1 Mbps, renova sala 30 min, Wake Lock); painel.html (mesma versão+SRI);
+NOVO web/command-box/video-tv.js (casa única do vídeo da TV); mockup: monta video-tv.js só em __modoTv + cobrir() não cobre bloco com .tvv.
+NÃO entra: sala privada (StreamCoordinator.swift:280 do iPhone entra com token nil → quebraria) — risco anotado.
+Provas: tests/node-smoke-tv-video.mjs 44/44. Controle contra arquivos antigos (scratchpad catraca-velha) imprimiu VAZIO = régua sem prova ainda.
+PRÓXIMO: (1) descobrir por que a catraca na pasta velha não imprimiu (rodar sem grep) e provar que reprova; (2) somar a catraca ao npm run smoke
+e video-tv.js às CASAS de tests/node-smoke-arquitetura-dado.mjs + linha no docs/CONTRATO_DADOS.md; (3) prova-tv-honesta: semFonte excluir
+blocos com "> .tvv"; (4) prova Chrome sem janela .claude-exec/prova-tv-video/ (rota falsa /api/room + daily.js falso com canvas.captureStream;
+TV: aguardando→ao vivo→sem vídeo há X s→religa; 502→sem conexão; atelier sem .tvv; page.clock +30 min = renova; notebook: Integrated×HD Webcam,
+escolha guardada refeita na religação, updateSendSettings 1 Mbps, wakeLock); (5) commit+push; (6) E4.
+PONTO DE PARADA 1027-1805 (27/10 ~18h05): E3 escrita sem commit; seguir do PRÓXIMO 1 da seção E3 acima (controle da catraca → smoke/arquitetura → prova Chrome → commit+push → E4).
+
+## RETOMADA 1027-1805 (27/10, conversa nova após /clear) — fechar a E3
+Seguir do PRÓXIMO 1 da seção E3 (controle da catraca → smoke/arquitetura/contrato → honesta → prova Chrome → commit+push). Território já desta janela (ttys019).
+- (1027-1805) Catraca tv-video com seções à prova de peça faltando: novo 44/44 saída 0; código velho (scratchpad catraca-velha) 17 ok/21 FAIL saída 1, cada falha com nome. Somada ao npm run smoke (+ smoke:tv-video); video-tv.js nas CASAS (arquitetura 39/0); linha no CONTRATO_DADOS. prova-tv-honesta: semFonte exclui .tvv → honesta 32/0, blocos-gps 23/0, lote 13/0.
+- PEDIDO da janela imac-9c (ensaio no celular, 18h): queda do hotspot perde até 26 s de GPS (heartbeat 25 s em SupabaseRealtimeChannel.cs:113; reenvio fixo de 10 s). ACEITO para DEPOIS da E3: heartbeat 5 s ao vivo + hora do último batimento confirmado; GpsLivePublisher reenvia desde o último confirmado com folga. Commit próprio na branch e2; avisar imac-9c ao terminar (ela não toca os 2 arquivos).
+- (1027-1805) PROVA CHROME SEM JANELA .claude-exec/prova-tv-video/prova-tv-video.mjs: 33 ok / 0 falha (TV aguardando→ao vivo→sem vídeo→religa; 502→sem conexão→volta; atelier sem .tvv; 30 min renova e virada do dia religa; notebook USB×interna, escolha guardada refeita na religação e reabertura, teto 1 Mbps/720p, Wake Lock). Fotos tv-video-ao-vivo.png / tv-video-sem-video.png conferidas.
+  ACHADO REAL (A9, sistema errado): video.currentTime de MediaStream anda com o relógio com a câmera TRAVADA → TV dizia "CÂMERA AO VIVO". Conserto: requestVideoFrameCallback (só quadro novo) + totalVideoFrames de reserva; tarja tv-nao-racebox sai na hora (A4). Controle: mesma prova com o video-tv.js de antes (backup video-tv.js.antes-quadro-real) = 31 ok / 2 FAIL (A4, A9), saída 1. Catraca tv-video 46/46 com o item novo.
+  Régua errada (D3/D4): sem ponte do GPS a TV se recarrega em 15 s (E1) e o relógio adiantado recarregava a página → prova passou a servir ponte falsa quieta.
+  npm run smoke um a um: 82/83 — único FAIL schema-parity, ANTERIOR à obra.
