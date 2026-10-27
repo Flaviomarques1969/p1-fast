@@ -19,6 +19,7 @@
 const r1 = (x) => Math.round(x * 10) / 10;
 const r2 = (x) => Math.round(x * 100) / 100;
 const r3 = (x) => Math.round(x * 1000) / 1000;
+const virg = (x) => String(x).replace('.', ',');   // número na frase da TV em pt-BR
 
 export const FREIO_G = -0.25;          // abaixo disso (2 pontos seguidos) = freando
 export const TRAIL_G = -0.08;          // freio que sobra na mínima: abaixo disso = entrou freando (trail)
@@ -205,13 +206,13 @@ export function criarCerebroTvBlocosGps() {
       const u = ultima.trechos[i], r = ref ? ref.trechos[i] : null;
       const motivos = [];
       if (r) {
-        if (u.kmhMin != null && r.kmhMin != null && u.kmhMin < r.kmhMin - 1) motivos.push({ tipo: 'minima', texto: `mínima ${r1(r.kmhMin - u.kmhMin)} km/h abaixo da sua melhor` });
-        if (u.kmhSaida != null && r.kmhSaida != null && u.kmhSaida < r.kmhSaida - 1) motivos.push({ tipo: 'saida', texto: `saída ${r1(r.kmhSaida - u.kmhSaida)} km/h mais lenta` });
+        if (u.kmhMin != null && r.kmhMin != null && u.kmhMin < r.kmhMin - 1) motivos.push({ tipo: 'minima', texto: `mínima ${virg(r1(r.kmhMin - u.kmhMin))} km/h abaixo da sua melhor` });
+        if (u.kmhSaida != null && r.kmhSaida != null && u.kmhSaida < r.kmhSaida - 1) motivos.push({ tipo: 'saida', texto: `saída ${virg(r1(r.kmhSaida - u.kmhSaida))} km/h mais lenta` });
         const mu = lista[i].tipo === 'curva' ? medidas(ultima, lista)[i] : null;
         const mr = mu && ref ? medidas(ref, lista)[i] : null;
         if (mu && mr && mu.frenagem.ok && mr.frenagem.ok && mu.frenagem.inicioFreadaM != null && mr.frenagem.inicioFreadaM != null) {
           const cedo = r1(mr.frenagem.inicioFreadaM - mu.frenagem.inicioFreadaM);
-          if (cedo > 5) motivos.push({ tipo: 'freada', texto: `freou ${cedo} m mais cedo` });
+          if (cedo > 5) motivos.push({ tipo: 'freada', texto: `freou ${virg(cedo)} m mais cedo` });
         }
       }
       coach = { trecho: maior.i, nome: maior.nome, perdeuS: maior.difS, volta: ultima.n, refVolta: ref ? ref.n : null,

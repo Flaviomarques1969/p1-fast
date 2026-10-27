@@ -94,5 +94,11 @@ t('real + G: mínima medida = mínima do cérebro', fr.kmhMin === s1.ultimaVolta
   t('sem voltas → pacote vazio honesto (sem curva medida, stint zerado)', (() => { const p = criarCerebroTvBlocosGps().pacote({ voltas: [], trechos: s1.trechos, voltaAtual: null }); return p.stint.feitas === 0 && p.curva.passagem === null && p.coach === null; })());
 }
 
+// ── 4) Texto da TV em pt-BR: número com vírgula (a 1ª versão escreveu "freou 78.2 m", 27/10) ──
+{
+  const textos = [b0, b1].flatMap(p => [p.coach && p.coach.frase].concat(p.coach ? p.coach.motivos.map(m => m.texto) : [])).filter(Boolean);
+  t('coach: frases com número decimal usam vírgula, nunca ponto', textos.length >= 2 && textos.every(x => !/\d\.\d/.test(x)) && textos.some(x => /\d,\d/.test(x)), textos);
+}
+
 console.log(`\nnode-smoke-tv-blocos-gps: ${ok} ok, ${fail} falha`);
 process.exit(fail ? 1 : 0);

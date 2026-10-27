@@ -63,8 +63,8 @@ const ver = (page) => page.evaluate(() => {
     carroParado: mapa ? mapa.classList.contains('tv-carro-parado') : null,
     gps: Array.from(document.querySelectorAll('.b-header .health .h-cell')).map(c => (c.querySelector('.h-key') || {}).textContent + '=' + (c.querySelector('.h-val') || {}).textContent).join(' '),
     cobertos: Array.from(document.querySelectorAll('[data-block-id].tv-nao-racebox')).map(e => e.getAttribute('data-block-id')).sort().join(','),
-    // esperado da FONTE: todo bloco da página menos os 3 que o RaceBox alimenta (mapa, hud, header)
-    semFonte: Array.from(document.querySelectorAll('[data-block-id]')).map(e => e.getAttribute('data-block-id')).filter(id => !['mapa', 'hud', 'header'].includes(id)).sort().join(','),
+    // esperado da FONTE: todo bloco da página menos os 3 que o RaceBox alimenta (mapa, hud, header) e os que a página pinta pelo GPS (E2b)
+    semFonte: Array.from(document.querySelectorAll('[data-block-id]')).map(e => e.getAttribute('data-block-id')).filter(id => !['mapa', 'hud', 'header'].includes(id) && !document.querySelector('[data-block-id="' + id + '"] > .tvb')).sort().join(','),   // E2b: bloco com a camada do GPS (.tvb) tem fonte
     stage: [Math.round(st.left), Math.round(st.top), Math.round(st.width), Math.round(st.height)],
     barraEdicao: vis('.edit-toolbar'), rodape: vis('.legend'), salvar: vis('#atelier-salvar-wrap'),
     seloFonte: getComputedStyle(document.getElementById('cb-live-selo')).fontSize,

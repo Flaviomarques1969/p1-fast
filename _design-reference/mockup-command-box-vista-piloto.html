@@ -8359,6 +8359,7 @@ html,body{
 </style>
 <script type="module">
   import { criarCerebroGpsTv } from '/web/command-box/cerebro/cerebro-gps-tv.js';
+  import { criarCerebroTvBlocosGps } from '/web/command-box/cerebro/cerebro-tv-blocos-gps.js';
 
   var COR = { freio:'#FF5A4E', acel:'#3FE08C', embalo:'#D4AF37' };
   var G_ESCALA = 1.5;   // borda do círculo = 1,5 G
@@ -8566,7 +8567,10 @@ html,body{
     ui.leg.innerHTML = itens.map(function(it){ return '<span><i style="background:' + it[1] + '"></i>' + it[0] + '</span>'; }).join('');
   }
 
-  var ui = null, cerebro = criarCerebroGpsTv(), relogio = function(){ return Date.now(); }, rotuloDev = null;
+  // E2b: o cérebro guarda o perfil de cada volta (guardarVoltas) para a casa dos blocos que saem do GPS
+  // (stint, Δ acumulado, passagem, frenagem pelo G medido, vmin, coach); a camada BLOCOS DO GPS só pinta.
+  function novoCerebro(){ blocos = criarCerebroTvBlocosGps(); return criarCerebroGpsTv({ guardarVoltas: true }); }
+  var blocos = null, ui = null, cerebro = novoCerebro(), relogio = function(){ return Date.now(); }, rotuloDev = null;
   window.__tvGps = { ativo: false, feed: function(p){ return cerebro.feedGps(p); }, snapshot: function(){ return cerebro.snapshot(relogio()); } };
 
   function quadro(){
@@ -8595,6 +8599,7 @@ html,body{
     desenharConsistencia(ui, s);
     desenharTempos(s);
     desenharLegenda(ui, s);
+    window.__tvGps.blocos = blocos.pacote(s);
   }
   setInterval(quadro, 250);
 
@@ -8624,7 +8629,7 @@ html,body{
           var dec = (performance.now() - inicio) * speed;
           if(pararNoFim && dec >= dur) dec = dur;                  // &fim=parar: segura a última tela
           var r = pararNoFim ? 0 : Math.floor(dec / dur);
-          if(r !== rodada){ rodada = r; idx = 0; cerebro = criarCerebroGpsTv(); }   // recomeça a gravação do zero
+          if(r !== rodada){ rodada = r; idx = 0; cerebro = novoCerebro(); }   // recomeça a gravação do zero
           tAgora = t0 + (pararNoFim ? dec : dec % dur);
           while(idx < pts.length && pts[idx].tWall <= tAgora){
             var p = pts[idx++];
@@ -8670,7 +8675,8 @@ html,body{
 <script type="module">
   (function(){
     // Blocos que mostram dado do RaceBox; o resto é coberto. Header: só GPS (satélites) e REC.
-    var DO_RACEBOX = { mapa:1, hud:1, header:1 };
+    // E2b: stint, Δ acumulado, passagem, frenagem, vmin e coach saem do GPS (camada BLOCOS DO GPS, abaixo)
+    var DO_RACEBOX = { mapa:1, hud:1, header:1, stint:1, 'stint-bar':1, 'delta-acum':1, passagem:1, frenagem:1, vmin:1, coach:1 };
     var est = { ativo:false, sats:null, km:0, ult:null };
     window.__tvRacebox = !!window.__modoTv;   // modo TV: só o real desde o 1º quadro
 
@@ -8727,6 +8733,180 @@ html,body{
       cb.onGpsPoint(feed);
       cb.startCloudBridge().catch(function(){});
     }).catch(function(e){ console.warn('[MODO RACEBOX] ponte indisponível:', e); });
+  })();
+</script>
+<!-- BLOCOS DO GPS NA TV (E2b da obra TV do box ao vivo, Flávio 27/10/2026: "trail braking, freio, aceleração,
+     tempo de volta, quantidade de voltas, comparativos de gráfico de frenagem e aceleração, etc. tudo dá para
+     ver no tv box a partir do gps"). Com o modo RaceBox ligado, stint, barra do stint, Δ acumulado, passagem,
+     frenagem, vmin e coach mostram o pacote da casa web/command-box/cerebro/cerebro-tv-blocos-gps.js
+     (window.__tvGps.blocos, montado pela camada TV-GPS a 4 Hz). Esta camada SÓ PINTA: o desenho de
+     demonstração fica escondido por baixo e nada de FAKE_LAPS/plano/recorde aparece; o que não sai do GPS
+     não é mostrado. Frenagem pelo G MEDIDO do RaceBox (sem o zero do box = "—" com o motivo). -->
+<style>
+  body.tv-racebox .tv-gps-bloco{filter:none!important;opacity:1!important;}
+  body.tv-racebox .tv-gps-bloco::after{content:none!important;display:none!important;}
+  body.tv-racebox .tv-gps-bloco > *:not(.tvb){visibility:hidden!important;}
+  .tvb{position:absolute;inset:0;z-index:7;box-sizing:border-box;padding:8px 9px;overflow:hidden;
+    display:flex;flex-direction:column;gap:5px;color:var(--text-1,#F5F0E0);
+    font-family:'JetBrains Mono','SF Mono',Menlo,monospace;font-variant-numeric:tabular-nums;pointer-events:none;}
+  .tvb-h{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:2px 6px;}
+  .tvb-t{font-size:7px;letter-spacing:.24em;text-transform:uppercase;color:rgba(212,175,55,0.78);white-space:nowrap;}
+  .tvb-s{font-size:7px;letter-spacing:.08em;color:rgba(245,240,224,0.62);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+  .tvb-vazio{margin:auto;font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,240,224,0.40);text-align:center;line-height:1.5;}
+  .tvb-l{display:flex;justify-content:space-between;align-items:baseline;gap:4px;font-size:9px;line-height:1.25;}
+  .tvb-l .k{font-size:7px;letter-spacing:.1em;text-transform:uppercase;color:rgba(212,175,55,0.62);}
+  .tvb-big{font-size:26px;line-height:1;color:var(--text-1,#F5F0E0);}
+  .tvb-big small{font-size:9px;color:rgba(245,240,224,0.55);margin-left:3px;}
+  .tvb-pe{margin-top:auto;font-size:6px;letter-spacing:.12em;text-transform:uppercase;color:rgba(245,240,224,0.38);}
+  .tvb .ganhou{color:#3FE08C;} .tvb .perdeu{color:#FFB347;} .tvb .perto{color:#EAD9A0;}
+  .tvb svg{display:block;width:100%;}
+  .tvb-voltas{display:flex;flex-direction:column;gap:3px;align-items:center;}
+  .tvb-voltas .v{display:flex;flex-direction:column;align-items:center;font-size:8px;line-height:1.05;}
+  .tvb-voltas .v i{font-style:normal;font-size:6px;color:rgba(212,175,55,0.62);}
+  .tvb-frase{font-size:15px;line-height:1.25;color:var(--text-1,#F5F0E0);}
+  .tvb-motivo{font-size:10px;line-height:1.35;color:#FFB347;}
+</style>
+<script type="module">
+  (function(){
+    var IDS = ['stint', 'stint-bar', 'delta-acum', 'passagem', 'frenagem', 'vmin', 'coach'];
+    var ultimoHtml = {}, camadas = {};
+
+    function esc(x){ return String(x).replace(/[&<>"]/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]; }); }
+    function volta(s){ if(s == null) return '—'; var m = Math.floor(s / 60), r = s - m * 60; return m + ':' + (r < 10 ? '0' : '') + r.toFixed(3); }
+    function num(x, casas){ return x == null ? '—' : x.toFixed(casas).replace('.', ','); }
+    function sinal(x, casas){ return x == null ? '—' : (x > 0 ? '+' : x < 0 ? '−' : '') + num(Math.abs(x), casas); }
+    function tomS(d){ return d == null ? '' : d <= 0 ? 'ganhou' : d < 0.1 ? 'perto' : 'perdeu'; }
+    function tomKmh(d){ return d == null ? '' : d >= 0 ? 'ganhou' : d > -1 ? 'perto' : 'perdeu'; }   // km/h a mais = melhor
+    function cab(t, s){ return '<div class="tvb-h"><span class="tvb-t">' + t + '</span>' + (s ? '<span class="tvb-s">' + esc(s) + '</span>' : '') + '</div>'; }
+    function vazio(t, msg){ return cab(t) + '<div class="tvb-vazio">' + msg + '</div>'; }
+    function lin(k, v, cls){ return '<div class="tvb-l"><span class="k">' + k + '</span><span class="' + (cls || '') + '">' + v + '</span></div>'; }
+
+    // gráfico: série atual (dourado) × referência (azul tracejado) por distância; zero quando a escala cruza o 0
+    function grafico(serie, ref, w, h){
+      var todos = (serie || []).concat(ref || []);
+      if(!todos.length) return '';
+      var m0 = Math.min.apply(null, todos.map(function(p){ return p.m; })), m1 = Math.max.apply(null, todos.map(function(p){ return p.m; }));
+      var v0 = Math.min.apply(null, todos.map(function(p){ return p.v; })), v1 = Math.max.apply(null, todos.map(function(p){ return p.v; }));
+      if(!(m1 > m0)) return '';
+      if(!(v1 > v0)){ v0 -= 1; v1 += 1; }
+      var X = function(m){ return (2 + (m - m0) / (m1 - m0) * (w - 4)).toFixed(1); };
+      var Y = function(v){ return (2 + (v1 - v) / (v1 - v0) * (h - 4)).toFixed(1); };
+      var pl = function(sr){ return sr.map(function(p){ return X(p.m) + ',' + Y(p.v); }).join(' '); };
+      var svg = '<svg viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none" style="height:' + h + 'px">';
+      if(v0 < 0 && v1 > 0) svg += '<line x1="0" x2="' + w + '" y1="' + Y(0) + '" y2="' + Y(0) + '" stroke="rgba(245,240,224,0.22)" stroke-width="0.6" stroke-dasharray="2 2"/>';
+      if(m0 < 0 && m1 > 0) svg += '<line y1="0" y2="' + h + '" x1="' + X(0) + '" x2="' + X(0) + '" stroke="rgba(212,175,55,0.25)" stroke-width="0.6"/>';
+      if(ref && ref.length) svg += '<polyline points="' + pl(ref) + '" fill="none" stroke="#38BCFF" stroke-width="1" stroke-dasharray="2 2" stroke-opacity="0.75"/>';
+      if(serie && serie.length) svg += '<polyline points="' + pl(serie) + '" fill="none" stroke="#D4AF37" stroke-width="1.6" stroke-linejoin="round"/>';
+      return svg + '</svg>';
+    }
+
+    var PINTA = {
+      stint: function(p){
+        var st = p && p.stint;
+        if(!st) return vazio('stint · pelo GPS', 'aguardando<br>o carro');
+        var h = cab('stint · pelo GPS', st.voltaAtual ? 'volta ' + st.voltaAtual + ' em curso' : 'fora da volta');
+        h += '<div class="tvb-big">' + st.feitas + '<small>volta' + (st.feitas === 1 ? '' : 's') + ' completa' + (st.feitas === 1 ? '' : 's') + '</small></div>';
+        h += lin('na volta', st.decorridoVoltaS != null ? volta(st.decorridoVoltaS) : '—');
+        h += lin('última', volta(st.ultimaS));
+        h += lin('melhor', st.melhor ? volta(st.melhor.tempoS) + ' · v' + st.melhor.n : '—', st.melhor ? 'ganhou' : '');
+        h += lin('média', volta(st.mediaS));
+        return h;
+      },
+      'stint-bar': function(p){
+        var st = p && p.stint;
+        var h = '<div class="tvb-h" style="justify-content:center"><span class="tvb-t" style="letter-spacing:.12em">voltas</span></div>';
+        if(!st || !st.voltas.length) return h + '<div class="tvb-vazio">—</div>';
+        h += '<div class="tvb-voltas">' + st.voltas.slice(-22).map(function(v){
+          return '<div class="v"><i>v' + v.n + '</i><span class="' + (v.melhor ? 'ganhou' : tomS(v.deltaS)) + '">' + (v.melhor ? 'melhor' : sinal(v.deltaS, 2)) + '</span></div>';
+        }).join('') + '</div>';
+        return h;
+      },
+      'delta-acum': function(p){
+        var da = p && p.deltaAcum;
+        if(!da || !da.voltas.length) return vazio('Δ acumulado · vs melhor da sessão', 'aguardando a 1ª volta completa');
+        var pts = da.voltas, maxA = Math.max.apply(null, pts.map(function(v){ return v.acumS; })) || 1, n = pts.length;
+        var W = 230, H = 40;
+        var xy = pts.map(function(v, i){ return ((n === 1 ? W / 2 : 4 + i * (W - 8) / (n - 1))).toFixed(1) + ',' + (4 + v.acumS / maxA * (H - 8)).toFixed(1); }).join(' ');
+        var ult = pts[pts.length - 1];
+        return '<div style="display:flex;gap:10px;align-items:stretch;height:100%">'
+          + '<div style="flex:1;display:flex;flex-direction:column;gap:3px">' + cab('Δ acumulado · vs melhor da sessão')
+          + '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" style="height:' + H + 'px"><line x1="0" x2="' + W + '" y1="4" y2="4" stroke="rgba(245,240,224,0.30)" stroke-width="0.8" stroke-dasharray="4 3"/>'
+          + '<polyline points="' + xy + '" fill="none" stroke="#D4AF37" stroke-width="1.6" stroke-linejoin="round"/></svg></div>'
+          + '<div style="display:flex;flex-direction:column;justify-content:center;align-items:flex-end">'
+          + '<span class="tvb-t">Δ última</span><span class="tvb-big ' + tomS(ult.deltaS) + '" style="font-size:18px">' + sinal(ult.deltaS, 3) + '<small>s</small></span>'
+          + '<span class="tvb-s">soma ' + sinal(ult.acumS, 2) + ' s</span></div></div>';
+      },
+      passagem: function(p){
+        var c = p && p.curva, ps = c && c.passagem;
+        if(!c) return vazio('passagem', 'aguardando<br>o carro');
+        if(!ps) return vazio('passagem', esc(c.nome) + '<br>aguardando a 1ª volta');
+        var h = cab('passagem', c.nome);
+        h += '<div class="tvb-s">v' + ps.volta + (ps.ehRef ? ' · a sua melhor aqui' : ' × melhor v' + ps.refVolta) + '</div>';
+        [['entrada', ps.entrada], ['mínima', ps.minima], ['saída', ps.saida]].forEach(function(r){
+          h += lin(r[0], num(r[1].kmh, 0) + (ps.ehRef ? '' : ' <span class="' + tomKmh(r[1].delta) + '">' + sinal(r[1].delta, 1) + '</span>'));
+        });
+        h += '<div class="tvb-pe">km/h · trecho <span class="' + tomS(ps.difS) + '">' + sinal(ps.difS, 2) + ' s</span></div>';
+        return h;
+      },
+      frenagem: function(p){
+        var c = p && p.curva, f = c && c.frenagem;
+        if(!c) return vazio('frenagem', 'aguardando<br>o carro');
+        if(!f) return vazio('frenagem', esc(c.nome) + '<br>aguardando a 1ª volta');
+        if(!f.ok) return cab('frenagem', c.nome) + '<div class="tvb-vazio">—<br>' + esc(f.motivo) + '</div>';
+        var h = cab('frenagem', c.nome) + grafico(f.serie, f.serieRef, 100, 30);
+        if(!f.freou) h += lin('freada', 'não freou');
+        else {
+          h += lin('freou', sinal(f.inicioFreadaM, 0) + ' m' + (f.freouAntesM != null && f.freouAntesM !== 0 ? ' <span class="' + (f.freouAntesM > 0 ? 'perdeu' : 'ganhou') + '">' + (f.freouAntesM > 0 ? 'cedo' : 'tarde') + '</span>' : ''));
+          h += lin('pico', sinal(f.picoFreioG, 2) + ' G');
+          h += lin('trail', f.trail ? 'sim ' + sinal(f.freioNaMinimaG, 2) : 'não');
+          h += lin('soltou', f.soltou || '—');
+        }
+        h += lin('acel.', f.picoAcelG != null ? sinal(f.picoAcelG, 2) + ' G' : '—');
+        return h + '<div class="tvb-pe">G medido · RaceBox</div>';
+      },
+      vmin: function(p){
+        var c = p && p.curva, v = c && c.vmin;
+        if(!c) return vazio('vmin', 'aguardando<br>o carro');
+        if(!v) return vazio('vmin', esc(c.nome) + '<br>aguardando a 1ª volta');
+        var h = cab('vmin', c.nome);
+        h += '<div class="tvb-big" style="font-size:22px">' + num(v.kmh, 0) + '<small>km/h</small></div>';
+        h += lin('melhor', num(v.ref, 0) + ' <span class="' + tomKmh(v.delta) + '">' + sinal(v.delta, 1) + '</span>');
+        return h + grafico(v.serie, v.serieRef, 84, 34);
+      },
+      coach: function(p){
+        var co = p && p.coach;
+        if(!p) return vazio('p1 coach · pelo GPS', 'aguardando o carro');
+        if(!co) return vazio('p1 coach · pelo GPS', 'aguardando 2 voltas completas<br>para comparar');
+        var h = cab('p1 coach · pelo GPS', 'volta ' + co.volta);
+        h += '<div class="tvb-frase">' + esc(co.frase) + '</div>';
+        h += '<div class="tvb-s">contra a sua melhor passagem ali' + (co.refVolta ? ' (volta ' + co.refVolta + ')' : '') + '</div>';
+        h += co.motivos.length ? co.motivos.map(function(m){ return '<div class="tvb-motivo">' + esc(m.texto) + '</div>'; }).join('')
+          : '<div class="tvb-s">freada, mínima e saída iguais à melhor — perdeu no meio do trecho</div>';
+        return h + '<div class="tvb-pe">só o que o GPS mediu · sem plano nem recorde</div>';
+      },
+    };
+
+    function pintar(){
+      if(!document.body.classList.contains('tv-racebox')) return;
+      var p = window.__tvGps && window.__tvGps.blocos;
+      IDS.forEach(function(id){
+        var el = document.querySelector('[data-block-id="' + id + '"]');
+        if(!el) return;
+        el.classList.add('tv-gps-bloco');
+        var camada = camadas[id];
+        if(!camada){
+          camada = camadas[id] = document.createElement('div'); camada.className = 'tvb'; camada.setAttribute('data-tvb', id);
+          // o desenho de demonstração reescreve o bloco inteiro (innerHTML): a MESMA camada volta antes do quadro
+          new MutationObserver(function(){ if(camada.parentNode !== el) el.appendChild(camada); }).observe(el, { childList: true });
+        }
+        if(camada.parentNode !== el) el.appendChild(camada);
+        var html;
+        try { html = PINTA[id](p); } catch(e){ html = vazio(id, '—'); console.warn('[BLOCOS DO GPS] ' + id + ':', e); }
+        if(html !== ultimoHtml[id]){ camada.innerHTML = html; ultimoHtml[id] = html; }
+      });
+    }
+    setInterval(pintar, 250);
+    window.__tvBlocosPintar = pintar;
   })();
 </script>
 <!-- SINAL DA TV — modo TV (E1 da obra TV do box ao vivo, Flávio 27/10/2026: "esta tela não está

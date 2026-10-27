@@ -128,7 +128,7 @@ Provas pós-rebase: Domain.Tests 625/625 · tv-envio-lote 18/18 · tv-honesta 37
 arquitetura 37/37 · prova-tv-lote 13/13 · prova-tv-honesta 32/32 · sintaxe MainWindow.Live.cs 0. imac-9c avisada (SendMessage).
 
 ## E2b EM ANDAMENTO — blocos da TV pelo GPS (pedido dele 27/10 ~17h20). Mapa: .claude-exec/e2b-mapa-blocos-gps-20261027.md
-FEITO (sem commit ainda): casa nova web/command-box/cerebro/cerebro-tv-blocos-gps.js (stint, deltaAcum, curva{passagem, frenagem pelo
+FEITO (commit local 65c468a01, sem push): casa nova web/command-box/cerebro/cerebro-tv-blocos-gps.js (stint, deltaAcum, curva{passagem, frenagem pelo
 G MEDIDO, vmin}, coach) + catraca tests/node-smoke-tv-blocos-gps.mjs 24/24 (achou e corrigiu: "soltou" media desde o 1º ponto do pico).
 PRÓXIMO: (1) registrar a casa em docs/CONTRATO_DADOS.md e na trava tests/node-smoke-arquitetura-dado.mjs; catraca no `npm run smoke`;
 (2) TV: camada TV-GPS cria o cerebro-gps-tv com guardarVoltas:true e passa o snapshot à casa nova (4 Hz); DO_RACEBOX ganha passagem,
@@ -136,3 +136,25 @@ frenagem, vmin, stint, stint-bar, delta-acum, coach; pintar cada bloco com o pac
 preditivo, pneu); desligar massa de maio/FAKE_LAPS nesses blocos no modo TV; rodapé da frenagem "G medido pelo RaceBox";
 (3) prova Chrome: replay 21/06 com G pela física via ponte falsa (lote) → blocos com número real; controle = backup do HTML;
 (4) commit + push na branch -e2-. Depois E3 câmera, E4 atalho, E5 pacote.
+
+## RETOMADA 1027-1718 (27/10, conversa nova após /clear) — continuar a E2b
+Estado conferido: commit local 65c468a01 (casa cerebro-tv-blocos-gps.js + catraca 24/24), servidor 5199 no ar (200), território
+tv-box-aovivo-1027 nesta janela (ttys019). Seguir: contrato + trava de arquitetura + smoke → ligar na TV → prova Chrome → push.
+### E2b — TV LIGADA (27/10, conversa 1027-1718) — commit local, SEM push
+FEITO: contrato (docs/CONTRATO_DADOS.md) + trava de arquitetura 38/38 (era 37) + catraca no `npm run smoke` (smoke:tv-blocos-gps).
+TV (backup .claude-exec/backup-e2b-20261027/): camada TV-GPS cria o cérebro com guardarVoltas e monta window.__tvGps.blocos a 4 Hz;
+DO_RACEBOX ganhou stint, stint-bar, delta-acum, passagem, frenagem, vmin, coach; camada nova "BLOCOS DO GPS NA TV" pinta (.tvb por cima,
+demo escondida; MutationObserver por bloco devolve a camada quando a demo reescreve). Casa: vírgula pt-BR nas frases do coach (catraca 25/25,
+controle com a versão de antes reprova).
+PROVAS: prova-tv-blocos-gps 23/23 (controle com o HTML de antes reprova) · prova-tv-honesta 32/32 · prova-tv-lote 13/13 6× seguidas ·
+tv-honesta 37 · tv-envio-lote 18 · gps-tv 91 · gps-fonte-unica 28 · arquitetura 38 · trechos-volta 24.
+TRIAGEM (3 reprovações, todas régua): (1) honesta A: lista à mão da regra antiga → agora nasce da página (.tvb); (2) lote: lia o velocímetro
+exatamente 1 período (200 ms) depois do último envio → +250 ms (e −250 ms no "6 s sem mensagem"); perfilador: carga igual antes × agora,
+0 tarefas longas; (3) blocos: maiúsculas do innerText e Δ com 2 dígitos.
+ACHADO NÃO MEU (já falhava em a0d2be2dd): pagina-volta 45/1 — "iPhone: os 15 arquivos da página têm cópia idêntica no app:
+web/cockpit/gps-fonte-unica.js" → a E2 mudou gps-fonte-unica.js e a cópia do app iPhone ficou velha. CONFERIR E CORRIGIR (próximo passo 1).
+Artefato do teste (não do sistema): "acel. +7,87 G" na foto vem do G montado pela física na gravação 21/06 (sem G real).
+PRÓXIMO: (1) pagina-volta: achar a cópia do iPhone de gps-fonte-unica.js e igualar (ver o teste); (2) `npm run smoke` inteiro;
+(3) commit + push na branch claude/tv-box-aovivo-e2-20261027; (4) responder imac-9c (3 recados: rua offline 240 s; troca 1 religou com
+perda 6,7 s = reenvio da E2 tem valor; ensaio 30 min: teto 720p ~1 Mbps é item 1, sala expira 2 h → renovar na E3, Windows pode dormir);
+(5) E3 câmera (incluir: teto de vídeo, renovar sala, impedir o Windows de dormir — SetThreadExecutionState).

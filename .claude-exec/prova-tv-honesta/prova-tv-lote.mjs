@@ -42,6 +42,8 @@ page.on('pageerror', e => erros.push('PAGEERROR: ' + String(e).slice(0, 200)));
 await page.route('https://esm.sh/@supabase/supabase-js*', r => r.fulfill({ contentType: 'text/javascript', body: SUPABASE_FALSO }));
 if (PONTE_ALT) for (const arq of ['cloud-bridge.js', 'gps-fonte-unica.js'])
   await page.route('**/web/cockpit/' + arq + '*', r => r.fulfill({ contentType: 'text/javascript', body: readFileSync(PONTE_ALT + '/' + arq, 'utf8') }));
+// HTML_ALT=<arquivo> no ambiente: serve outra versão da TV no lugar (controle de oscilação entre versões)
+if (process.env.HTML_ALT) await page.route('**/_design-reference/mockup-command-box-vista-piloto.html*', r => r.fulfill({ contentType: 'text/html', body: readFileSync(process.env.HTML_ALT, 'utf8') }));
 await page.goto(BASE + '?canal=cockpit-bubi-dev-teste', { waitUntil: 'load' });
 await page.waitForTimeout(2500);
 
@@ -76,6 +78,8 @@ const enviarLotes = (fixes, esperaMs = 200) => page.evaluate(async ({ fixes, esp
 const agora0 = await page.evaluate(() => Date.now());
 const trecho1 = pts.slice(ini, ini + 250).map((a, i) => fix(a, agora0 + i * 40));
 await enviarLotes(trecho1);
+// o velocímetro recebe o ponto mais novo 5×/s (E1): ler depois de mais uma batida, senão a régua empata com o relógio da página
+await page.waitForTimeout(250);
 let e = await ver();
 t('L1: 50 mensagens em lote → TV entrega os 250 pontos (fidelidade 25 Hz preservada)', e.n === 250, e.n);
 const ordem = await page.evaluate(() => window.__entregues.every((v, i, a) => i === 0 || v > a[i - 1]));
@@ -86,7 +90,7 @@ await page.screenshot({ path: OUT + '/tv-lote-ao-vivo.png' });
 
 // L2: conexão meio-morta — o notebook achou que enviou os últimos 2 s, o canal caiu, e na religação
 // ele REENVIA os últimos 10 s (que a TV já tinha) + os fixes novos.
-await page.waitForTimeout(6000);
+await page.waitForTimeout(5750);   // + os 250 ms da leitura do L1 = os mesmos 6 s sem mensagem
 e = await ver();
 t('L2: 6 s sem mensagem → SEM SINAL', /^SEM SINAL HÁ [56] s$/.test(e.selo), e.selo);
 const carroQueda = e.carro;
@@ -96,6 +100,7 @@ const novos = pts.slice(ini + 250, ini + 300).map((a, i) => fix(a, agora1 - 1960
 const antesN = (await ver()).n;
 await enviarLotes(reenvio.concat(novos), 0);   // a fila do notebook despeja de uma vez
 await enviarLotes(pts.slice(ini + 300, ini + 325).map((a, i) => fix(a, agora1 + 40 + i * 40)));  // e segue ao vivo
+await page.waitForTimeout(250);   // mais uma batida do velocímetro (5×/s)
 e = await ver();
 const st = await page.evaluate(() => window.__stats());
 t('L2: os 250 pontos repetidos do reenvio NÃO chegam de novo à TV', e.n - antesN === 75, [e.n - antesN, 'esperado 75 novos']);
