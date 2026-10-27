@@ -46,6 +46,7 @@ export const SEM_DADO_MS = 2500;
 const PRECISAO_MAX_M = 50;     // mesmo gate do cerebro-vivo / filtro do notebook (hacc < 50)
 const SALTO_FRAC_MAX = 0.05;   // passo maior que isto entre 2 pontos = projeção pulou: não vale como cruzamento
 const TETO_PONTOS_VOLTA = 6000;
+const TETO_PERFIL_VOLTA = 20000;   // perfil da volta (opção guardarVoltas): 25 Hz × 13 min
 
 function emFaixaBrasilia(lat, lng) { return lat < -15.7 && lat > -15.8 && lng < -47.8 && lng > -48.0; }
 function distM(a, b) {
@@ -76,12 +77,16 @@ function somarPico(p, gl, gt) {
  * @param {number[]} [opts.setoresFrac]         linhas de setor (fração da volta desde a chegada)
  * @param {number} [opts.sentido]               +1 se a fração do traçado cresce andando
  * @param {(lat:number,lng:number)=>{x:number,y:number,frac:number}|null} [opts.projetar]
+ * @param {boolean} [opts.guardarVoltas]       item 6 (página da volta): cada volta fechada leva o
+ *   perfil ponto a ponto {t s desde a chegada, p fração da volta, d m andados, kmh, x, y, gl, ga, z}
+ *   e o rastro do mapa. Desligado na TV (pacote leve); a conta de volta/setor é a MESMA.
  */
 export function criarCerebroGpsTv(opts = {}) {
   const marco = opts.marcoChegada || MARCO_CHEGADA_BRASILIA;
   const setoresFrac = (opts.setoresFrac || SETORES_FRAC_PADRAO).slice().sort((a, b) => a - b);
   const nSetores = setoresFrac.length + 1;
   const sentido = opts.sentido === -1 ? -1 : SENTIDO_BRASILIA;
+  const guardarVoltas = opts.guardarVoltas === true;
   const projetar = opts.projetar || ((lat, lng) => {
     if (!emFaixaBrasilia(lat, lng)) return null;
     const p = geoParaCommandBox(lat, lng);
@@ -108,6 +113,8 @@ export function criarCerebroGpsTv(opts = {}) {
   let ultimoGT = null;
   let picosVolta = novosPicos();
   let picosUltima = null;
+  let perfilVolta = [];           // opção guardarVoltas: pontos da volta corrente
+  let distVolta = 0, ultimoGeoVolta = null;
 
   function fecharVolta(t) {
     const tempoS = (t - inicioVoltaT) / 1000;
@@ -120,7 +127,9 @@ export function criarCerebroGpsTv(opts = {}) {
       setoresS.push(tempoS - setoresS.reduce((s, v) => s + v, 0));
       setoresS = setoresS.map(r3);
     }
-    voltas.push({ n: voltaN, tempoS: r3(tempoS), setoresS, picosG: picosVolta.n ? picosVolta : null });
+    const v = { n: voltaN, tempoS: r3(tempoS), setoresS, picosG: picosVolta.n ? picosVolta : null };
+    if (guardarVoltas) { v.perfil = perfilVolta; v.rastro = rastroVolta; v.distM = Math.round(distVolta); }
+    voltas.push(v);
     rastroUltima = rastroVolta; gUltima = gVolta; picosUltima = picosVolta.n ? picosVolta : null;
   }
 
@@ -131,6 +140,7 @@ export function criarCerebroGpsTv(opts = {}) {
     inicioVoltaT = t;
     cruzSetorT = [];
     rastroVolta = []; gVolta = []; picosVolta = novosPicos();
+    perfilVolta = []; distVolta = 0; ultimoGeoVolta = null;
   });
 
   /** Ponto do evento 'gps' do canal (RaceBox). Devolve true se entrou. */
@@ -165,6 +175,14 @@ export function criarCerebroGpsTv(opts = {}) {
         if (progAnterior < linha && prog >= linha && passo > 0 && passo < SALTO_FRAC_MAX) cruzSetorT.push(t);
       }
       progAnterior = prog;
+      if (guardarVoltas && inicioVoltaT != null && perfilVolta.length < TETO_PERFIL_VOLTA) {
+        const aqui = { lat: g.lat, lng };
+        if (ultimoGeoVolta) distVolta += distM(ultimoGeoVolta, aqui);
+        ultimoGeoVolta = aqui;
+        perfilVolta.push({ t: r3((t - inicioVoltaT) / 1000), p: Math.round(prog * 1e5) / 1e5, d: r1(distVolta),
+          kmh: kmh != null ? r1(kmh) : null, x: r1(pos.x), y: r1(pos.y),
+          gl: temG ? r3(gLong) : null, ga: temG ? r3(gLat) : null, z: zeroOk });
+      }
     }
 
     // 3) mapa: rastro da volta com velocidade e fase do G
