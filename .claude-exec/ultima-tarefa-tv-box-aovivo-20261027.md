@@ -158,3 +158,8 @@ PRÓXIMO: (1) pagina-volta: achar a cópia do iPhone de gps-fonte-unica.js e igu
 (3) commit + push na branch claude/tv-box-aovivo-e2-20261027; (4) responder imac-9c (3 recados: rua offline 240 s; troca 1 religou com
 perda 6,7 s = reenvio da E2 tem valor; ensaio 30 min: teto 720p ~1 Mbps é item 1, sala expira 2 h → renovar na E3, Windows pode dormir);
 (5) E3 câmera (incluir: teto de vídeo, renovar sala, impedir o Windows de dormir — SetThreadExecutionState).
+PONTO DE PARADA 1027-1752 (27/10 ~17h52): commit e024233cf local; seguir do PRÓXIMO 1 acima (pagina-volta → smoke → push → imac-9c → E3).
+
+## RETOMADA 1027-1752 (27/10, conversa nova após /clear) — fechar pendências da E2b
+Objetivo: (1) igualar cópia do app de web/cockpit/gps-fonte-unica.js (pagina-volta 45/1); (2) npm run smoke; (3) push da branch; (4) responder imac-9c; (5) E3.
+Território: sessão tv-box-aovivo-1027 (esta janela, ttys019). Produção intocada.

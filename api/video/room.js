@@ -123,8 +123,10 @@ export default async function handler(req, res) {
     }
 
     // 2. Meeting tokens — piloto publisher, box viewer.
-    // Owner=true permite controle (importante pro box poder kickar etc).
-    // is_owner é só pro Box; piloto entra como participante normal.
+    // Box = ESPECTADOR (E3 da TV do box ao vivo, 27/10/2026): sem dono e sem permissão de
+    // transmitir (permissions.canSend=false). Antes o tokenBox era is_owner — quem abrisse a TV
+    // (ou o app do iPhone em "assistir") podia expulsar e silenciar o carro. Nenhum leitor do
+    // tokenBox transmite (TesteAoVivoView/AssistirView/painel.html/TV entram com câmera desligada).
     const [tokenPiloto, tokenBox] = await Promise.all([
       dailyFetch('/meeting-tokens', {
         method: 'POST',

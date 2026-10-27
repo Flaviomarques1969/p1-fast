@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>P1 Fast — Painel ao vivo</title>
+<script crossorigin src="https://unpkg.com/@daily-co/daily-js"></script>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:-apple-system,Segoe UI,Roboto,sans-serif; background:#000; color:#fff; overflow:hidden; }
+  #stage { position:fixed; inset:0; }
+  video { width:100%; height:100%; object-fit:cover; background:#000; }
+  .overlay { position:fixed; left:0; right:0; bottom:0; padding:12px 18px calc(16px + env(safe-area-inset-bottom));
+    background:linear-gradient(transparent, rgba(0,0,0,.82)); }
+  .linha { display:flex; gap:22px; align-items:flex-end; }
+  .linha + .linha { margin-top:10px; padding-top:10px; border-top:1px solid rgba(255,255,255,.12); }
+  .stat { display:flex; flex-direction:column; }
+  .stat .n { font-size:30px; font-weight:800; line-height:1; font-variant-numeric:tabular-nums; }
+  .stat .n.med { font-size:22px; }
+  .stat .u { font-size:10px; color:#9fb0c0; text-transform:uppercase; letter-spacing:.7px; margin-top:4px; }
+  .top { position:fixed; top:0; left:0; right:0; padding:14px 16px; display:flex; justify-content:space-between; align-items:center; gap:8px;
+    background:linear-gradient(rgba(0,0,0,.7), transparent); font-size:13px; }
+  .pill { padding:4px 11px; border-radius:999px; font-size:12px; font-weight:700; }
+  .ok{ background:#0d3320; color:#4ade80; } .warn{ background:#3a2d0d; color:#fbbf24; } .bad{ background:#3a1212; color:#f87171; } .idle{ background:#1b2330; color:#8a97a6; }
+  #hint { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; text-align:center; padding:30px; }
+  #hint h1 { font-size:20px; margin:0; } #hint p { color:#9fb0c0; margin:0; font-size:14px; max-width:300px; }
+  #go { font-size:16px; font-weight:700; padding:14px 26px; border-radius:12px; border:0; background:#2563eb; color:#fff; }
+</style>
+</head>
+<body>
+<div id="hint">
+  <h1>P1 Fast · Painel ao vivo</h1>
+  <p>Vídeo da pista + GPS + dados do carro. Toque pra entrar.</p>
+  <button id="go">Entrar no painel</button>
+</div>
+
+<div id="stage" style="display:none">
+  <video id="remote" autoplay playsinline></video>
+  <div class="top">
+    <span>P1 Fast · ao vivo</span>
+    <span style="flex:1"></span>
+    <span id="vPill" class="pill warn">vídeo…</span>
+    <span id="cPill" class="pill idle">carro · sem dados</span>
+  </div>
+  <div class="overlay">
+    <div class="linha">
+      <div class="stat"><span class="n" id="spd">—</span><span class="u">km/h (GPS)</span></div>
+      <div class="stat"><span class="n" id="sv">—</span><span class="u">satélites</span></div>
+      <div class="stat"><span class="n med" id="ver" style="align-self:flex-end">—</span><span class="u">GPS</span></div>
+    </div>
+    <div class="linha" id="carroRow" style="display:none">
+      <div class="stat"><span class="n" id="rpm">—</span><span class="u">RPM</span></div>
+      <div class="stat"><span class="n med" id="agua">—</span><span class="u">água</span></div>
+      <div class="stat"><span class="n med" id="lam">—</span><span class="u">lambda</span></div>
+      <div class="stat"><span class="n med" id="tps">—</span><span class="u">borboleta</span></div>
+      <div class="stat"><span class="n med" id="bat">—</span><span class="u">bateria</span></div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+
+const $ = id => document.getElementById(id);
+function pill(el,t,c){ el.textContent=t; el.className='pill '+c; }
+let call=null, entrou=false, videoRetryMs=3000;
+
+// ── Vídeo (com religação automática) ──
+async function getRoom(){
+  const r = await fetch('/api/room', { method:'POST' });
+  if(!r.ok) throw new Error('vídeo respondeu '+r.status);
+  return r.json();
+}
+async function conectarVideo(){
+  try {
+    pill($('vPill'),'vídeo…','warn');
+    const room = await getRoom();
+    if (call) { try { await call.destroy(); } catch{} call = null; }
+    call = window.DailyIframe.createCallObject();
+    call.on('participant-joined', attach);
+    call.on('participant-updated', attach);
+    call.on('track-started', attach);
+    call.on('app-message', e => { if(e.data && e.data.t==='gps') renderGps(e.data, 'video'); });
+    call.on('joined-meeting', () => { pill($('vPill'),'vídeo ✓','ok'); videoRetryMs=3000; });
+    call.on('left-meeting', videoCaiu);
+    call.on('error', videoCaiu);
+    await call.join({ url: room.roomUrl, token: room.tokenBox });
+  } catch(e){ videoCaiu(); }
+}
+function videoCaiu(){
+  if (!entrou) return;
+  pill($('vPill'),'vídeo religando…','warn');
+  const wait = videoRetryMs;
+  videoRetryMs = Math.min(videoRetryMs*2, 15000);
+  setTimeout(() => { if (entrou) conectarVideo(); }, wait);
+}
+function attach(){
+  if(!call) return;
+  const ps = call.participants();
+  for(const id in ps){
+    if(id==='local') continue;
+    const tr = ps[id].tracks && ps[id].tracks.video && ps[id].tracks.video.persistentTrack;
+    if(tr){ $('remote').srcObject = new MediaStream([tr]); return; }
+  }
+}
+
+// ── GPS: chega pelo vídeo (principal) e pela nuvem (reserva) ──
+const gpsState = { lastTs:0, lastFonte:null };
+function renderGps(g, fonte){
+  // se o caminho principal (vídeo) está vivo, ignora a reserva
+  const now = performance.now();
+  if (fonte === 'nuvem' && gpsState.lastFonte === 'video' && now - gpsState.lastTs < 2000) return;
+  gpsState.lastTs = now; gpsState.lastFonte = fonte;
+  const spd = g.spd ?? g.kmh;
+  $('spd').textContent = (spd!=null? Number(spd).toFixed(0):'—');
+  $('sv').textContent = g.numSV ?? '—';
+  $('ver').textContent = g.ver || (g.fix===0 ? 'sem sinal' : (g.numSV>=6?'travado ✓':'ok')) || '—';
+}
+
+// ── Dados do carro (canal canônico cockpit-bubi-live, só escuta) ──
+const SUPABASE_URL  = 'https://fvhwltzhytpnhlqbttmd.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2aHdsdHpoeXRwbmhscWJ0dG1kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4MTExNDAsImV4cCI6MjA5MzM4NzE0MH0._ZpxksUnuVFhLzCB5x7bBiZ_VLQQR5cH4A1T-0-mvrA';
+const carro = { lastTs:0, retryMs:2000 };
+
+function conectarNuvem(){
+  try {
+    const client = createClient(SUPABASE_URL, SUPABASE_ANON, { realtime: { params: { eventsPerSecond: 10 } } });
+    const ch = client.channel('cockpit-bubi-live', { config: { broadcast: { ack:false, self:false } } });
+    ch.on('broadcast', { event:'sample' }, msg => { if (msg && msg.payload) renderCarro(msg.payload); });
+    ch.on('broadcast', { event:'gps' }, msg => { if (msg && msg.payload) renderGps(msg.payload, 'nuvem'); });
+    ch.subscribe((status) => {
+      if (status === 'SUBSCRIBED') { carro.retryMs = 2000; }
+      else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+        try { ch.unsubscribe(); } catch{}
+        setTimeout(conectarNuvem, carro.retryMs);
+        carro.retryMs = Math.min(carro.retryMs*2, 15000);
+      }
+    });
+  } catch(e){
+    setTimeout(conectarNuvem, carro.retryMs);
+    carro.retryMs = Math.min(carro.retryMs*2, 15000);
+  }
+}
+
+function renderCarro(s){
+  carro.lastTs = performance.now();
+  $('carroRow').style.display = 'flex';
+  $('rpm').textContent = s.rpm ?? '—';
+  $('agua').textContent = s.waterTempC != null ? s.waterTempC+'°' : '—';
+  $('lam').textContent = (typeof s.lambda === 'number' && s.lambda > 0) ? s.lambda.toFixed(2) : '—';
+  $('tps').textContent = s.tpsPct != null ? Math.round(s.tpsPct)+'%' : '—';
+  $('bat').textContent = s.batteryV != null ? s.batteryV.toFixed(1)+'V' : '—';
+  pill($('cPill'), 'carro ✓' + (s.source==='sim-replay' ? ' (sim)' : ''), 'ok');
+}
+setInterval(() => {
+  if (!carro.lastTs) return;
+  if (performance.now() - carro.lastTs > 3000) pill($('cPill'),'carro · parou','bad');
+}, 1000);
+
+$('go').onclick = () => {
+  entrou = true;
+  $('hint').style.display='none'; $('stage').style.display='block';
+  conectarVideo();
+  conectarNuvem();
+};
+</script>
+</body>
+</html>
