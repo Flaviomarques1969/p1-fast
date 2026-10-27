@@ -102,7 +102,7 @@ await secao('4) ícones', () => {
   const citados = [...new Set([...ic.matchAll(/'([A-Za-z0-9-]+\.cmd)'/g)].map((x) => x[1]))];
   t('instala os 2 ícones (AO VIVO e TESTE AO VIVO)', citados.includes('P1FAST-AO-VIVO.cmd') && citados.includes('TESTE-AO-VIVO.cmd'), citados.join(','));
   for (const c of citados) t(`ícone aponta para .cmd que existe: ${c}`, existsSync(new URL('windows/cockpit/' + c, raiz)));
-  t('desenho do ícone vem do RELEASE, Debug só de reserva', /\\Release\\[^']*'\);\s*if\(-not \(Test-Path \$exe\)\)\{ \$exe=[^}]*\\Debug\\/.test(ic));
+  t('desenho do ícone vem do RELEASE, Debug só de reserva', /\\Release\\[^']*';\s*if\(-not \(Test-Path \$exe\)\)\{ \$exe=[^}]*\\Debug\\/.test(ic));
   t('.cmd só com ASCII', /^[\x00-\x7f]*$/.test(ic));
   t('parênteses de bloco fecham certo', parentesesOk(ic));
 });
