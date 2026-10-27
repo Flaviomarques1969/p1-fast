@@ -12,7 +12,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './supabase-config.js';
 import { leituraPlausivel } from './t3000-usb-parser.js';
-import { pontoGpsAceito } from './gps-fonte-unica.js';
+import { pontosDoGps, criarFiltroRepetidos } from './gps-fonte-unica.js';
 
 const SUPABASE_ANON = SUPABASE_ANON_KEY;
 
@@ -34,7 +34,8 @@ let _client = null;
 let _channel = null;
 let _status = 'off';
 let _lastPublishTs = 0;
-let _stats = { sent: 0, dropped: 0, errors: 0, lastError: null, gpsIphoneDescartados: 0 };
+let _stats = { sent: 0, dropped: 0, errors: 0, lastError: null, gpsIphoneDescartados: 0, gpsRepetidos: 0 };
+const _gpsNovo = criarFiltroRepetidos();
 let _onStatusChange = () => {};
 // Vários consumidores podem ouvir a MESMA conexão (uma fonte só, todos consomem).
 // Ex.: na Vista Piloto, o HUD e o "cérebro" ouvem juntos sem abrir 2 conexões.
@@ -121,8 +122,12 @@ export async function startCloudBridge() {
     // volta (evento) e posição já calculada na nuvem (posicao).
     _channel.on('broadcast', { event: 'gps' },     (msg) => {
       if (!msg || !msg.payload) return;
-      if (!pontoGpsAceito(msg.payload)) { _stats.gpsIphoneDescartados += 1; return; }
-      _fan(_onGpsPoint, msg.payload);
+      // Lote do Cockpit (E2, 27/10): 1 mensagem traz vários fixes; cada ouvinte recebe ponto a
+      // ponto, em ordem, como antes. pontosDoGps aplica pontoGpsAceito em cada um.
+      // O reenvio do Cockpit depois de uma queda repete pontos já entregues: _gpsNovo os descarta.
+      const pontos = pontosDoGps(msg.payload);
+      if (!pontos.length) { _stats.gpsIphoneDescartados += 1; return; }
+      for (const p of pontos) { if (_gpsNovo(p)) _fan(_onGpsPoint, p); else _stats.gpsRepetidos += 1; }
     });
     _channel.on('broadcast', { event: 'sample' },  (msg) => { if (msg && msg.payload) _fan(_onSample,   msg.payload); });
     _channel.on('broadcast', { event: 'evento' },  (msg) => { if (msg && msg.payload) _fan(_onEvento,   msg.payload); });

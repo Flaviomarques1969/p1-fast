@@ -34,4 +34,23 @@ export function pontosDoGps(payload) {
   return out;
 }
 
-export default { pontoGpsAceito, pontosDoGps };
+// REPETIDOS (E2, 27/10): quando o canal cai, o Cockpit devolve à fila os fixes dos últimos 10 s
+// (podem ter ido para um socket já morto) e os reenvia na religação. Os que a TV já tinha recebido
+// chegam de novo: este filtro descarta o ponto com tWall menor ou igual ao último já entregue da
+// MESMA fonte. Ponto muito mais velho (> 15 s antes do último) passa: é relógio do notebook
+// corrigido ou Cockpit reiniciado, não reenvio — melhor mostrar do que travar a TV.
+export const REPETIDO_JANELA_MS = 15000;
+export function criarFiltroRepetidos({ janelaMs = REPETIDO_JANELA_MS } = {}) {
+  const ultimo = new Map();
+  return function novo(p) {
+    const tw = p && typeof p.tWall === 'number' && isFinite(p.tWall) ? p.tWall : null;
+    if (tw == null) return true;
+    const chave = String(p.source || p.fonte || '');
+    const u = ultimo.get(chave);
+    if (u != null && tw <= u && u - tw <= janelaMs) return false;
+    ultimo.set(chave, tw);
+    return true;
+  };
+}
+
+export default { pontoGpsAceito, pontosDoGps, criarFiltroRepetidos };

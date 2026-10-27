@@ -11,7 +11,7 @@ import { fileURLToPath } from 'node:url';
 import { realpathSync } from 'node:fs';
 import { geoParaCommandBox } from '../web/cockpit/pista-brasilia-commandbox.js';
 import { fracDe } from '../web/command-box/pista-cb-polyline.js';
-import { pontoGpsAceito } from '../web/cockpit/gps-fonte-unica.js';
+import { pontoGpsAceito, pontosDoGps } from '../web/cockpit/gps-fonte-unica.js';
 
 const CANAL_PRODUCAO = 'cockpit-bubi-live';
 
@@ -48,7 +48,8 @@ if (executadoDireto) {
   const ch = client.channel(CANAL, { config: { broadcast: { ack: false, self: false } } });
   let n = 0;
   ch.on('broadcast', { event: 'gps' }, (msg) => {
-    try { const pos = calcularPosicao(msg && msg.payload); if (!pos) return;
+    // Lote do Cockpit (E2, 27/10): só o ponto MAIS NOVO vira posição (5 Hz, sem multiplicar mensagens).
+    try { const pts = pontosDoGps(msg && msg.payload); const pos = calcularPosicao(pts[pts.length - 1]); if (!pos) return;
       ch.send({ type: 'broadcast', event: 'posicao', payload: { ...pos, tWall: Date.now() } });
       if ((++n % 25) === 0) console.log(`[nuvem] ${n} posições · frac=${pos.frac}`);
     } catch (e) { /* não derruba o canal */ }

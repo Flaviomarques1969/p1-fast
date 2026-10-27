@@ -81,3 +81,25 @@ sem ponte → recarrega em 15 s.
   Fica para depois (não é E1): import() dos outros blocos sem nova tentativa → resolvido pela recarga de 15 s; texto pequeno
   da camada GPS (6 px → 9 px com a escala 1,5); "não vem do RaceBox" agora quebra linha.
   PRÓXIMO: E2 (envio do notebook, C#) — avisar a janela «P1FAST - GPS TV modo RaceBox» antes de mexer em MainWindow.Live.cs.
+
+## RETOMADA 1027-1647 (27/10, conversa nova após /clear) — E2 em andamento
+Território: reservado também windows/cockpit. Aviso à imac-9c («P1FAST - GPS TV modo RaceBox») feito; ela: sem colisão, manter
+`religacao.GarantirAsync` ANTES das drenagens (mantido); conserto dela da religação = 1d7a32ffc em claude/gps-base-g-racebox-20261027
+(SupabaseRealtimeChannel.cs, ReligacaoNuvem.cs, T4000Capture/Program.cs) — REBASEAR por cima depois do commit da E2.
+Backup: .claude-exec/backup-e2-envio-20261027/.
+FEITO (commit WIP local, sem push):
+- GpsLivePublisher.cs reescrito: lote ~200 ms (topo = fix mais novo, chave aditiva "lote" = anteriores), janela ao vivo 10 s
+  (ForaDoAoVivo), reenvio dos últimos 10 s quando o canal cai (conexão meio-morta, achado da imac-9c), relógio injetável.
+- LivePublisher.cs (motor): janela ao vivo 10 s por chegada (ForaDoAoVivo); SEM reenvio (TV não deduplica 'sample').
+- LetreiroAoVivo.cs (novo, puro) + testes.
+- MainWindow.Live.cs: GPS drena antes do motor; letreiro ~1 Hz em _statusCanal; varredura de subida contínua, só com carro parado.
+- web/cockpit/gps-fonte-unica.js: pontosDoGps (desmonta lote) + criarFiltroRepetidos; cloud-bridge.js usa os dois (cópias iOS idênticas);
+  tools/nuvem-posicao.mjs calcula só o ponto mais novo do lote.
+PROVAS: Domain.Tests 621/621 (dotnet test com DOTNET_ROLL_FORWARD=Major via ~/.claude/fila-pesada/na-fila.sh);
+GpsLivePublisherTests 11/11 com 2 controles por mutação (reenvio desligado → 1 falha; janela desligada → 2 falhas);
+node tests/node-smoke-gps-fonte-unica.mjs 28/28 com controle (ponte antiga → reprova).
+FALTA NA E2: (1) conferência de sintaxe do MainWindow.Live.cs (WinUI não compila no Mac — Roslyn só-sintaxe ou smoke de texto);
+(2) catraca de texto da E2 (tests/node-smoke-tv-envio-lote.mjs: GPS antes do motor, letreiro ligado, varredura contínua);
+(3) npm run smoke:arquitetura + node tests/node-smoke-tv-honesta.mjs + prova Chrome tv-honesta com mensagens em LOTE;
+(4) docs/CONTRATO_DADOS.md: chave "lote" no evento gps; (5) cota Supabase (leitura); (6) rebase em 1d7a32ffc, commit final, push;
+(7) responder imac-9c que o achado do buffer foi tratado no GPS (reenvio 10 s + filtro de repetidos na TV) e no motor só a janela.

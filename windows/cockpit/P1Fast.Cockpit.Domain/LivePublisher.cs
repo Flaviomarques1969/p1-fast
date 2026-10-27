@@ -31,7 +31,12 @@ public interface ILiveChannel
 
 public sealed record LivePublisherConfig(
     int PublishHz = 5,        // mesma taxa do cloud-bridge.js (5 Hz)
-    int FilaMax   = 9000)     // ~30 min a 5 Hz; acima disso descarta o MAIS VELHO (conta)
+    int FilaMax   = 9000,     // rede de segurança; acima disso descarta o MAIS VELHO (conta)
+    // E2 "TV do box ao vivo" (27/10/2026, achado N2): o AO VIVO só leva os últimos ~10 s. Antes a
+    // fila guardava ~30 min e, na volta da internet, despejava o passado na TV como se fosse agora.
+    // Amostra com mais de 10 s na fila sai do ao vivo (contada em ForaDoAoVivo); o disco e a subida
+    // da gravação (sessao_dumps) guardam todas.
+    long JanelaAoVivoMs = 10_000)
 {
     public int PeriodoMs => 1000 / Math.Max(1, PublishHz);
     public static LivePublisherConfig Default { get; } = new();
@@ -43,7 +48,8 @@ public sealed record LivePublisherStats(
     long Descartadas,   // estouro de fila (perda consciente, contada)
     long Erros,
     long Estranguladas, // puladas pelo throttle (esperado, não é perda)
-    long BarradasGuarda // barradas pela trava (sim em produção / fora de faixa)
+    long BarradasGuarda, // barradas pela trava (sim em produção / fora de faixa)
+    long ForaDoAoVivo = 0 // passaram de 10 s na fila: só no disco/gravação
 );
 
 public sealed class LivePublisher
@@ -57,10 +63,11 @@ public sealed class LivePublisher
     private readonly bool _producao;
     private readonly LivePublisherConfig _cfg;
     private readonly Func<long> _agora; // epoch ms
+    private readonly Func<long> _relogioMs; // monotônico: idade na fila (janela do ao vivo)
 
-    private readonly Queue<IDictionary<string, object?>> _fila = new();
+    private readonly Queue<(IDictionary<string, object?> Payload, long ChegadaMs)> _fila = new();
     private long _ultimoEnfileiradoWall = long.MinValue;
-    private long _enviadas, _descartadas, _erros, _estranguladas, _barradas;
+    private long _enviadas, _descartadas, _erros, _estranguladas, _barradas, _foraDoAoVivo;
 
     /// <param name="canalNome">Nome do canal. Se for 'cockpit-bubi-live' exige permitirProducao=true.</param>
     /// <param name="permitirProducao">Trava dura: só true quando o Flávio autorizar tocar produção.</param>
@@ -69,7 +76,8 @@ public sealed class LivePublisher
         string canalNome,
         bool permitirProducao = false,
         LivePublisherConfig? config = null,
-        Func<long>? agora = null)
+        Func<long>? agora = null,
+        Func<long>? relogioMs = null)
     {
         ArgumentNullException.ThrowIfNull(canal);
         if (string.IsNullOrWhiteSpace(canalNome))
@@ -84,6 +92,7 @@ public sealed class LivePublisher
         _producao  = canalNome == CanalProducao;
         _cfg       = config ?? LivePublisherConfig.Default;
         _agora     = agora ?? (() => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+        _relogioMs = relogioMs ?? (() => Environment.TickCount64);
     }
 
     public string Canal => _canalNome;
@@ -91,7 +100,7 @@ public sealed class LivePublisher
 
     public LivePublisherStats GetStats() => new(
         Enviadas: _enviadas, NaFila: _fila.Count, Descartadas: _descartadas,
-        Erros: _erros, Estranguladas: _estranguladas, BarradasGuarda: _barradas);
+        Erros: _erros, Estranguladas: _estranguladas, BarradasGuarda: _barradas, ForaDoAoVivo: _foraDoAoVivo);
 
     /// <summary>Saúde pro operador, NUNCA silenciosa.</summary>
     public string Saude()
@@ -123,17 +132,29 @@ public sealed class LivePublisher
 
         // Fila limitada: se encher, descarta o MAIS VELHO (mantém o ao-vivo fresco) e conta.
         while (_fila.Count >= _cfg.FilaMax) { _fila.Dequeue(); _descartadas++; }
-        _fila.Enqueue(StripSample(sample, tWallCaptura));
+        var agora = _relogioMs();
+        _fila.Enqueue((StripSample(sample, tWallCaptura), agora));
+        Aparar(agora);
+    }
+
+    private void Aparar(long agora)
+    {
+        while (_fila.Count > 0 && agora - _fila.Peek().ChegadaMs > _cfg.JanelaAoVivoMs)
+        {
+            _fila.Dequeue();
+            _foraDoAoVivo++;
+        }
     }
 
     /// <summary>Drena a fila pra nuvem enquanto online e houver entrega. Se a nuvem
     /// cai no meio, PARA (mantém o resto na fila) — reenvia na próxima chamada.</summary>
     public async Task DrenarAsync(CancellationToken ct)
     {
+        Aparar(_relogioMs());
         if (!_canal.Online) return;
         while (_fila.Count > 0 && !ct.IsCancellationRequested)
         {
-            var payload = _fila.Peek();
+            var payload = _fila.Peek().Payload;
             bool ok;
             try { ok = await _canal.PublishAsync("sample", payload, ct).ConfigureAwait(false); }
             catch (OperationCanceledException) { throw; }

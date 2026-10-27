@@ -110,4 +110,38 @@ public class LivePublisherTests
         Assert.Empty(canal.Publicadas);
         Assert.Equal(1, pub.GetStats().BarradasGuarda);
     }
+
+    // E2 "TV do box ao vivo" (27/10/2026): queda longa NÃO despeja o passado na TV — o ao vivo só
+    // leva os últimos ~10 s; o resto é contado (o disco e a gravação guardam tudo).
+    [Fact]
+    public async Task QuedaLonga_AoVivoSoLevaOsUltimos10s_EConta()
+    {
+        var canal = new InMemoryLiveChannel { Online = false };
+        long relogio = 0;
+        var pub = new LivePublisher(canal, "teste", relogioMs: () => relogio);
+
+        for (int i = 0; i < 300; i++) { relogio = i * 200; pub.Oferecer(Amostra(rpm: 3000 + i), i * 200); } // 1 min a 5 Hz
+        await pub.DrenarAsync(CancellationToken.None);
+        var st = pub.GetStats();
+        Assert.InRange(st.NaFila, 50, 51);                   // ~10 s a 5 Hz
+        Assert.Equal(300 - st.NaFila, st.ForaDoAoVivo);
+
+        canal.Online = true;
+        await pub.DrenarAsync(CancellationToken.None);
+        Assert.Equal(299 * 200, TWall(canal.Publicadas[^1].Payload));   // chega até a mais nova
+        Assert.True(TWall(canal.Publicadas[0].Payload) >= 49_800);       // nada de mais de 10 s atrás
+    }
+
+    [Fact]
+    public async Task Controle_QuedaCurta_NadaSaiDoAoVivo()
+    {
+        var canal = new InMemoryLiveChannel { Online = false };
+        long relogio = 0;
+        var pub = new LivePublisher(canal, "teste", relogioMs: () => relogio);
+        for (int i = 0; i < 40; i++) { relogio = i * 200; pub.Oferecer(Amostra(), i * 200); }   // 8 s
+        canal.Online = true;
+        await pub.DrenarAsync(CancellationToken.None);
+        Assert.Equal(40, canal.Publicadas.Count);
+        Assert.Equal(0, pub.GetStats().ForaDoAoVivo);
+    }
 }

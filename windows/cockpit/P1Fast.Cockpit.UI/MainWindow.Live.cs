@@ -405,8 +405,8 @@ public sealed partial class MainWindow
         return null;
     }
 
-    // Fila resiliente de upload (Fase 4): em FUNDO, sobe as sessões ENCERRADAS pendentes
-    // (sem o marcador .uploaded) com retry/backoff. O uploader é resumível+idempotente:
+    // Fila resiliente de upload (Fase 4): em FUNDO, o dia todo, sobe as sessões ENCERRADAS pendentes
+    // (sem o marcador .uploaded) com retry/backoff, só com o carro parado. O uploader é resumível+idempotente:
     // a internet da pista cai/volta → ele retoma de onde parou; entre reinícios a verdade
     // é o disco. NÃO mexe na sessão AO VIVO atual (ela sobe no fim, por DispararUpload).
     // Erro aqui NUNCA derruba a tela do piloto. Sem chave ou sem a ferramenta: não faz nada.
@@ -420,31 +420,40 @@ public sealed partial class MainWindow
 
         return Task.Run(async () =>
         {
-            // Algumas rodadas com espera crescente entre elas: se a rede está fora agora,
-            // tenta de novo daqui a pouco (a pista religa). Marcadores no disco encolhem a
-            // fila a cada rodada; quando nada fica pendente, encerra.
-            for (int rodada = 0; rodada < 6 && !ct.IsCancellationRequested; rodada++)
+            // E2 "TV do box ao vivo" (27/10, achado N5): a varredura vigia O DIA TODO. Antes eram 6
+            // rodadas só no boot, e o stint fechado pela captura automática só subia ao fechar o app
+            // (1 tentativa) ou na partida seguinte. Agora: a cada rodada, sobe o que estiver pendente;
+            // falhou (rede da pista) → tenta de novo com espera crescente (15 s … 2 min); nada
+            // pendente → olha de novo em 1 min. Só sobe com o carro PARADO (nenhuma sessão gravando):
+            // na pista o 5G é do ao vivo da TV do box.
+            int rodada = 0;
+            while (!ct.IsCancellationRequested)
             {
+                TimeSpan espera;
                 List<SessaoNoDisco> noDisco;
                 try { noDisco = LerSessoesDoDisco(pasta); }
-                catch { return; }
+                catch { noDisco = new List<SessaoNoDisco>(); }
 
                 string? idAtual;
                 lock (_liveRecLock) idAtual = _liveRecorder?.SessaoAtualId;
-                var excluir = idAtual is null ? null : new HashSet<string> { idAtual };
 
-                var pend = PendenciasUpload.Selecionar(noDisco, excluir: excluir);
-                if (pend.Count == 0) return; // nada pendente: encerra a varredura
-
-                foreach (var id in pend)
+                var pend = PendenciasUpload.Selecionar(noDisco, excluir: null);
+                if (pend.Count == 0) { rodada = 0; espera = TimeSpan.FromMinutes(1); }
+                else if (idAtual is not null) { espera = TimeSpan.FromSeconds(30); }   // carro andando: espera o box
+                else
                 {
-                    if (ct.IsCancellationRequested) return;
-                    try { await RodarUploadAsync(exe, pasta, id, ct).ConfigureAwait(false); }
-                    catch (OperationCanceledException) { return; }
-                    catch { /* falhou esta: tenta na próxima rodada (resumível) */ }
+                    foreach (var id in pend)
+                    {
+                        if (ct.IsCancellationRequested) return;
+                        try { await RodarUploadAsync(exe, pasta, id, ct).ConfigureAwait(false); }
+                        catch (OperationCanceledException) { return; }
+                        catch { /* falhou esta: tenta na próxima rodada (resumível) */ }
+                    }
+                    rodada++;
+                    espera = TimeSpan.FromSeconds(Math.Min(120, 15 * rodada));
                 }
 
-                try { await Task.Delay(TimeSpan.FromSeconds(15 * (rodada + 1)), ct).ConfigureAwait(false); }
+                try { await Task.Delay(espera, ct).ConfigureAwait(false); }
                 catch { return; }
             }
         }, ct);
@@ -683,11 +692,11 @@ public sealed partial class MainWindow
     }
 
     // Laço da nuvem (C5) — UM só dono do publisher e do canal: conecta, religa sozinho
-    // (backoff ~2 s), oferece ao publisher tudo o que o motor empurrou (ele estrangula
-    // a 5 Hz e enfileira sem perder), drena pra nuvem e publica o último GPS a ~25 Hz
-    // (taxa do RaceBox; evento à parte, sem fila durável — o disco já guardou). O giro do
-    // laço (40 ms) casa com o GPS; o motor segue 5 Hz pelo throttle do Oferecer, não pelo
-    // giro. Roda em fundo até o _liveCts cair. Erro aqui NUNCA derruba a tela do piloto.
+    // (backoff ~2 s), oferece aos publishers o que o motor e o GPS empurraram, drena pra
+    // nuvem (GPS primeiro, em lotes de ~200 ms = 5 mensagens/s com os 25 Hz dentro; motor a
+    // 5 Hz pelo throttle do Oferecer) e escreve o letreiro de saúde do ao vivo. Os dois só
+    // guardam ~10 s pro ao vivo — o passado fica no disco e sobe com a gravação. Roda em
+    // fundo até o _liveCts cair. Erro aqui NUNCA derruba a tela do piloto.
     private async Task LacoNuvemAsync(CancellationToken ct)
     {
         var nuvem = _liveNuvem!;
@@ -695,12 +704,15 @@ public sealed partial class MainWindow
         var gpsPub = _liveGpsPublisher!;
         try { await nuvem.ConnectAsync(ct).ConfigureAwait(false); } catch { /* religa abaixo */ }
         var religacao = new ReligacaoNuvem();
+        var letreiro = new LetreiroAoVivo();
+        long proxLetreiroMs = 0;
+        string? ultimoLetreiro = null;
         try
         {
             while (!ct.IsCancellationRequested)
             {
-                // 1) Motor + GPS: passa pros publishers tudo o que chegou (cada um com sua
-                //    fila-que-não-perde; o motor estrangula a 5 Hz, o GPS é lossless a 25 Hz).
+                // 1) Motor + GPS: passa pros publishers tudo o que chegou (o motor estrangula a
+                //    5 Hz; o GPS vai inteiro, em lotes de ~200 ms; os dois só guardam ~10 s pro ao vivo).
                 while (_liveCloudMotor.TryDequeue(out var item))
                     pub.Oferecer(item.s, item.tWall);
                 while (_liveCloudGps.TryDequeue(out var fix))
@@ -710,14 +722,29 @@ public sealed partial class MainWindow
                 //    esperando a confirmação da entrada ganha até 10 s) — mesma regra do console.
                 await religacao.GarantirAsync(nuvem, ct).ConfigureAwait(false);
 
-                // 3) Drena motor E GPS (cada um reenvia TODO o acumulado quando a nuvem volta).
+                // 3) Drena GPS ANTES do motor (E2 27/10, achado N3: a posição é o que a TV do box mais
+                //    precisa; antes o motor drenava inteiro primeiro e o GPS esperava atrás dele).
+                try { await gpsPub.DrenarAsync(ct).ConfigureAwait(false); }
+                catch (OperationCanceledException) { break; }
+                catch { /* erro de envio: segura na fila, tenta no próximo giro */ }
+
                 try { await pub.DrenarAsync(ct).ConfigureAwait(false); }
                 catch (OperationCanceledException) { break; }
                 catch { /* erro de envio: segura na fila, tenta no próximo giro */ }
 
-                try { await gpsPub.DrenarAsync(ct).ConfigureAwait(false); }
-                catch (OperationCanceledException) { break; }
-                catch { /* erro de envio: segura na fila, tenta no próximo giro */ }
+                // 4) Letreiro de saúde do ao vivo (E2, achado N4), ~1 vez por segundo, na região do
+                //    canal no status: OK / CAIU há X s / ATRASADO / sem GPS. Só repinta se mudou.
+                var agoraMs = Environment.TickCount64;
+                if (agoraMs >= proxLetreiroMs)
+                {
+                    proxLetreiroMs = agoraMs + 1000;
+                    var texto = $"{_liveCanalRotulo}  ·  {letreiro.Atualizar(agoraMs, nuvem.Online, gpsPub.GetStats())}";
+                    if (texto != ultimoLetreiro)
+                    {
+                        ultimoLetreiro = texto;
+                        DispatcherQueue.TryEnqueue(() => { _statusCanal = texto; RenderStatus(); });
+                    }
+                }
 
                 try { await Task.Delay(40, ct).ConfigureAwait(false); } // ~25 Hz, taxa do RaceBox
                 catch (OperationCanceledException) { break; }
