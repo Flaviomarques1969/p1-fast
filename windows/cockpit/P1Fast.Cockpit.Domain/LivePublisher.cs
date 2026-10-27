@@ -29,6 +29,17 @@ public interface ILiveChannel
     Task<bool> PublishAsync(string evento, object payload, CancellationToken cancellationToken);
 }
 
+/// <summary>Canal que sabe até onde a entrega foi CONFIRMADA pelo servidor (pedido da janela do ensaio
+/// no celular, 27/10/2026: cada queda do hotspot perdia até 26 s de GPS escritos num socket morto).
+/// Conexao = número da conexão atual (sobe a cada socket novo). ConfirmadoAteMs = relógio do instante
+/// em que o último heartbeat RESPONDIDO desta conexão entrou no fio: tudo que terminou de ser enviado
+/// ANTES disso, nesta conexão, chegou ao servidor (mesmo socket, em ordem). null = nada confirmado ainda.</summary>
+public interface IConfirmaEntrega
+{
+    int Conexao { get; }
+    long? ConfirmadoAteMs { get; }
+}
+
 public sealed record LivePublisherConfig(
     int PublishHz = 5,        // mesma taxa do cloud-bridge.js (5 Hz)
     int FilaMax   = 9000,     // rede de segurança; acima disso descarta o MAIS VELHO (conta)
