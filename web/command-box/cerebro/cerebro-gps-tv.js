@@ -15,6 +15,11 @@
 //  - setores: frações do traçado do Command Box a partir da chegada (geoParaCommandBox +
 //    fracDe, as peças do nuvem-posicao.mjs). Padrão = 3 setores de 1/3 da volta cada
 //    (ADR-006: "3 setores macro"); a posição exata das linhas é configurável (setoresFrac).
+//  - pancadas (item 7): chave gVert que o notebook publica (gz − zero de gz da parada, mesma
+//    peça AceleracaoCarro). Pancada = |gVert| passa de PANCADA_G (borda de subida); o grupo
+//    acaba quando volta abaixo; vale o pico do grupo, no lugar e na volta do pico.
+//  - consistência (item 7): só números das voltas fechadas (média, desvio, amplitude, desvio
+//    por setor, volta mais longe da média). Sem regra de corte (nada de "107%"): quem julga é a equipe.
 // ============================================================================
 
 import { criarDetectorChegada } from './chegada-gps.js';
@@ -42,6 +47,10 @@ export const RASTRO_G_S = 3;
 export const PASSO_G_MS = 100;
 /** Sem ponto novo há mais que isto (ms) = TV mostra "aguardando o carro". */
 export const SEM_DADO_MS = 2500;
+/** Pancada vertical (zebra, buraco): |gVert| acima disto. Mesmo 0,15 G da análise de 27/10 (capacidade.py: 19 na gravação). */
+export const PANCADA_G = 0.15;
+/** Duas pancadas de voltas diferentes a até esta fração da volta = mesmo lugar (±0,006 ≈ ±13 m em 2,1 km). */
+export const LUGAR_FRAC = 0.006;
 
 const PRECISAO_MAX_M = 50;     // mesmo gate do cerebro-vivo / filtro do notebook (hacc < 50)
 const SALTO_FRAC_MAX = 0.05;   // passo maior que isto entre 2 pontos = projeção pulou: não vale como cruzamento
@@ -60,6 +69,42 @@ function faseDe(gLong) {
 }
 function r1(v) { return Math.round(v * 10) / 10; }
 function r3(v) { return Math.round(v * 1000) / 1000; }
+function media(xs) { return xs.reduce((s, v) => s + v, 0) / xs.length; }
+function desvio(xs) { const m = media(xs); return Math.sqrt(media(xs.map(v => (v - m) * (v - m)))); }
+
+/** Lugares onde há pancada em 2+ voltas diferentes (fração da volta a até LUGAR_FRAC, com a volta da chegada). */
+function lugaresRepetidos(pancadas) {
+  const ps = pancadas.filter(p => p.n >= 1 && p.p != null).slice().sort((a, b) => a.p - b.p);
+  const grupos = [];
+  for (const p of ps) {
+    const g = grupos.find(gr => Math.min(Math.abs(p.p - gr.p), 1 - Math.abs(p.p - gr.p)) <= LUGAR_FRAC);
+    if (g) { g.itens.push(p); g.p = media(g.itens.map(i => i.p)); } else grupos.push({ p: p.p, itens: [p] });
+  }
+  return grupos
+    .map(g => {
+      const voltasN = [...new Set(g.itens.map(i => i.n))].sort((a, b) => a - b);
+      const pico = g.itens.reduce((m, i) => (Math.abs(i.g) > Math.abs(m.g) ? i : m));
+      return { frac: Math.round(g.p * 1e4) / 1e4, x: pico.x, y: pico.y, voltas: voltasN, n: g.itens.length, maxG: pico.g };
+    })
+    .filter(l => l.voltas.length >= 2)
+    .sort((a, b) => b.voltas.length - a.voltas.length || a.frac - b.frac);
+}
+
+/** Consistência das voltas fechadas: só números, sem regra de corte. null com menos de 2 voltas. */
+function consistenciaDe(voltas, nSetores) {
+  if (voltas.length < 2) return null;
+  const ts = voltas.map(v => v.tempoS);
+  const m = media(ts);
+  const fora = voltas.reduce((a, v) => (Math.abs(v.tempoS - m) > Math.abs(a.tempoS - m) ? v : a));
+  const desvioSetoresS = [];
+  for (let i = 0; i < nSetores; i++) {
+    const xs = voltas.filter(v => v.setoresS).map(v => v.setoresS[i]);
+    desvioSetoresS.push(xs.length >= 2 ? r3(desvio(xs)) : null);
+  }
+  return { nVoltas: voltas.length, mediaS: r3(m), desvioS: r3(desvio(ts)),
+    amplitudeS: r3(Math.max(...ts) - Math.min(...ts)), desvioSetoresS,
+    voltaMaisFora: { n: fora.n, difS: r3(fora.tempoS - m) } };
+}
 
 function novosPicos() { return { freioMax: null, acelMax: null, latMax: null, combinadoMax: null, n: 0 }; }
 function somarPico(p, gl, gt) {
@@ -115,6 +160,8 @@ export function criarCerebroGpsTv(opts = {}) {
   let picosUltima = null;
   let perfilVolta = [];           // opção guardarVoltas: pontos da volta corrente
   let distVolta = 0, ultimoGeoVolta = null;
+  const pancadas = [];            // item 7: {n volta da borda de subida, p fração, x, y, g pico (com sinal), t}
+  let grupoPancada = null;        // pancada em curso (|gVert| ainda acima do limite)
 
   function fecharVolta(t) {
     const tempoS = (t - inicioVoltaT) / 1000;
@@ -127,7 +174,10 @@ export function criarCerebroGpsTv(opts = {}) {
       setoresS.push(tempoS - setoresS.reduce((s, v) => s + v, 0));
       setoresS = setoresS.map(r3);
     }
-    const v = { n: voltaN, tempoS: r3(tempoS), setoresS, picosG: picosVolta.n ? picosVolta : null };
+    const daVolta = pancadas.filter(p => p.n === voltaN);
+    const v = { n: voltaN, tempoS: r3(tempoS), setoresS, picosG: picosVolta.n ? picosVolta : null,
+      pancadas: daVolta.length,
+      pancadaMaxG: daVolta.length ? daVolta.reduce((m, p) => (Math.abs(p.g) > Math.abs(m) ? p.g : m), 0) : null };
     if (guardarVoltas) { v.perfil = perfilVolta; v.rastro = rastroVolta; v.distM = Math.round(distVolta); }
     voltas.push(v);
     rastroUltima = rastroVolta; gUltima = gVolta; picosUltima = picosVolta.n ? picosVolta : null;
@@ -166,9 +216,12 @@ export function criarCerebroGpsTv(opts = {}) {
     const gLong = temG ? g.gLong : null, gLat = temG ? g.gLat : null;
     const zeroOk = temG && g.zeroOk === true;
 
+    const gVert = typeof g.gVert === 'number' && Number.isFinite(g.gVert) ? g.gVert : null;
+    const progAqui = pos ? mod1(sentido * (pos.frac - fracChegada)) : null;
+
     // 2) setores — pela fração do traçado contada da chegada
     if (pos) {
-      const prog = mod1(sentido * (pos.frac - fracChegada));
+      const prog = progAqui;
       if (inicioVoltaT != null && progAnterior != null && cruzSetorT.length < nSetores - 1) {
         const linha = setoresFrac[cruzSetorT.length];
         const passo = prog - progAnterior;
@@ -183,6 +236,22 @@ export function criarCerebroGpsTv(opts = {}) {
           kmh: kmh != null ? r1(kmh) : null, x: r1(pos.x), y: r1(pos.y),
           gl: temG ? r3(gLong) : null, ga: temG ? r3(gLat) : null, z: zeroOk });
       }
+    }
+
+    // 2b) pancadas (item 7): borda de subida de |gVert| > PANCADA_G abre o grupo; vale o pico.
+    // A volta do grupo é a da borda de subida (uma pancada nunca conta em duas voltas).
+    if (gVert != null) {
+      if (Math.abs(gVert) > PANCADA_G) {
+        if (!grupoPancada) {
+          grupoPancada = { n: voltaN, p: null, x: null, y: null, g: 0, t };
+          pancadas.push(grupoPancada);
+        }
+        if (Math.abs(gVert) > Math.abs(grupoPancada.g)) {
+          grupoPancada.g = r3(gVert); grupoPancada.t = t;
+          grupoPancada.p = progAqui != null ? Math.round(progAqui * 1e5) / 1e5 : null;
+          grupoPancada.x = pos ? r1(pos.x) : null; grupoPancada.y = pos ? r1(pos.y) : null;
+        }
+      } else grupoPancada = null;
     }
 
     // 3) mapa: rastro da volta com velocidade e fase do G
@@ -208,7 +277,7 @@ export function criarCerebroGpsTv(opts = {}) {
       }
     }
 
-    agora = { t, lat: g.lat, lng, kmh, gLong, gLat, zeroOk,
+    agora = { t, lat: g.lat, lng, kmh, gLong, gLat, zeroOk, gVert,
       gTotal: temG ? r3(Math.hypot(gLong, gLat)) : null,
       x: pos ? r1(pos.x) : null, y: pos ? r1(pos.y) : null, frac: pos ? pos.frac : null };
     return true;
@@ -255,6 +324,13 @@ export function criarCerebroGpsTv(opts = {}) {
         volta: gVolta, ultima: gUltima,
         picosVolta: picosVolta.n ? { ...picosVolta } : null, picosUltima,
       },
+      pancadas: {
+        total: pancadas.length,
+        volta: pancadas.filter(p => p.n === voltaN && p.x != null).map(p => ({ x: p.x, y: p.y, g: p.g })),
+        ultima: ultima ? pancadas.filter(p => p.n === ultima.n && p.x != null).map(p => ({ x: p.x, y: p.y, g: p.g })) : [],
+        lugaresRepetidos: lugaresRepetidos(pancadas),
+      },
+      consistencia: consistenciaDe(voltas, nSetores),
     };
   }
 

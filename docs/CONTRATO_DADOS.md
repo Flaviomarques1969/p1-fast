@@ -31,6 +31,8 @@ GPS (evento `gps`): `lat`, `lng`, `kmh`, `tWall` (+ `numSV`, `fix`, `accM`, `gx/
 G do carro no mesmo evento `gps` (item 5, 27/10/2026): `gLong` (+ acelera / − freia), `gLat` (lateral),
 `zeroOk` (zero do box valendo). Calculados UMA vez no notebook pela peça `AceleracaoCarro.Converter`
 (zero + eixos provados; não aprende de novo) — nenhuma tela recalcula G a partir de `gx/gy/gz`.
+`gVert` (item 7, 27/10/2026): G vertical (+ para cima, sem a gravidade = gz − zero de gz da mesma parada;
+1 G nominal até a 1ª parada) — mesma peça, mesmo evento, também gravado no `.jsonl`; `null` sem gz.
 **Fonte única de posição = RaceBox** (publicado pelo Cockpit com `source: 'racebox'`; Flávio 27/10/2026,
 painel `p1fast-gps-fonte-unica-0911` = C). O iPhone não publica mais `gps`; ponto `source: 'iphone…'`
 é descartado na ponte (`web/cockpit/gps-fonte-unica.js`, catraca `tests/node-smoke-gps-fonte-unica.mjs`).
@@ -52,7 +54,7 @@ Cada cálculo tem UMA casa. Telas usam a casa; **proibido** recriar a conta dent
 | Coach (lições) | `web/command-box/cerebro/cerebro-coach.js` |
 | Alerta preditivo (temperatura) | `web/command-box/cerebro/cerebro-preditivo.js` |
 | Chegada / linha por GPS | `web/command-box/cerebro/chegada-gps.js` |
-| TV do box: mapa com km/h e G, círculo de G, voltas e setores (item 5 do GPS) | `web/command-box/cerebro/cerebro-gps-tv.js` |
+| TV do box: mapa com km/h e G, círculo de G, voltas e setores (item 5 do GPS); pancadas, lugares repetidos e consistência das voltas (item 7) | `web/command-box/cerebro/cerebro-gps-tv.js` |
 | Página da volta e comparação entre 2 voltas no celular (item 6 do GPS; volta/setor vêm da MESMA peça da TV) | `web/command-box/cerebro/cerebro-pagina-volta.js` |
 | Frenagem | `web/command-box/frenagem-real.js` · `frenagem-curvas-reais.js` |
 | Passagem (tempo por trecho) | `web/command-box/passagem-real.js` · `passagem-curvas-reais.js` |

@@ -3,7 +3,7 @@
 // Casa da conta: web/command-box/cerebro/cerebro-gps-tv.js. Offline, sem rede.
 // Cada regra tem um CONTROLE que tem de dar o resultado oposto.
 import { readFileSync } from 'node:fs';
-import { criarCerebroGpsTv, SEM_DADO_MS } from '../web/command-box/cerebro/cerebro-gps-tv.js';
+import { criarCerebroGpsTv, SEM_DADO_MS, PANCADA_G, LUGAR_FRAC } from '../web/command-box/cerebro/cerebro-gps-tv.js';
 
 let ok = 0, fail = 0;
 const t = (nome, cond, extra) => { if (cond) { ok++; console.log('  ok ', nome); } else { fail++; console.log('  FAIL', nome, extra ?? ''); } };
@@ -26,18 +26,18 @@ function ponto(fr, tWall, extra = {}) {
 function rodar(cerebro, tempos, { inicioFrac = 0.9, extra = () => ({}), pularEm = null } = {}) {
   let tw = 1_000_000;
   // volta de saída: de inicioFrac até a chegada (fração 1)
-  for (let fr = inicioFrac; fr < 1; fr += 0.002) { tw += 40; cerebro.feedGps(ponto(fr, tw, extra(tw))); }
+  for (let fr = inicioFrac; fr < 1; fr += 0.002) { tw += 40; cerebro.feedGps(ponto(fr, tw, extra(tw, fr, 0))); }
   for (let v = 0; v < tempos.length; v++) {
     const n = Math.round(tempos[v] * 25);
     for (let i = 1; i <= n; i++) {
       const fr = (i / n) % 1;
       tw += 40;
       if (pularEm != null && v === pularEm.volta && fr > pularEm.de && fr < pularEm.ate) continue;
-      cerebro.feedGps(ponto(fr + 1e-6, tw, extra(tw)));
+      cerebro.feedGps(ponto(fr + 1e-6, tw, extra(tw, fr, v + 1)));
     }
   }
   // um pouco além da chegada
-  for (let i = 1; i <= 25; i++) { tw += 40; cerebro.feedGps(ponto(i / 2000, tw, extra(tw))); }
+  for (let i = 1; i <= 25; i++) { tw += 40; cerebro.feedGps(ponto(i / 2000, tw, extra(tw, i / 2000, tempos.length + 1))); }
   return tw;
 }
 
@@ -136,18 +136,86 @@ function rodar(cerebro, tempos, { inicioFrac = 0.9, extra = () => ({}), pularEm 
     s.mapa.ultima.length > 300 && s.mapa.ultima.every(p => p.x > 100 && p.x < 740 && p.y > 80 && p.y < 800), s.mapa.ultima.length);
 }
 
+// 3b) Item 7 — pancadas (gVert) e consistência das voltas
+{
+  // pancada de 0,6 G em 0,500–0,510 nas voltas 1 e 2 (mesmo lugar); na volta 3, uma em 0,200 (lugar só dela)
+  const bate = (fr, v) => (v === 1 || v === 2) && fr > 0.500 && fr < 0.510 ? 0.3 + 30 * Math.min(fr - 0.500, 0.510 - fr)
+    : (v === 3 && fr > 0.200 && fr < 0.204 ? -0.4 : 0.02);
+  const c = criarCerebroGpsTv({ marcoChegada: MARCO, projetar });
+  rodar(c, [60, 58, 61], { extra: (tw, fr, v) => ({ gVert: bate(fr, v) }) });
+  const s = c.snapshot();
+  t('item 7: 1 pancada por volta (grupo acima do limite conta 1 vez)', s.voltas.map(v => v.pancadas).join() === '1,1,1',
+    JSON.stringify(s.voltas.map(v => v.pancadas)));
+  const picoEsperado = 0.3 + 30 * 0.005;   // pico da rampa no meio do trecho
+  t('item 7: pancada vale o PICO do grupo, com sinal', perto(s.voltas[0].pancadaMaxG, picoEsperado, 0.02) && s.voltas[2].pancadaMaxG === -0.4,
+    JSON.stringify(s.voltas.map(v => v.pancadaMaxG)));
+  const L = s.pancadas.lugaresRepetidos;
+  t('item 7: lugar repetido = o de 0,505 nas voltas 1 e 2 (o da volta 3 sozinho não entra)',
+    L.length === 1 && L[0].voltas.join() === '1,2' && perto(L[0].frac, 0.505, LUGAR_FRAC), JSON.stringify(L));
+  t('item 7: pancadas da última volta no mapa (x/y/g)', s.pancadas.ultima.length === 1 && s.pancadas.ultima[0].x != null);
+  // consistência: esperado DERIVADO das voltas que o próprio cérebro fechou
+  const ts = s.voltas.map(v => v.tempoS), m = ts.reduce((a, b) => a + b, 0) / ts.length;
+  const dp = Math.sqrt(ts.reduce((a, b) => a + (b - m) ** 2, 0) / ts.length);
+  const fora = s.voltas.reduce((a, v) => (Math.abs(v.tempoS - m) > Math.abs(a.tempoS - m) ? v : a));
+  const k = s.consistencia;
+  t('item 7: consistência = média, desvio e amplitude das voltas fechadas',
+    k && k.nVoltas === 3 && perto(k.mediaS, m, 0.001) && perto(k.desvioS, dp, 0.001)
+      && perto(k.amplitudeS, Math.max(...ts) - Math.min(...ts), 0.001), JSON.stringify(k));
+  t('item 7: volta mais longe da média e desvio por setor', k && k.voltaMaisFora.n === fora.n
+    && perto(k.voltaMaisFora.difS, fora.tempoS - m, 0.001) && k.desvioSetoresS.length === 3 && k.desvioSetoresS.every(x => x != null));
+}
+// controles do item 7: G vertical abaixo do limite / sem gVert → 0 pancadas; 2 batidas separadas → 2; 1 volta → sem consistência
+{
+  const c0 = criarCerebroGpsTv({ marcoChegada: MARCO, projetar });
+  rodar(c0, [60, 58], { extra: () => ({ gVert: PANCADA_G - 0.001 }) });
+  const c1 = criarCerebroGpsTv({ marcoChegada: MARCO, projetar });
+  rodar(c1, [60, 58]);
+  const c2 = criarCerebroGpsTv({ marcoChegada: MARCO, projetar });
+  rodar(c2, [60], { extra: (tw, fr, v) => ({ gVert: v === 1 && ((fr > 0.3 && fr < 0.31) || (fr > 0.32 && fr < 0.33)) ? 0.5 : 0 }) });
+  t('controle item 7: abaixo do limite e sem gVert = 0 pancadas', c0.snapshot().pancadas.total === 0 && c1.snapshot().pancadas.total === 0);
+  t('controle item 7: 2 batidas separadas = 2 pancadas', c2.snapshot().voltas[0].pancadas === 2, c2.snapshot().voltas[0].pancadas);
+  t('controle item 7: 1 volta fechada = sem consistência (null)', c2.snapshot().consistencia === null);
+  const fonte = ler('web/command-box/cerebro/cerebro-gps-tv.js').replace(/\/\/.*$/gm, '');
+  t('item 7: sem regra de corte inventada (107%) no cérebro', !/1\.07|107/.test(fonte));
+}
+// 3c) Item 7 na gravação REAL de 27/10 (rua, 7.345 leituras; recorte só de gz/km/h): o cérebro conta as
+// MESMAS pancadas que a régua independente da análise (capacidade.py: borda de subida de |gz−1| > 0,15).
+{
+  const r = JSON.parse(ler('web/command-box/fixtures/gz-rua-2026-10-27.json'));
+  let esperado = 0;
+  for (let i = 1; i < r.gz.length; i++) if (Math.abs(r.gz[i] - 1) > PANCADA_G && Math.abs(r.gz[i - 1] - 1) <= PANCADA_G) esperado++;
+  const c = criarCerebroGpsTv({ marcoChegada: MARCO, projetar });
+  r.gz.forEach((gz, i) => c.feedGps(ponto(0.25, 1_000_000 + i * 40, { kmh: r.kmh[i], gVert: gz - 1 })));
+  const s = c.snapshot();
+  t('real 27/10: pancadas do cérebro = régua da análise', r.gz.length === r._meta.n && esperado > 0 && s.pancadas.total === esperado,
+    s.pancadas.total + ' × ' + esperado);
+  const sem = criarCerebroGpsTv({ marcoChegada: MARCO, projetar });
+  r.gz.forEach((gz, i) => sem.feedGps(ponto(0.25, 1_000_000 + i * 40, { kmh: r.kmh[i] })));
+  t('controle real 27/10: mesma gravação sem gVert = 0 pancadas', sem.snapshot().pancadas.total === 0);
+}
+
 // 4) Ligações na fonte (quem desligar reprova aqui)
 const live = ler('windows/cockpit/P1Fast.Cockpit.UI/MainWindow.Live.cs');
 const dic = (live.match(/_liveCloudGps\.Enqueue\(new Dictionary[\s\S]{0,1800}?\}\);/) || [''])[0];
 t('Cockpit: canal leva gLong/gLat/zeroOk', /\["gLong"\]/.test(dic) && /\["gLat"\]/.test(dic) && /\["zeroOk"\]/.test(dic));
+t('Cockpit (item 7): canal e .jsonl levam gVert da MESMA peça (Converter com f.GZ)',
+  /\["gVert"\]\s*=\s*gVert/.test(dic) && /_gpsFiltro\.Acel\.Converter\(f\.GX, f\.GY, f\.GZ\)/.test(live)
+  && /_liveRecorder\?\.Gps\([\s\S]{0,600}?gVert \}/.test(live));
 t('Cockpit: G do canal sai da MESMA peça do cérebro (Acel.Converter), sem aprender de novo',
   /_gpsFiltro\.Acel\.Converter\(f\.GX, f\.GY(, f\.GZ)?\)/.test(live) && !/_gpsFiltro\.Acel\.Ler\(/.test(live));
 const contrato = ler('docs/CONTRATO_DADOS.md');
 t('contrato: gLong/gLat/zeroOk registrados e casa do cérebro da TV listada',
   /gLong/.test(contrato) && /zeroOk/.test(contrato) && /cerebro-gps-tv\.js/.test(contrato));
+t('contrato (item 7): gVert registrado', /gVert/.test(contrato));
 const tela = ler('_design-reference/mockup-command-box-vista-piloto.html');
 const camada = (tela.match(/<!-- TV-GPS item 5[\s\S]*?<\/script>/) || [''])[0];
 t('TV: Vista Piloto carrega o cérebro da TV pela ponte única', /cerebro-gps-tv\.js/.test(camada) && /cloud-bridge\.js/.test(camada));
+t('TV (item 7): camada desenha pancadas, lugares repetidos e consistência do pacote',
+  /s\.pancadas/.test(camada) && /lugaresRepetidos/.test(camada) && /s\.consistencia/.test(camada)
+  // chamadas DENTRO do quadro da TV (definir a função sem chamar não desenha nada)
+  && /function quadro\(\)[\s\S]*?desenharPancadas\(ui\.pancadas, s\.pancadas\);[\s\S]*?desenharConsistencia\(ui, s\);[\s\S]*?\n  \}/.test(camada));
+t('TV (item 7): camada não conta pancada nem consistência (sem PANCADA_G/desvio na tela)',
+  !/PANCADA_G|gVert\s*[<>]|Math\.sqrt/.test(camada));
 t('TV: a camada só exibe (não projeta GPS nem refaz G/volta)',
   camada.length > 0 && !/geoParaCommandBox|fracDe\(|criarDetectorChegada|Math\.hypot|createClient/.test(camada));
 

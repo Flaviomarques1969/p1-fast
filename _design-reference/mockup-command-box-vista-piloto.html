@@ -8272,7 +8272,9 @@ html,body{
      web/command-box/cerebro/cerebro-gps-tv.js (docs/CONTRATO_DADOS.md §2); esta camada SÓ DESENHA o
      pacote dele. Entrada = ponte única cloud-bridge.js (evento gps do RaceBox, com gLong/gLat/zeroOk
      calculados no notebook). DEV: ?replay-gps=21-06 (&speed=N, padrão 4×; &fim=parar segura a última tela) toca a sessão REAL de pista
-     de 21/06 — rótulo "volta gravada", nunca "ao vivo". Sem GPS e sem o parâmetro, nada muda. -->
+     de 21/06 — rótulo "volta gravada", nunca "ao vivo". Sem GPS e sem o parâmetro, nada muda.
+     Item 7 (27/10): pancadas (gVert) no mapa, anel nos lugares que se repetem em 2+ voltas e a linha de
+     consistência das voltas — tudo do pacote do cérebro (s.pancadas, s.consistencia); a tela não conta. -->
 <style>
   .tv-rastro path{fill:none;stroke-linecap:round;stroke-linejoin:round;}
   .tv-rastro .tv-ultima{stroke:#FFFFFF;stroke-opacity:.30;stroke-width:3;}
@@ -8286,6 +8288,10 @@ html,body{
   .tv-setores .v.melhor{color:#3FE08C;}
   .tv-setores .v.vazio{color:rgba(255,255,255,0.28);}
   .tv-setores .s.atual .k{color:#FF5A4E;}
+  .tv-consist{position:absolute;top:60px;right:12px;z-index:5;pointer-events:none;text-align:right;
+    font-family:'JetBrains Mono','SF Mono',Menlo,monospace;font-size:6px;letter-spacing:.14em;line-height:1.6;
+    text-transform:uppercase;color:rgba(212,175,55,0.62);font-variant-numeric:tabular-nums;}
+  .tv-consist b{font-weight:400;color:var(--text-1);}
   .tv-g{position:absolute;right:8px;bottom:8px;width:100px;z-index:5;pointer-events:none;
     font-family:'JetBrains Mono','SF Mono',Menlo,monospace;}
   .tv-g svg{width:100px;height:100px;display:block;margin-left:auto;}
@@ -8298,7 +8304,8 @@ html,body{
   /* com o cérebro da TV ligado, some o que é demonstração no mapa (deltas fictícios por trecho,
      linha branca fictícia e o "fantasma" de volta de referência que este cérebro não calcula) */
   .b-map.tv-on [data-trechos],.b-map.tv-on [data-traj-live],.b-map.tv-on [data-marker^="ghost"]{display:none;}
-  .b-map.tv-parado .tv-setores,.b-map.tv-parado .tv-g,.b-map.tv-parado .tv-rastro{opacity:.45;}
+  .b-map.tv-parado .tv-setores,.b-map.tv-parado .tv-g,.b-map.tv-parado .tv-rastro,
+  .b-map.tv-parado .tv-consist,.b-map.tv-parado .tv-pancadas{opacity:.45;}
 </style>
 <script type="module">
   import { criarCerebroGpsTv } from '/web/command-box/cerebro/cerebro-gps-tv.js';
@@ -8330,12 +8337,15 @@ html,body{
     if(!mapa || !grupo) return null;
     var g = document.createElementNS(NS, 'g'); g.setAttribute('class', 'tv-rastro'); g.setAttribute('data-tv-rastro', '');
     grupo.appendChild(g);
+    var gp = document.createElementNS(NS, 'g'); gp.setAttribute('class', 'tv-pancadas'); gp.setAttribute('data-tv-pancadas', '');
+    grupo.appendChild(gp);
+    var cons = document.createElement('div'); cons.className = 'tv-consist'; cons.setAttribute('data-tv-consist', '');
     var set = document.createElement('div'); set.className = 'tv-setores'; set.setAttribute('data-tv-setores', '');
     var circ = document.createElement('div'); circ.className = 'tv-g'; circ.setAttribute('data-tv-g', '');
     circ.innerHTML = '<svg viewBox="-60 -60 120 120"></svg><div class="tv-g-txt" data-tv-g-txt></div>';
     var leg = document.createElement('div'); leg.className = 'tv-legenda'; leg.setAttribute('data-tv-legenda', '');
-    [set, circ, leg].forEach(function(el){ el.style.display = 'none'; mapa.appendChild(el); });
-    return { mapa: mapa, rastro: g, set: set, circ: circ, circSvg: circ.querySelector('svg'),
+    [set, cons, circ, leg].forEach(function(el){ el.style.display = 'none'; mapa.appendChild(el); });
+    return { mapa: mapa, rastro: g, pancadas: gp, cons: cons, set: set, circ: circ, circSvg: circ.querySelector('svg'),
       circTxt: circ.querySelector('[data-tv-g-txt]'), leg: leg };
   }
 
@@ -8398,6 +8408,34 @@ html,body{
     ui.set.innerHTML = h;
   }
 
+  // item 7: pancadas da volta (branco) e da última (apagado); anel laranja = lugar que bate em 2+ voltas
+  function desenharPancadas(el, pc){
+    var h = '';
+    pc.lugaresRepetidos.forEach(function(l){
+      if(l.x == null) return;
+      h += '<circle cx="' + l.x + '" cy="' + l.y + '" r="15" fill="none" stroke="#FF8C66" stroke-opacity=".75" stroke-width="2"/>'
+        + '<text x="' + (l.x + 19) + '" y="' + (l.y + 4) + '" fill="#FF8C66" font-size="13" font-family="JetBrains Mono,Menlo,monospace">'
+        + l.voltas.length + ' voltas</text>';
+    });
+    pc.ultima.forEach(function(p){ h += '<circle cx="' + p.x + '" cy="' + p.y + '" r="4" fill="#FFFFFF" fill-opacity=".30"/>'; });
+    pc.volta.forEach(function(p){ h += '<circle cx="' + p.x + '" cy="' + p.y + '" r="5.5" fill="#FFFFFF" fill-opacity=".85" stroke="#0B0B0F" stroke-width="1"/>'; });
+    el.innerHTML = h;
+  }
+
+  function desenharConsistencia(ui, s){
+    var k = s.consistencia, pc = s.pancadas, l = [];
+    if(k) l.push('consistência <b>±' + k.desvioS.toFixed(2).replace('.', ',') + ' s</b> · amplitude <b>'
+      + k.amplitudeS.toFixed(2).replace('.', ',') + ' s</b> · ' + k.nVoltas + ' voltas',
+      'mais longe da média: <b>V' + k.voltaMaisFora.n + ' ' + (k.voltaMaisFora.difS >= 0 ? '+' : '−')
+      + Math.abs(k.voltaMaisFora.difS).toFixed(2).replace('.', ',') + ' s</b>');
+    else l.push('consistência — (precisa de 2 voltas)');
+    var ult = s.ultimaVolta;
+    l.push('pancadas <b>' + (s.voltaAtual ? pc.volta.length : 0) + '</b> nesta volta'
+      + (ult && ult.pancadas != null ? ' · <b>' + ult.pancadas + '</b> na última' : '')
+      + (pc.lugaresRepetidos.length ? ' · <b>' + pc.lugaresRepetidos.length + '</b> lugar(es) repetido(s)' : ''));
+    ui.cons.innerHTML = l.join('<br>');
+  }
+
   function desenharTempos(s){
     function por(sel, txt){ var e = document.querySelector(sel); if(e) e.textContent = txt; return e; }
     por('[data-overlay-last]', fmt(s.ultimaVolta && s.ultimaVolta.tempoS));
@@ -8427,7 +8465,7 @@ html,body{
     if(!window.__tvGps.ativo){
       window.__tvGps.ativo = true;
       ui.mapa.classList.add('tv-on');
-      [ui.set, ui.circ, ui.leg].forEach(function(el){ el.style.display = ''; });
+      [ui.set, ui.cons, ui.circ, ui.leg].forEach(function(el){ el.style.display = ''; });
     }
     ui.mapa.classList.toggle('tv-parado', !s.fresco);
     window.__tvGps.fresco = s.fresco; window.__tvGps.dev = !!rotuloDev;
@@ -8438,6 +8476,8 @@ html,body{
     desenharRastro(ui.rastro, s.mapa.volta, s.mapa.ultima);
     desenharCirculo(ui, s.circuloG);
     desenharSetores(ui, s);
+    desenharPancadas(ui.pancadas, s.pancadas);
+    desenharConsistencia(ui, s);
     desenharTempos(s);
     desenharLegenda(ui, s);
   }

@@ -91,7 +91,7 @@ t('controle: gravação sem G (21/06) → página sem G', pR.sessao.temG === fal
 // o notebook grava o G no .jsonl (o arquivo que a página lê), calculado UMA vez antes do disco
 const live = ler('windows/cockpit/P1Fast.Cockpit.UI/MainWindow.Live.cs');
 const corpoGps = (live.match(/private void OnLiveGps\(RaceBoxFix f\)[\s\S]*?_liveCloudGps\.Enqueue/) || [''])[0];
-const iConv = corpoGps.indexOf('_gpsFiltro.Acel.Converter(f.GX, f.GY)'), iDisco = corpoGps.indexOf('_liveRecorder?.Gps(');
+const iConv = corpoGps.search(/_gpsFiltro\.Acel\.Converter\(f\.GX, f\.GY(, f\.GZ)?\)/), iDisco = corpoGps.indexOf('_liveRecorder?.Gps(');
 // só o objeto gravado (new { … }), sem comentários — comentário que cita gLong não conta
 const disco = ((corpoGps.slice(iDisco).match(/new\s*\{[^}]*\}/) || [''])[0]);
 t('notebook: G do carro calculado antes do disco e gravado no .jsonl (gLong, gLat, zeroOk)',
