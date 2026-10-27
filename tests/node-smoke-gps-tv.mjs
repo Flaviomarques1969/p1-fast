@@ -385,5 +385,14 @@ t('TV (item 9): camada não julga giro (sem detector, EXCESSO_ ou giro esperado 
 t('TV: a camada só exibe (não projeta GPS nem refaz G/volta)',
   camada.length > 0 && !/geoParaCommandBox|fracDe\(|criarDetectorChegada|Math\.hypot|createClient/.test(camada));
 
+// 27/10: a camada pendura o rastro DENTRO de .track-transformed; com fill-box, um ponto fora da pista
+// (carro no box) aumentava a caixa e a pista inteira saía da tela. O giro tem centro fixo, igual ao dos marcadores.
+const cssPista = (tela.match(/\.track-transformed\{[^}]*\}/) || [''])[0].replace(/\/\*[\s\S]*?\*\//g, '');
+const cssMarcas = (tela.match(/\.markers-transformed\{[^}]*\}/) || [''])[0];
+const origem = (c) => (c.match(/transform-origin:\s*([^;]+);/) || [])[1];
+t('TV: pista gira por centro FIXO (view-box), igual aos marcadores — ponto fora da pista não arrasta o mapa',
+  /transform-box:\s*view-box/.test(cssPista) && !/fill-box/.test(cssPista)
+  && !!origem(cssPista) && origem(cssPista) === origem(cssMarcas));
+
 console.log(`\ngps-tv: ${ok} ok / ${fail} fail`);
 process.exit(fail ? 1 : 0);

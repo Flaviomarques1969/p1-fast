@@ -16,7 +16,17 @@ import { pontoGpsAceito } from './gps-fonte-unica.js';
 
 const SUPABASE_ANON = SUPABASE_ANON_KEY;
 
-const CHANNEL_NAME    = 'cockpit-bubi-live';
+// Canal padrão = AO VIVO. A página aberta com ?canal=cockpit-bubi-dev-teste (TV do box no
+// ensaio) ouve o canal de teste — vale para TODOS os blocos da página, que dividem esta ponte.
+// Também dá para trocar por código antes de conectar: usarCanal(nome). Só nomes cockpit-bubi-*.
+const CANAL_VALIDO   = /^cockpit-bubi-[a-z0-9-]{1,40}$/;
+let CHANNEL_NAME     = (function () {
+  try {
+    const c = new URLSearchParams(globalThis.location && globalThis.location.search || '').get('canal');
+    if (c && CANAL_VALIDO.test(c)) return c;
+  } catch { /* fora do navegador: padrão */ }
+  return 'cockpit-bubi-live';
+})();
 const PUBLISH_HZ      = 5;
 const PUBLISH_PERIOD  = 1000 / PUBLISH_HZ;
 
@@ -84,6 +94,12 @@ export function onEvento(fn) {
 /** Registrar callback pra POSIÇÃO já calculada na nuvem (a tela só exibe). */
 export function onPosicao(fn) {
   if (typeof fn === 'function') _onPosicao.push(fn);
+}
+
+/** Trocar o canal ANTES de conectar (depois de conectado não muda). Devolve o canal em uso. */
+export function usarCanal(nome) {
+  if (!_channel && typeof nome === 'string' && CANAL_VALIDO.test(nome)) CHANNEL_NAME = nome;
+  return CHANNEL_NAME;
 }
 
 export async function startCloudBridge() {

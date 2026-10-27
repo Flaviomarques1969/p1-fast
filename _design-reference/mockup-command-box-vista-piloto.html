@@ -304,8 +304,11 @@ html,body{
 }
 .track-transformed{
   transform: rotate(-106deg) scale(1.140) translate(300px, -24px);
-  transform-origin: 426px 430px;
-  transform-box: fill-box;
+  /* centro de giro FIXO, igual ao dos marcadores (= caixa do #track + 426/430). Era fill-box: a camada
+     TV-GPS pendura o rastro neste grupo e, com o carro no box (fora da pista), a caixa crescia e a
+     pista inteira saía da tela (27/10). */
+  transform-origin: 596.55px 580.11px;
+  transform-box: view-box;
 }
 .markers-transformed{
   transform: rotate(-106deg) scale(1.140) translate(300px, -24px);
@@ -5862,6 +5865,8 @@ html,body{
   // ─── LIVE UPDATES — chamados a cada tick do mapAnim com liveT (0..1) ────
   // HUD: textContent das 7 métricas. Sem rebuild — só substitui texto.
   function updateLiveHUD(liveT){
+    // MODO RACEBOX (27/10): o HUD honesto mora noutro escopo (setupLigacaoAoVivo) — chamado por window.
+    if(window.__tvRacebox && typeof window.__hudReal === 'function'){ window.__hudReal(); return; }
     var spd = liveSpeed(liveT);
     var d   = liveDelta(liveT);
     var g   = liveGear(liveT);
@@ -7846,8 +7851,9 @@ html,body{
       if(window.__renderShiftLightFromValues) window.__renderShiftLightFromValues(rpmReal, marcha, rpmTroca);
     }, 100);
 
-    // HUD honesto: real onde há sensor, "—" onde não há
-    updateLiveHUD = function(){
+    // HUD honesto: real onde há sensor, "—" onde não há. Este bloco vive noutro escopo: a troca
+    // direta de updateLiveHUD não pegava (27/10) — o HUD do escopo principal chama window.__hudReal.
+    window.__hudReal = function(){
       function set(f,v){ var el=document.querySelector('[data-hud="'+f+'"]'); if(el) el.textContent=v; }
       set('velocidade', (REAL.fresh && REAL.kmh!=null) ? Math.round(REAL.kmh) : '—');
       if(typeof window.__updateSpeedNeedle === 'function') window.__updateSpeedNeedle();
@@ -8132,7 +8138,7 @@ html,body{
       if(window.__cbSetEstado) window.__cbSetEstado('cb-wait','VELOCÍMETRO · volta gravada (do GPS)');
       var dur = serie[serie.length-1].tMs || 1, t0 = performance.now(), vel = 4; // 4× pra demonstração
       (function passo(){
-        if(window.__velAoVivoReal) return;            // se o carro ao vivo chegar, para o gravado
+        if(window.__velAoVivoReal || window.__tvRacebox) return;   // carro ao vivo (ou RaceBox) chegou: para o gravado
         var tg = ((performance.now()-t0)*vel) % dur;
         var i=0; for(var k=0;k<serie.length;k++){ if(serie[k].tMs<=tg) i=k; else break; }
         window.__cbFeedGps({ kmh: serie[i].kmh });    // só velocidade (não mexe no mapa)
@@ -8601,9 +8607,85 @@ html,body{
       var ultTw = null, chegou = 0;
       relogio = function(){ return ultTw == null ? Date.now() : ultTw + (performance.now() - chegou); };
       cb.onGpsPoint(function(p){ if(cerebro.feedGps(p)){ ultTw = p.tWall; chegou = performance.now(); } });
+      // mesmo canal do resto da tela (?canal=cockpit-bubi-dev-teste no ensaio); sem ?canal = AO VIVO
+      var canalUrl = new URLSearchParams(location.search).get('canal');
+      if(canalUrl && cb.usarCanal) cb.usarCanal(canalUrl);
       cb.startCloudBridge().catch(function(){});
     }).catch(function(e){ console.warn('[TV-GPS] ponte indisponível:', e); });
   }
+</script>
+<!-- MODO RACEBOX (27/10/2026, Flávio: "vai ter que vir tudo do RaceBox porque não estaremos ligados
+     ainda na injeção eletrônica"). Com o RaceBox mandando posição boa (fix 3), a TV só mostra o que
+     ELE mede: velocidade, km rodados na sessão, satélites e o mapa (pacote TV-GPS: rastro, G, trechos).
+     Todo bloco sem fonte no RaceBox fica coberto ("não vem do RaceBox") — nada de número de exemplo.
+     Liga sozinho no 1º ponto bom e não desliga na sessão (sem flicker); a volta gravada DEV não liga. -->
+<style>
+  body.tv-racebox [data-block-id].tv-nao-racebox{filter:none!important;opacity:1!important;}
+  body.tv-racebox [data-block-id].tv-nao-racebox > *{visibility:hidden!important;}
+  body.tv-racebox [data-block-id].tv-nao-racebox::after{content:"não vem do RaceBox"!important;
+    position:absolute;top:50%;left:50%;right:auto;transform:translate(-50%,-50%);z-index:6;white-space:nowrap;
+    background:#14161c;color:#7d828c;font:700 9px/1 -apple-system,Segoe UI,sans-serif;letter-spacing:.08em;
+    text-transform:uppercase;padding:4px 9px;border-radius:999px;border:1px solid #262a33;pointer-events:none;}
+  body.tv-racebox .b-header .messages{visibility:hidden;}
+</style>
+<script type="module">
+  (function(){
+    // Blocos que mostram dado do RaceBox; o resto é coberto. Header: só GPS (satélites) e REC.
+    var DO_RACEBOX = { mapa:1, hud:1, header:1 };
+    var est = { ativo:false, sats:null, km:0, ult:null };
+    window.__tvRacebox = false;
+
+    function raio(a,b){   // metros entre 2 pontos (haversine)
+      var R=6371000, r=Math.PI/180, dLa=(b.lat-a.lat)*r, dLo=(b.lng-a.lng)*r;
+      var h=Math.sin(dLa/2)*Math.sin(dLa/2)+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dLo/2)*Math.sin(dLo/2);
+      return 2*R*Math.asin(Math.min(1,Math.sqrt(h)));
+    }
+    function pintarOdometro(){
+      var t = est.km.toFixed(1); while(t.length < 5) t = '0' + t;   // 000.0 … 999.9 km
+      var cel = document.querySelectorAll('[data-hud="odometro"] .sg-odo-cell text');
+      for(var i=0;i<cel.length;i++) cel[i].textContent = t.charAt(t.length - cel.length + i) || '';
+    }
+    function pintarCabecalho(){
+      document.querySelectorAll('.b-header .health .h-cell').forEach(function(c){
+        var k = (c.querySelector('.h-key')||{}).textContent, v = c.querySelector('.h-val');
+        if(!v) return;
+        if(k === 'GPS') v.textContent = est.sats != null ? est.sats + 'sat' : '—';
+        else if(k !== 'REC') { v.textContent = '—'; c.classList.remove('ok'); }
+      });
+    }
+    function cobrir(){
+      document.querySelectorAll('[data-block-id]').forEach(function(el){
+        el.classList.toggle('tv-nao-racebox', !DO_RACEBOX[el.getAttribute('data-block-id')]);
+      });
+    }
+    function ligar(){
+      est.ativo = true; window.__tvRacebox = true;
+      document.body.classList.add('tv-racebox');
+      cobrir(); pintarOdometro(); pintarCabecalho();
+      setInterval(function(){ cobrir(); pintarCabecalho(); }, 1000);   // blocos novos do editor também
+    }
+    function feed(p){
+      if(!p || p.source !== 'racebox') return;
+      var bom = p.fix >= 3 && typeof p.lat === 'number' && typeof p.lng === 'number' && p.lat !== 0;
+      if(!bom) return;
+      if(typeof p.numSV === 'number') est.sats = p.numSV;
+      if(!est.ativo){ if(window.__tvGps && window.__tvGps.dev) return; ligar(); }
+      var t = typeof p.tWall === 'number' ? p.tWall : Date.now();
+      var aqui = { lat:p.lat, lng:p.lng, t:t };
+      // km rodados: só com o carro andando, precisão boa e sem buraco grande entre pontos
+      if(est.ult && t > est.ult.t && t - est.ult.t < 2000 && (p.kmh||0) >= 3 && !(p.accM > 10)){
+        var d = raio(est.ult, aqui); if(d < 60) est.km += d / 1000;
+      }
+      est.ult = aqui;
+      pintarOdometro();
+    }
+    window.__tvRaceboxFeed = feed;   // prova fora do ar entra pelo mesmo caminho
+    window.__tvRaceboxEstado = function(){ return { ativo:est.ativo, sats:est.sats, km:+est.km.toFixed(3) }; };
+    import('/web/cockpit/cloud-bridge.js').then(function(cb){
+      cb.onGpsPoint(feed);
+      cb.startCloudBridge().catch(function(){});
+    }).catch(function(e){ console.warn('[MODO RACEBOX] ponte indisponível:', e); });
+  })();
 </script>
 </body>
 </html>
