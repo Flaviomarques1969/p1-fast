@@ -122,3 +122,17 @@ Começo pelo FALTA NA E2 (1)→(7) acima; nada refeito. Servidor 5199 no ar (200
   bloco fora de mapa/hud/header; isso está ERRADO para os blocos que o GPS alimenta. Nova etapa E2b (antes da câmera): mapear bloco a
   bloco da Vista Piloto o que sai do GPS (gLong/gLat/kmh/posição → freio, aceleração, trail, voltas, tempos, gráficos) e ligar pelo
   cérebro (cerebro-gps-tv.js / frenagem-real / forma-trail-tipo), cobrindo só o que depende do motor (rpm, temperatura etc.).
+
+## E2 PRONTA (27/10 ~17h40) — branch claude/tv-box-aovivo-e2-20261027 no GitHub (rebase em 1d7a32ffc; antiga intocada: push com sobrescrita barrado)
+Provas pós-rebase: Domain.Tests 625/625 · tv-envio-lote 18/18 · tv-honesta 37/37 · gps-fonte-unica 28/28 · gps-tv 91/91 · nuvem-posicao 7/7 ·
+arquitetura 37/37 · prova-tv-lote 13/13 · prova-tv-honesta 32/32 · sintaxe MainWindow.Live.cs 0. imac-9c avisada (SendMessage).
+
+## E2b EM ANDAMENTO — blocos da TV pelo GPS (pedido dele 27/10 ~17h20). Mapa: .claude-exec/e2b-mapa-blocos-gps-20261027.md
+FEITO (sem commit ainda): casa nova web/command-box/cerebro/cerebro-tv-blocos-gps.js (stint, deltaAcum, curva{passagem, frenagem pelo
+G MEDIDO, vmin}, coach) + catraca tests/node-smoke-tv-blocos-gps.mjs 24/24 (achou e corrigiu: "soltou" media desde o 1º ponto do pico).
+PRÓXIMO: (1) registrar a casa em docs/CONTRATO_DADOS.md e na trava tests/node-smoke-arquitetura-dado.mjs; catraca no `npm run smoke`;
+(2) TV: camada TV-GPS cria o cerebro-gps-tv com guardarVoltas:true e passa o snapshot à casa nova (4 Hz); DO_RACEBOX ganha passagem,
+frenagem, vmin, stint, stint-bar, delta-acum, coach; pintar cada bloco com o pacote (campos sem fonte = "—": PB histórico, plano, nota,
+preditivo, pneu); desligar massa de maio/FAKE_LAPS nesses blocos no modo TV; rodapé da frenagem "G medido pelo RaceBox";
+(3) prova Chrome: replay 21/06 com G pela física via ponte falsa (lote) → blocos com número real; controle = backup do HTML;
+(4) commit + push na branch -e2-. Depois E3 câmera, E4 atalho, E5 pacote.
