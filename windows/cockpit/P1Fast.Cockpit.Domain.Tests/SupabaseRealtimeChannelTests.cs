@@ -10,6 +10,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
@@ -310,5 +311,98 @@ public class SupabaseRealtimeChannelTests
         await religa;
         Assert.True(await AteAsync(() => canal.Online), "na rede nova (celular) volta a ficar online");
         Assert.True(await canal.PublishAsync("gps", new { lat = 3 }, CancellationToken.None));
+    }
+
+    // ── 10–13) CONFIRMAÇÃO DE ENTREGA (ensaio no celular 27/10: cada queda do hotspot perdia até 26 s
+    //    de GPS). Heartbeat padrão de 5 s; o heartbeat RESPONDIDO, no socket ativo, diz até quando a
+    //    entrega está confirmada (hora em que ELE entrou no fio); religação começa do zero. ──
+    private static FakeRealtimeSocket SocketQueResponde(Func<string, bool>? responderHeartbeat = null) => new()
+    {
+        AoEnviar = (s, msg) =>
+        {
+            var ev = Evento(msg);
+            if (ev == "phx_join") s.ServidorEnvia(ReplyOk(Topic, RefDe(msg)));
+            if (ev == "heartbeat" && (responderHeartbeat?.Invoke(msg) ?? true)) s.ServidorEnvia(ReplyOk("phoenix", RefDe(msg)));
+        }
+    };
+
+    [Fact]
+    public async Task HeartbeatPadrao_EhDe5Segundos()
+    {
+        await using var canal = new SupabaseRealtimeChannel(Url, Anon, Canal, socketFactory: () => new FakeRealtimeSocket());
+        Assert.Equal(5, SupabaseRealtimeChannel.HeartbeatSegundosDefault);
+        Assert.Equal(TimeSpan.FromSeconds(5), canal.HeartbeatIntervalo);   // era 25 s: queda percebida em 25–50 s
+    }
+
+    [Fact]
+    public async Task HeartbeatRespondido_ConfirmaAteAHoraEmQueEleEntrouNoFio()
+    {
+        long agora = 7_000;
+        var fake = SocketQueResponde();
+        await using var canal = new SupabaseRealtimeChannel(Url, Anon, Canal, socketFactory: () => fake,
+            heartbeatIntervalo: TimeSpan.FromMilliseconds(100), relogioMs: () => Interlocked.Read(ref agora));
+
+        Assert.Equal(new ConfirmacaoEntrega(0, null), canal.Confirmacao);   // antes de conectar: nada
+        await canal.ConnectAsync(CancellationToken.None);
+        Assert.Equal(1, canal.Confirmacao.Conexao);
+        Assert.True(await AteAsync(() => canal.Confirmacao.AteMs == 7_000), $"confirmação = {canal.Confirmacao}");
+
+        Interlocked.Exchange(ref agora, 9_000);                              // o próximo heartbeat sai às 9 s
+        Assert.True(await AteAsync(() => canal.Confirmacao.AteMs == 9_000), $"confirmação = {canal.Confirmacao}");
+        Assert.Equal(1, canal.Confirmacao.Conexao);
+    }
+
+    [Fact]
+    public async Task HeartbeatComRefErrado_OuStatusErro_NaoConfirma()
+    {
+        var refErrado = new FakeRealtimeSocket
+        {
+            AoEnviar = (s, msg) =>
+            {
+                var ev = Evento(msg);
+                if (ev == "phx_join") s.ServidorEnvia(ReplyOk(Topic, RefDe(msg)));
+                if (ev == "heartbeat") s.ServidorEnvia(ReplyOk("phoenix", "999999"));    // resposta de outra coisa
+            }
+        };
+        var statusErro = new FakeRealtimeSocket
+        {
+            AoEnviar = (s, msg) =>
+            {
+                var ev = Evento(msg);
+                if (ev == "phx_join") s.ServidorEnvia(ReplyOk(Topic, RefDe(msg)));
+                if (ev == "heartbeat") s.ServidorEnvia(ReplyErro("phoenix", RefDe(msg)));  // ref certo, status erro
+            }
+        };
+        foreach (var fake in new[] { refErrado, statusErro })
+        {
+            await using var canal = Criar(fake, heartbeatMs: 100);
+            await canal.ConnectAsync(CancellationToken.None);
+            bool DoisHeartbeats() { lock (fake.Enviadas) return fake.Enviadas.Count(m => Evento(m) == "heartbeat") >= 2; }
+            Assert.True(await AteAsync(DoisHeartbeats), "esperava 2 heartbeats enviados");
+            await Task.Delay(150);
+            Assert.Null(canal.Confirmacao.AteMs);
+        }
+    }
+
+    [Fact]
+    public async Task Religacao_SobeAConexao_EZeraAConfirmacao()
+    {
+        long agora = 1_000;
+        var fila = new Queue<FakeRealtimeSocket>(new[] { SocketQueResponde(), SocketQueResponde() });
+        await using var canal = new SupabaseRealtimeChannel(Url, Anon, Canal, socketFactory: () => fila.Dequeue(),
+            heartbeatIntervalo: TimeSpan.FromMilliseconds(100), relogioMs: () => Interlocked.Read(ref agora));
+
+        await canal.ConnectAsync(CancellationToken.None);
+        Assert.True(await AteAsync(() => canal.Confirmacao.AteMs == 1_000));
+        Assert.Equal(1, canal.Confirmacao.Conexao);
+
+        // religa SEM o 2º socket responder heartbeat ainda: a confirmação da 1ª não vale na 2ª
+        Interlocked.Exchange(ref agora, 2_000);
+        await canal.ConnectAsync(CancellationToken.None);
+        var logoDepois = canal.Confirmacao;
+        Assert.Equal(2, logoDepois.Conexao);
+        Assert.True(logoDepois.AteMs is null or 2_000, $"confirmação da conexão velha vazou: {logoDepois}");
+        Assert.True(await AteAsync(() => canal.Confirmacao.AteMs == 2_000), $"confirmação = {canal.Confirmacao}");
+        Assert.Equal(2, canal.Confirmacao.Conexao);
     }
 }

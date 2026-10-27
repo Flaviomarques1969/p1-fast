@@ -191,3 +191,30 @@ Seguir do PRÓXIMO 1 da seção E3 (controle da catraca → smoke/arquitetura/co
   ACHADO REAL (A9, sistema errado): video.currentTime de MediaStream anda com o relógio com a câmera TRAVADA → TV dizia "CÂMERA AO VIVO". Conserto: requestVideoFrameCallback (só quadro novo) + totalVideoFrames de reserva; tarja tv-nao-racebox sai na hora (A4). Controle: mesma prova com o video-tv.js de antes (backup video-tv.js.antes-quadro-real) = 31 ok / 2 FAIL (A4, A9), saída 1. Catraca tv-video 46/46 com o item novo.
   Régua errada (D3/D4): sem ponte do GPS a TV se recarrega em 15 s (E1) e o relógio adiantado recarregava a página → prova passou a servir ponte falsa quieta.
   npm run smoke um a um: 82/83 — único FAIL schema-parity, ANTERIOR à obra.
+- (1027-1805) E3 COMMITADA E NO GITHUB: fb5eaf020 (branch claude/tv-box-aovivo-e2-20261027). Nada publicado.
+### CONSERTO DO HEARTBEAT (pedido imac-9c) — EM ANDAMENTO, SEM COMMIT. Backup: .claude-exec/backup-heartbeat-confirmado-20261027/
+Escrito e COMPILA (dotnet build Domain: 0 aviso/0 erro), testes AINDA NÃO escritos nem rodados:
+- LivePublisher.cs: interface nova IConfirmaEntrega { int Conexao; long? ConfirmadoAteMs }.
+- SupabaseRealtimeChannel.cs: heartbeat padrão 25 s → 5 s (HeartbeatSegundosDefault, HeartbeatIntervalo público); relogioMs injetável;
+  Conexao sobe a cada socket (zera a confirmação); hbRef + hora do heartbeat medida DENTRO da trava de envio (naVez); resposta phoenix
+  com o ref em voo no socket ativo → ConfirmadoAteMs.
+- GpsLivePublisher.cs: Enviado(Item, ConcluidoMs, Conexao); Confirmar() solta só o confirmado (ConcluidoMs < ConfirmadoAteMs na mesma
+  conexão) e devolve tudo se a conexão trocou sem ver offline; guarda sem confirmação 30 s; devolvido vale 30 s na fila (novo 10 s);
+  FilaMax 1000 → 2000; stats AguardandoConfirmacao. Canal sem IConfirmaEntrega (InMemory) = comportamento antigo.
+PRÓXIMO: (1) testes novos em GpsLivePublisherTests (canal falso com IConfirmaEntrega: socket morto 26 s sem perceber → reenvia tudo desde
+o último confirmado; confirmado NÃO é reenviado; conexão trocada entre drenagens devolve; guarda de 30 s corta o mais velho; controle
+InMemory perde o trecho) + SupabaseRealtimeChannelTests (padrão 5 s; heartbeat respondido avança ConfirmadoAteMs = hora do envio;
+ref errado não confirma; religação zera e sobe Conexao); (2) dotnet test do Domain.Tests inteiro + controle contra o backup; (3) npm run
+smoke; commit+push; (4) SendMessage à imac-9c (uds:/tmp/cc-socks/94183.sock) com o commit; (5) E4.
+PONTO DE PARADA 1027-1821 (27/10 ~18h21): E3 commitada (fb5eaf020); conserto do heartbeat escrito e compilando, SEM testes nem commit — seguir do PRÓXIMO (1) da seção CONSERTO DO HEARTBEAT.
+
+### RETOMADA 1027-1821 (27/10, depois do /clear)
+Segue do PRÓXIMO (1) do CONSERTO DO HEARTBEAT: testes → dotnet test + controle contra backup → smoke → commit/push → aviso à imac-9c → E4.
+- (RETOMADA 1027-1821) CONSERTO DO HEARTBEAT FECHADO. Furo achado antes dos testes: o publisher lia conexão e confirmação em
+  duas leituras e rotulava o lote com a conexão lida DEPOIS do envio — religação no meio = lote do socket morto dado como entregue.
+  Agora ConfirmacaoEntrega(Conexao, AteMs) numa leitura só (record trocado inteiro; CAS na resposta do heartbeat) e rótulo ANTES do envio.
+  Triagem dos 6 vermelhos: 5 régua (Faltando contava o relógio do Fechar) + 1 sistema (canal SEM confirmação passou a guardar devolvido
+  30 s — voltou a 10 s, comportamento antigo; pego pelo teste velho ConexaoMeioMorta).
+  Provas: 11 testes novos (7 publisher, 4 canal); Domain.Tests 636/636 (DOTNET_ROLL_FORWARD=Major); 4 mutações reprovam cada uma
+  o seu teste (rótulo depois do envio; publisher ignora confirmação = 6 FAIL; confirma sem conferir ref/status; religação não zera);
+  smoke um a um 82/83 (só schema-parity, anterior).

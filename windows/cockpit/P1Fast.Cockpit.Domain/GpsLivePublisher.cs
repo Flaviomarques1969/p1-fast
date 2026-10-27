@@ -15,6 +15,12 @@
 //    ainda "aberto", o envio volta "ok" por alguns segundos antes de o canal perceber a queda.
 //    Por isso o enviado fica guardado por 10 s; quando o canal cai, esses fixes voltam pra frente
 //    da fila e são reenviados na religação. A TV descarta o que já tinha (mesmo tWall).
+//  - ENTREGA CONFIRMADA (ensaio no celular 27/10, hotspot caindo: buracos de até 26 s na TV, porque a
+//    queda só era percebida pelo heartbeat de 25 s e os 10 s fixos de guarda não cobriam): com canal
+//    que confirma (IConfirmaEntrega — o SupabaseRealtimeChannel, heartbeat de 5 s), o enviado fica
+//    guardado até o heartbeat seguinte CONFIRMAR, no mesmo socket (até 30 s, folga). Na queda — ou se a
+//    conexão trocou sem o publisher ver o offline — o não confirmado volta pra frente da fila; o
+//    devolvido vale até 30 s no ao vivo (o novo continua com 10 s). Canal sem confirmação: como antes.
 //
 // Contrato: cada fix é montado pelo chamador no formato {lat,lng,kmh,numSV,fix,accM,tWall,...} e
 // só trafega — este publisher não inventa nem normaliza nada.
@@ -39,7 +45,8 @@ public sealed record GpsLivePublisherStats(
     long Mensagens = 0,     // mensagens 'gps' enviadas (o que conta na cota)
     long ForaDoAoVivo = 0,  // fixes que passaram de 10 s na fila: só no disco/gravação
     long Reenviados = 0,    // fixes devolvidos à fila porque o canal caiu logo depois de "enviar"
-    long? MsDesdeUltimoEnvio = null);
+    long? MsDesdeUltimoEnvio = null,
+    int AguardandoConfirmacao = 0);   // enviados que o servidor ainda não confirmou (reenviados se cair)
 
 public sealed class GpsLivePublisher
 {
@@ -50,9 +57,10 @@ public sealed class GpsLivePublisher
     public const int  IntervaloLoteMsDefault = 200;     // 5 mensagens/s
     public const int  LoteMaxDefault         = 25;      // 1 s de RaceBox por mensagem (recuperação)
     public const long JanelaAoVivoMsDefault  = 10_000;  // o ao vivo só leva os últimos ~10 s
+    public const long GuardaSemConfirmacaoMsDefault = 30_000; // enviado não confirmado: até 30 s (queda percebida em 5–10 s)
 
-    // Rede de segurança acima da janela de 10 s (relógio parado/teste): 10 s a 25 Hz com folga.
-    private const int FilaMaxDefault = 1_000;
+    // Rede de segurança acima das janelas (relógio parado/teste): 30 s devolvidos + 10 s novos a 25 Hz, com folga.
+    private const int FilaMaxDefault = 2_000;
 
     private readonly ILiveChannel _canal;
     private readonly string _canalNome;
@@ -61,12 +69,15 @@ public sealed class GpsLivePublisher
     private readonly int _intervaloLoteMs;
     private readonly int _loteMax;
     private readonly long _janelaAoVivoMs;
+    private readonly long _guardaSemConfirmacaoMs;
     private readonly Func<long> _relogioMs;
+    private readonly IConfirmaEntrega? _confirma;
 
-    private sealed record Item(IDictionary<string, object?> Payload, long ChegadaMs);
+    private sealed record Item(IDictionary<string, object?> Payload, long ChegadaMs, bool Devolvido = false);
+    private sealed record Enviado(Item Item, long ConcluidoMs, int Conexao);
 
     private readonly LinkedList<Item> _fila = new();
-    private readonly Queue<Item> _enviadosRecentes = new();
+    private readonly Queue<Enviado> _enviadosRecentes = new();
     private long _enviadas, _descartadas, _erros, _mensagens, _foraDoAoVivo, _reenviados;
     private long? _ultimoEnvioMs;
     private bool _estavaOnline;
@@ -82,7 +93,8 @@ public sealed class GpsLivePublisher
         int intervaloLoteMs = IntervaloLoteMsDefault,
         int loteMax = LoteMaxDefault,
         long janelaAoVivoMs = JanelaAoVivoMsDefault,
-        Func<long>? relogioMs = null)
+        Func<long>? relogioMs = null,
+        long guardaSemConfirmacaoMs = GuardaSemConfirmacaoMsDefault)
     {
         ArgumentNullException.ThrowIfNull(canal);
         if (string.IsNullOrWhiteSpace(canalNome))
@@ -99,7 +111,9 @@ public sealed class GpsLivePublisher
         _intervaloLoteMs = Math.Max(0, intervaloLoteMs);
         _loteMax         = Math.Max(1, loteMax);
         _janelaAoVivoMs  = Math.Max(1, janelaAoVivoMs);
+        _guardaSemConfirmacaoMs = Math.Max(_janelaAoVivoMs, guardaSemConfirmacaoMs);
         _relogioMs       = relogioMs ?? (() => Environment.TickCount64);
+        _confirma        = canal as IConfirmaEntrega;
     }
 
     public string Canal => _canalNome;
@@ -108,7 +122,8 @@ public sealed class GpsLivePublisher
     public GpsLivePublisherStats GetStats() => new(
         Enviadas: _enviadas, NaFila: _fila.Count, Descartadas: _descartadas, Erros: _erros,
         Mensagens: _mensagens, ForaDoAoVivo: _foraDoAoVivo, Reenviados: _reenviados,
-        MsDesdeUltimoEnvio: _ultimoEnvioMs is { } u ? _relogioMs() - u : null);
+        MsDesdeUltimoEnvio: _ultimoEnvioMs is { } u ? _relogioMs() - u : null,
+        AguardandoConfirmacao: _enviadosRecentes.Count);
 
     /// <summary>Saúde pro operador, NUNCA silenciosa.</summary>
     public string Saude()
@@ -134,6 +149,7 @@ public sealed class GpsLivePublisher
     public async Task DrenarAsync(CancellationToken ct)
     {
         var agora = _relogioMs();
+        Confirmar();
         Aparar(agora);
 
         if (!_canal.Online)
@@ -153,6 +169,10 @@ public sealed class GpsLivePublisher
             var itens = _fila.Take(_loteMax).ToList();
             var payload = MontarLote(itens);
 
+            // conexão lida ANTES do envio: se trocar no meio, o lote fica marcado com a velha e volta à
+            // fila no próximo Confirmar (pior caso: reenvio a mais, que a TV descarta pelo tWall — nunca
+            // perda). Lida depois, um lote escrito no socket morto ganhava a conexão nova e a confirmação dela.
+            int conexao = _confirma?.Confirmacao.Conexao ?? 0;
             bool ok;
             try { ok = await _canal.PublishAsync("gps", payload, ct).ConfigureAwait(false); }
             catch (OperationCanceledException) { throw; }
@@ -160,7 +180,8 @@ public sealed class GpsLivePublisher
 
             if (!ok) { _erros++; break; } // nuvem recusou/caiu: mantém na fila
             for (int i = 0; i < itens.Count; i++) _fila.RemoveFirst();
-            foreach (var it in itens) _enviadosRecentes.Enqueue(it);
+            long concluido = _relogioMs();
+            foreach (var it in itens) _enviadosRecentes.Enqueue(new Enviado(it with { Devolvido = false }, concluido, conexao));
             _enviadas += itens.Count;
             _mensagens++;
             _ultimoEnvioMs = agora;
@@ -176,26 +197,45 @@ public sealed class GpsLivePublisher
         return topo;
     }
 
-    // Tira do ao vivo o que passou da janela (fila e guardados pra reenvio).
-    private void Aparar(long agora)
+    // Canal que confirma: solta o que o servidor já confirmou (enviado ANTES do heartbeat respondido,
+    // na MESMA conexão). Enviado numa conexão que já foi trocada nunca será confirmado: volta à fila.
+    private void Confirmar()
     {
-        while (_fila.First is { } f && agora - f.Value.ChegadaMs > _janelaAoVivoMs)
-        {
-            _fila.RemoveFirst();
-            _foraDoAoVivo++;
-        }
-        while (_enviadosRecentes.Count > 0 && agora - _enviadosRecentes.Peek().ChegadaMs > _janelaAoVivoMs)
+        if (_confirma is null || _enviadosRecentes.Count == 0) return;
+        var c = _confirma.Confirmacao;   // conexão e confirmação numa leitura só
+        if (_enviadosRecentes.Any(e => e.Conexao != c.Conexao)) { DevolverRecentes(); return; }
+        while (_enviadosRecentes.Count > 0 && c.AteMs is { } a && _enviadosRecentes.Peek().ConcluidoMs < a)
             _enviadosRecentes.Dequeue();
     }
 
-    // O canal caiu: o que foi "enviado" nos últimos 10 s pode ter ido pro buffer de um socket morto.
-    // Volta pra FRENTE da fila, em ordem; a TV descarta o que já tinha recebido.
+    // Tira do ao vivo o que passou da janela: novo = 10 s; devolvido (escrito num socket morto) = guarda
+    // de 30 s com canal que confirma (sem confirmação: 10 s, como antes). A fila está em ordem de
+    // chegada com os devolvidos na frente.
+    private void Aparar(long agora)
+    {
+        var node = _fila.First;
+        while (node is not null)
+        {
+            var prox = node.Next;
+            long limite = node.Value.Devolvido && _confirma is not null ? _guardaSemConfirmacaoMs : _janelaAoVivoMs;
+            if (agora - node.Value.ChegadaMs > limite) { _fila.Remove(node); _foraDoAoVivo++; }
+            else if (!node.Value.Devolvido) break;   // daqui pra frente só novos, mais recentes
+            node = prox;
+        }
+        long guarda = _confirma is null ? _janelaAoVivoMs : _guardaSemConfirmacaoMs;
+        while (_enviadosRecentes.Count > 0 && agora - _enviadosRecentes.Peek().Item.ChegadaMs > guarda)
+            _enviadosRecentes.Dequeue();
+    }
+
+    // O canal caiu (ou trocou de conexão): o enviado ainda não confirmado pode ter ido pro buffer de um
+    // socket morto. Volta pra FRENTE da fila, em ordem; a TV descarta o que já tinha recebido.
     private void DevolverRecentes()
     {
         if (_enviadosRecentes.Count == 0) return;
         var node = _fila.First;
-        foreach (var it in _enviadosRecentes)
+        foreach (var e in _enviadosRecentes)
         {
+            var it = e.Item with { Devolvido = true };
             if (node is null) _fila.AddLast(it); else _fila.AddBefore(node, it);
             _reenviados++;
         }

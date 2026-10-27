@@ -14,7 +14,7 @@
 // Protocolo (igual ao supabase-js):
 //   wss://<ref>.supabase.co/realtime/v1/websocket?apikey=<anon>&vsn=1.0.0
 //   join:      {topic:"realtime:<canal>", event:"phx_join", payload:{config:{broadcast:{ack:false,self:false}}}, ref}
-//   heartbeat: {topic:"phoenix", event:"heartbeat", payload:{}, ref}   (~25 s)
+//   heartbeat: {topic:"phoenix", event:"heartbeat", payload:{}, ref}   (5 s — ver CONFIRMAÇÃO abaixo)
 //   broadcast: {topic:"realtime:<canal>", event:"broadcast", payload:{type:"broadcast", event:"sample", payload:{...}}, ref}
 //
 // Online só vira true quando o servidor confirma a entrada NO NOSSO canal (phx_reply
@@ -32,6 +32,12 @@
 // até lá (alguns segundos de amostras) ele "dá certo" com a rede morta e o publisher já tirou
 // essas amostras da fila — somem do ao-vivo (o disco guarda). Fechar isso pede confirmação de
 // entrega por janela, assunto da fila do ao-vivo, não deste fio.
+//
+// CONFIRMAÇÃO DE ENTREGA (ensaio no celular 27/10: o hotspot caiu várias vezes e cada queda perdeu até
+// 26 s de GPS — o heartbeat de 25 s só percebia a meia-aberta em 25–50 s). Agora: heartbeat de 5 s
+// (12 mensagens/min, percebe em 5–10 s) e o canal diz até quando a entrega está CONFIRMADA
+// (IConfirmaEntrega): o heartbeat respondido prova que tudo enviado antes dele, no mesmo socket,
+// chegou. O GpsLivePublisher guarda o que ainda não foi confirmado e reenvia na religação.
 //
 // UMA CONEXÃO POR VEZ (auditoria 27/10): duas ConnectAsync sobrepostas (conexão inicial lenta +
 // religação) abriam dois sockets e o da perdedora ficava vivo para sempre, com heartbeat próprio.
@@ -71,7 +77,7 @@ public sealed class ClientWebSocketAdapter : IRealtimeSocket
     public void Dispose() => _ws.Dispose();
 }
 
-public sealed class SupabaseRealtimeChannel : ILiveChannel, IAsyncDisposable
+public sealed class SupabaseRealtimeChannel : ILiveChannel, IConfirmaEntrega, IAsyncDisposable
 {
     private readonly Uri _wsUri;
     private readonly string _topic;
@@ -92,6 +98,14 @@ public sealed class SupabaseRealtimeChannel : ILiveChannel, IAsyncDisposable
     private string _joinRef = "";          // ref do NOSSO phx_join (só ele confirma a entrada)
     private volatile bool _heartbeatPendente; // heartbeat enviado ainda sem resposta = meia-aberta
     private CancellationTokenSource? _bg;
+    private readonly Func<long> _relogioMs;
+    private volatile string _hbRef = "";      // ref do heartbeat em voo (só a resposta DELE confirma)
+    private long _hbEnviadoMs;                 // relógio quando esse heartbeat entrou no fio
+    // conexão + confirmação num objeto só, trocado inteiro (nunca meio a meio)
+    private sealed record EstadoConfirmacao(int Conexao, long? AteMs);
+    private EstadoConfirmacao _confirmacao = new(0, null);
+
+    public const int HeartbeatSegundosDefault = 5;
 
     public SupabaseRealtimeChannel(
         string supabaseUrl,
@@ -100,7 +114,8 @@ public sealed class SupabaseRealtimeChannel : ILiveChannel, IAsyncDisposable
         Func<IRealtimeSocket>? socketFactory = null,
         TimeSpan? heartbeatIntervalo = null,
         TimeSpan? envioTimeout = null,
-        TimeSpan? conexaoTimeout = null)
+        TimeSpan? conexaoTimeout = null,
+        Func<long>? relogioMs = null)
     {
         if (string.IsNullOrWhiteSpace(supabaseUrl)) throw new ArgumentException("URL vazia", nameof(supabaseUrl));
         if (string.IsNullOrWhiteSpace(anonKey))     throw new ArgumentException("chave anon vazia", nameof(anonKey));
@@ -110,13 +125,23 @@ public sealed class SupabaseRealtimeChannel : ILiveChannel, IAsyncDisposable
         _wsUri = new Uri($"{baseWs}/realtime/v1/websocket?apikey={Uri.EscapeDataString(anonKey)}&vsn=1.0.0");
         _topic = "realtime:" + canal;
         _socketFactory = socketFactory ?? (() => new ClientWebSocketAdapter());
-        _heartbeatIntervalo = heartbeatIntervalo ?? TimeSpan.FromSeconds(25);
+        _heartbeatIntervalo = heartbeatIntervalo ?? TimeSpan.FromSeconds(HeartbeatSegundosDefault);
+        _relogioMs = relogioMs ?? (() => Environment.TickCount64);   // o MESMO relógio padrão do GpsLivePublisher
         _envioTimeout   = envioTimeout ?? TimeSpan.FromSeconds(5);
         _conexaoTimeout = conexaoTimeout ?? TimeSpan.FromSeconds(10);
         _fechaTimeout   = TimeSpan.FromSeconds(2);
     }
 
     public bool Online => _ws?.State == WebSocketState.Open && _joined;
+
+    public TimeSpan HeartbeatIntervalo => _heartbeatIntervalo;
+
+    /// <summary>Conexão atual (sobe a cada socket novo) + instante (relógio injetado) em que o último
+    /// heartbeat RESPONDIDO dela entrou no fio (null = nada confirmado ainda), lidos juntos.</summary>
+    public ConfirmacaoEntrega Confirmacao
+    {
+        get { var c = Volatile.Read(ref _confirmacao); return new(c.Conexao, c.AteMs); }
+    }
 
     /// <summary>Socket aberto, entrada no canal pedida e ainda sem confirmação — religar agora
     /// derrubaria a conexão que está chegando (ReligacaoNuvem dá um prazo maior a esse estado).</summary>
@@ -158,6 +183,10 @@ public sealed class SupabaseRealtimeChannel : ILiveChannel, IAsyncDisposable
             }
         }
         _ws = ws;
+        // Conexão nova: confirmação só vale no MESMO socket — começa do zero. Troca DEPOIS do _ws: quem
+        // ler a conexão nova já escreve no socket novo (só um ConectarAsync por vez, pela _conexaoLock).
+        _hbRef = "";
+        Volatile.Write(ref _confirmacao, new EstadoConfirmacao(Volatile.Read(ref _confirmacao).Conexao + 1, null));
 
         // L5: cópia local pros laços — se uma religação trocar _bg no meio, cada laço
         // segue preso ao token da SUA conexão (nunca null/trocado por baixo). E cada laço
@@ -213,7 +242,7 @@ public sealed class SupabaseRealtimeChannel : ILiveChannel, IAsyncDisposable
         if (ReferenceEquals(_ws, socket)) _joined = false;
     }
 
-    private async Task SendRawAsync(object msg, CancellationToken ct)
+    private async Task SendRawAsync(object msg, CancellationToken ct, Action? naVez = null)
     {
         var bytes = JsonSerializer.SerializeToUtf8Bytes(msg);
         using var prazo = CancellationTokenSource.CreateLinkedTokenSource(ct);
@@ -225,6 +254,7 @@ public sealed class SupabaseRealtimeChannel : ILiveChannel, IAsyncDisposable
             try
             {
                 ws = _ws ?? throw new InvalidOperationException("socket não conectado");
+                naVez?.Invoke();   // já com a vez: tudo que saiu antes desta mensagem já está no fio
                 await ws.SendAsync(bytes, WebSocketMessageType.Text, endOfMessage: true, prazo.Token).ConfigureAwait(false);
             }
             finally { _sendLock.Release(); }
@@ -280,7 +310,19 @@ public sealed class SupabaseRealtimeChannel : ILiveChannel, IAsyncDisposable
                     bool ok = root.TryGetProperty("payload", out var pl) &&
                               pl.TryGetProperty("status", out var st) && st.GetString() == "ok";
                     // Resposta do heartbeat (topic phoenix): a conexão respondeu, não está meia-aberta.
-                    if (topic == "phoenix") { _heartbeatPendente = false; break; }
+                    if (topic == "phoenix")
+                    {
+                        // Só a resposta do heartbeat em voo, no socket ATIVO, confirma a entrega. Troca
+                        // condicionada: se uma religação já trocou o estado, a confirmação velha não entra.
+                        if (ok && refMsg is not null && refMsg == _hbRef && ReferenceEquals(_ws, socket))
+                        {
+                            var atual = Volatile.Read(ref _confirmacao);
+                            Interlocked.CompareExchange(ref _confirmacao,
+                                atual with { AteMs = Interlocked.Read(ref _hbEnviadoMs) }, atual);
+                        }
+                        _heartbeatPendente = false;
+                        break;
+                    }
                     // Confirmação da entrada: SÓ o nosso topic + o ref do NOSSO join. Um phx_reply
                     // de outra coisa (ou de uma conexão velha) não liga o online por engano.
                     if (ok && topic == _topic && refMsg == _joinRef && ReferenceEquals(_ws, socket))
@@ -312,13 +354,14 @@ public sealed class SupabaseRealtimeChannel : ILiveChannel, IAsyncDisposable
                 if (_heartbeatPendente) { MarcarDesconectado(socket); break; }
 
                 _heartbeatPendente = true;
+                var hbRef = NextRef();
                 try
                 {
                     await SendRawAsync(new Dictionary<string, object?>
                     {
                         ["topic"] = "phoenix", ["event"] = "heartbeat",
-                        ["payload"] = new { }, ["ref"] = NextRef(),
-                    }, ct).ConfigureAwait(false);
+                        ["payload"] = new { }, ["ref"] = hbRef,
+                    }, ct, naVez: () => { Interlocked.Exchange(ref _hbEnviadoMs, _relogioMs()); _hbRef = hbRef; }).ConfigureAwait(false);
                 }
                 catch { MarcarDesconectado(socket); break; }
             }

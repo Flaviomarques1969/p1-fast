@@ -4,6 +4,7 @@
 // últimos 10 s volta à fila quando o canal cai) e a trava dura do canal de produção.
 // E2 da obra "TV do box ao vivo" (27/10/2026). Canal-fake = InMemoryLiveChannel, igual ao do motor.
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -23,7 +24,7 @@ public class GpsLivePublisherTests
             ["numSV"] = 12, ["fix"] = 3, ["accM"] = 1.0, ["tWall"] = tWall, ["source"] = "racebox",
         };
 
-    private sealed class Relogio { public long Ms; public long Agora() => Ms; }
+    private sealed class Relogio { public long Ms; public long FimDaOferta; public long Agora() => Ms; }
 
     // Desmonta as mensagens como a TV faz (gps-fonte-unica.js pontosDoGps): lote em ordem, topo por último.
     private static List<long> TWallsEntregues(InMemoryLiveChannel canal)
@@ -229,5 +230,232 @@ public class GpsLivePublisherTests
 
         Assert.Single(canal.Publicadas);
         Assert.Equal("gps", canal.Publicadas[0].Evento);
+    }
+
+    // ── ENTREGA CONFIRMADA (ensaio no celular 27/10: hotspot caindo, buracos de até 26 s na TV) ──
+    // Canal-fake que imita o fio de verdade: socket meio-morto aceita o envio ("ok") e o dado some;
+    // o heartbeat só é respondido com o socket vivo; religar = conexão nova, confirmação do zero.
+    private sealed class CanalQueConfirma : ILiveChannel, IConfirmaEntrega
+    {
+        private readonly Relogio _rel;
+        private int _conexao = 1;
+        private long? _ate;
+        public CanalQueConfirma(Relogio rel) => _rel = rel;
+        public bool Online { get; set; } = true;
+        public bool SocketMorto { get; private set; }
+        public List<IDictionary<string, object?>> Chegaram { get; } = new();   // o que o SERVIDOR recebeu
+        public Action? DuranteOEnvio { get; set; }
+        public ConfirmacaoEntrega Confirmacao => new(_conexao, _ate);
+        public void Morrer() => SocketMorto = true;
+        public void Religar() { _conexao++; _ate = null; SocketMorto = false; }
+        public void Heartbeat() { if (!SocketMorto) _ate = _rel.Ms; }   // entrou no fio agora e voltou
+        public Task<bool> PublishAsync(string evento, object payload, CancellationToken ct)
+        {
+            if (!Online) return Task.FromResult(false);
+            bool morto = SocketMorto;              // o socket em que ESTE envio foi escrito
+            var acao = DuranteOEnvio; DuranteOEnvio = null;
+            acao?.Invoke();
+            if (!morto) Chegaram.Add((IDictionary<string, object?>)payload);
+            return Task.FromResult(true);          // meio-morto também diz "ok"
+        }
+    }
+
+    // O mesmo fio, mas sem contar ao publisher o que foi confirmado (o comportamento de antes).
+    private sealed class CanalSemConfirmacao : ILiveChannel
+    {
+        private readonly CanalQueConfirma _fio;
+        public CanalSemConfirmacao(CanalQueConfirma fio) => _fio = fio;
+        public bool Online => _fio.Online;
+        public Task<bool> PublishAsync(string e, object p, CancellationToken ct) => _fio.PublishAsync(e, p, ct);
+    }
+
+    private static List<long> TWalls(IEnumerable<IDictionary<string, object?>> mensagens)
+    {
+        var r = new List<long>();
+        foreach (var p in mensagens)
+        {
+            if (p.TryGetValue("lote", out var l) && l is IEnumerable<IDictionary<string, object?>> lote)
+                r.AddRange(lote.Select(x => (long)x["tWall"]!));
+            r.Add((long)p["tWall"]!);
+        }
+        return r;
+    }
+
+    // Como Rodar, com o heartbeat de 5 s do fio (respondido só se o socket estiver vivo).
+    private static async Task RodarComHeartbeat(GpsLivePublisher pub, Relogio rel, CanalQueConfirma fio, long ms)
+    {
+        long fim = rel.Ms + ms;
+        while (rel.Ms < fim)
+        {
+            if (rel.Ms % 5_000 == 0) fio.Heartbeat();
+            pub.Oferecer(Fix(tWall: rel.Ms));
+            rel.FimDaOferta = rel.Ms + 40;
+            await pub.DrenarAsync(CancellationToken.None);
+            rel.Ms += 40;
+        }
+    }
+
+    // Fecha os últimos lotes: o relógio anda sem oferecer fix novo.
+    private static async Task Fechar(GpsLivePublisher pub, Relogio rel)
+    {
+        for (int i = 0; i < 3; i++) { rel.Ms += 200; await pub.DrenarAsync(CancellationToken.None); }
+    }
+
+    // Todo fix oferecido (0, 40, ... até o último) que não chegou ao servidor.
+    private static List<long> Faltando(Relogio rel, IEnumerable<long> chegaram)
+    {
+        var set = new HashSet<long>(chegaram);
+        return Enumerable.Range(0, (int)(rel.FimDaOferta / 40)).Select(i => (long)i * 40).Where(t => !set.Contains(t)).ToList();
+    }
+
+    // A queda do ensaio: socket morto 26 s sem o canal perceber, depois offline, religa.
+    private static async Task<(CanalQueConfirma Fio, GpsLivePublisher Pub, Relogio Rel)> QuedaDe26s(bool comConfirmacao)
+    {
+        var rel = new Relogio();
+        var fio = new CanalQueConfirma(rel);
+        ILiveChannel canal = comConfirmacao ? fio : new CanalSemConfirmacao(fio);
+        var pub = new GpsLivePublisher(canal, "teste", relogioMs: rel.Agora);
+
+        await RodarComHeartbeat(pub, rel, fio, 10_000);
+        fio.Heartbeat();                                   // último heartbeat respondido (10 s)
+        fio.Morrer();                                      // hotspot caiu: escreve no vácuo
+        await RodarComHeartbeat(pub, rel, fio, 26_000);    // 26 s sem perceber (pior caso do ensaio)
+        fio.Online = false;
+        await RodarComHeartbeat(pub, rel, fio, 1_000);     // percebeu: offline
+        fio.Religar(); fio.Online = true;
+        await RodarComHeartbeat(pub, rel, fio, 2_000);
+        await Fechar(pub, rel);
+        return (fio, pub, rel);
+    }
+
+    [Fact]
+    public async Task Confirmacao_SocketMorto26s_ReenviaTudoDesdeOUltimoConfirmado_SemBuraco()
+    {
+        var (fio, pub, rel) = await QuedaDe26s(comConfirmacao: true);
+        var chegou = TWalls(fio.Chegaram);
+        var falta = Faltando(rel, chegou);
+        Assert.True(falta.Count == 0, $"faltaram {falta.Count} fixes na TV, 1º = {falta.FirstOrDefault()}");
+        Assert.True(pub.GetStats().Reenviados >= 26 * 25, $"reenviados = {pub.GetStats().Reenviados}");
+        Assert.Equal(0, pub.GetStats().Descartadas);
+    }
+
+    [Fact]
+    public async Task Controle_SemConfirmacao_AMesmaQueda_PerdeOTrecho()
+    {
+        // O comportamento de antes (guarda fixa de 10 s): a régua acima reprova este.
+        var (fio, _, rel) = await QuedaDe26s(comConfirmacao: false);
+        var falta = Faltando(rel, TWalls(fio.Chegaram));
+        Assert.True(falta.Count > 15 * 25, $"esperava buraco de > 15 s sem confirmação, faltaram {falta.Count}");
+        Assert.InRange(falta[0], 9_700, 10_400);           // o buraco começa na queda (o lote leva os ~200 ms de antes)
+    }
+
+    [Fact]
+    public async Task Confirmacao_OQueJaFoiConfirmado_NaoEhReenviado()
+    {
+        var rel = new Relogio();
+        var fio = new CanalQueConfirma(rel);
+        var pub = new GpsLivePublisher(canal: fio, canalNome: "teste", relogioMs: rel.Agora);
+
+        await RodarComHeartbeat(pub, rel, fio, 20_000);
+        fio.Heartbeat();                                   // tudo até 20 s confirmado
+        fio.Online = false;                                // queda limpa logo depois
+        await pub.DrenarAsync(CancellationToken.None);
+        Assert.Equal(0, pub.GetStats().Reenviados);
+        Assert.Equal(0, pub.GetStats().AguardandoConfirmacao);
+
+        fio.Religar(); fio.Online = true;
+        await RodarComHeartbeat(pub, rel, fio, 1_000);
+        await Fechar(pub, rel);
+        var chegou = TWalls(fio.Chegaram);
+        Assert.Equal(chegou.Distinct().Count(), chegou.Count);   // nenhum repetido
+        Assert.Empty(Faltando(rel, chegou));
+    }
+
+    [Fact]
+    public async Task Confirmacao_QuedaCincoSegundosDepoisDoHeartbeat_SoReenviaOsUltimos5s()
+    {
+        var rel = new Relogio();
+        var fio = new CanalQueConfirma(rel);
+        var pub = new GpsLivePublisher(fio, "teste", relogioMs: rel.Agora);
+
+        await RodarComHeartbeat(pub, rel, fio, 15_000);    // heartbeats respondidos até 10 s...
+        fio.Heartbeat();                                   // ...e o de 15 s
+        await RodarComHeartbeat(pub, rel, fio, 4_960);     // mais ~5 s sem heartbeat novo
+        int jaChegaram = fio.Chegaram.Count;
+        fio.Online = false;
+        await pub.DrenarAsync(CancellationToken.None);
+        fio.Religar(); fio.Online = true;
+        await pub.DrenarAsync(CancellationToken.None);
+        await Fechar(pub, rel);
+
+        var reenvio = TWalls(fio.Chegaram.Skip(jaChegaram));
+        Assert.InRange(reenvio[0], 14_700, 15_000);        // começa no último confirmado, não 10 s antes
+        Assert.InRange(pub.GetStats().Reenviados, 5 * 25 - 10, 5 * 25 + 25);
+    }
+
+    [Fact]
+    public async Task Confirmacao_ConexaoTrocadaSemVerOOffline_DevolveONaoConfirmado()
+    {
+        var rel = new Relogio();
+        var fio = new CanalQueConfirma(rel);
+        var pub = new GpsLivePublisher(fio, "teste", relogioMs: rel.Agora);
+
+        await RodarComHeartbeat(pub, rel, fio, 10_000);
+        fio.Heartbeat();
+        fio.Morrer();
+        await RodarComHeartbeat(pub, rel, fio, 3_000);     // 3 s escritos no vácuo
+        fio.Religar();                                     // religou entre duas drenagens: Online nunca caiu
+        await RodarComHeartbeat(pub, rel, fio, 2_000);
+        await Fechar(pub, rel);
+
+        Assert.True(pub.GetStats().Reenviados >= 3 * 25, $"reenviados = {pub.GetStats().Reenviados}");
+        Assert.Empty(Faltando(rel, TWalls(fio.Chegaram)));
+    }
+
+    [Fact]
+    public async Task Confirmacao_LoteEscritoNoSocketMortoEnquantoReligava_NaoEhDadoComoEntregue()
+    {
+        // A corrida: o lote sai no socket velho (morto) e a conexão troca NO MEIO do envio; o heartbeat
+        // seguinte, da conexão NOVA, não pode confirmar esse lote. (Lendo a conexão depois do envio, o
+        // lote ganhava a conexão nova e a confirmação dela: perda em silêncio.)
+        var rel = new Relogio();
+        var fio = new CanalQueConfirma(rel);
+        var pub = new GpsLivePublisher(fio, "teste", relogioMs: rel.Agora);
+
+        await RodarComHeartbeat(pub, rel, fio, 5_000);
+        fio.Heartbeat();
+        fio.Morrer();
+        fio.DuranteOEnvio = fio.Religar;                   // o próximo envio vai no morto e a conexão troca no meio
+        await RodarComHeartbeat(pub, rel, fio, 6_000);     // heartbeat das 10 s respondido na conexão nova
+        await Fechar(pub, rel);
+
+        var falta = Faltando(rel, TWalls(fio.Chegaram));
+        Assert.True(falta.Count == 0, $"faltaram {falta.Count} fixes, 1º = {falta.FirstOrDefault()}");
+    }
+
+    [Fact]
+    public async Task Confirmacao_SocketMortoUmMinuto_GuardaSo30s_SemEstourarAFila()
+    {
+        var rel = new Relogio();
+        var fio = new CanalQueConfirma(rel);
+        var pub = new GpsLivePublisher(fio, "teste", relogioMs: rel.Agora);
+
+        await RodarComHeartbeat(pub, rel, fio, 5_000);
+        fio.Heartbeat();
+        fio.Morrer();
+        await RodarComHeartbeat(pub, rel, fio, 60_000);    // 1 min no vácuo
+        Assert.InRange(pub.GetStats().AguardandoConfirmacao, 30 * 25 - 30, 30 * 25 + 30);   // só os últimos 30 s
+        int jaChegaram = fio.Chegaram.Count;
+        fio.Online = false;
+        await pub.DrenarAsync(CancellationToken.None);
+        fio.Religar(); fio.Online = true;
+        await pub.DrenarAsync(CancellationToken.None);
+        await Fechar(pub, rel);
+
+        var reenvio = TWalls(fio.Chegaram.Skip(jaChegaram));
+        Assert.InRange(reenvio[0], 64_960 - 30_100, 64_960 - 29_800);   // o mais velho que ainda vale: 30 s
+        Assert.Equal(64_960, reenvio[^1]);
+        Assert.Equal(reenvio.OrderBy(x => x), reenvio);
+        Assert.Equal(0, pub.GetStats().Descartadas);
     }
 }

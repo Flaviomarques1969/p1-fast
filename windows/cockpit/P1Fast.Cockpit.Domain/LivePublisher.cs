@@ -31,13 +31,16 @@ public interface ILiveChannel
 
 /// <summary>Canal que sabe até onde a entrega foi CONFIRMADA pelo servidor (pedido da janela do ensaio
 /// no celular, 27/10/2026: cada queda do hotspot perdia até 26 s de GPS escritos num socket morto).
-/// Conexao = número da conexão atual (sobe a cada socket novo). ConfirmadoAteMs = relógio do instante
-/// em que o último heartbeat RESPONDIDO desta conexão entrou no fio: tudo que terminou de ser enviado
-/// ANTES disso, nesta conexão, chegou ao servidor (mesmo socket, em ordem). null = nada confirmado ainda.</summary>
+/// Conexao = número da conexão atual (sobe a cada socket novo). AteMs = relógio do instante em que o
+/// último heartbeat RESPONDIDO desta conexão entrou no fio: tudo que terminou de ser enviado ANTES
+/// disso, nesta conexão, chegou ao servidor (mesmo socket, em ordem). null = nada confirmado ainda.
+/// Os dois vêm JUNTOS numa leitura só: lidos separados, uma religação no meio misturava a conexão
+/// velha com a confirmação da nova (trecho escrito no socket morto dado como entregue).</summary>
+public readonly record struct ConfirmacaoEntrega(int Conexao, long? AteMs);
+
 public interface IConfirmaEntrega
 {
-    int Conexao { get; }
-    long? ConfirmadoAteMs { get; }
+    ConfirmacaoEntrega Confirmacao { get; }
 }
 
 public sealed record LivePublisherConfig(
