@@ -127,3 +127,9 @@ trecho, aí é uma reta"
   nova (tv-box-aovivo): (1) antes de escrever em mockup-command-box-vista-piloto.html, cloud-bridge.js ou SupabaseRealtimeChannel.cs,
   avisar imac-7c; (2) quando a gravação da rua chegar ou o notebook responder, mandar a imac-7c o resultado em 3 linhas
   (ficou offline? quanto tempo? religou?).
+- 16:3x Achado da janela imac-7c CONFIRMADO no código: LacoNuvemAsync marcava a tentativa ANTES do ConnectAsync, que volta antes
+  do phx_reply → no celular (conectar > 2 s) derrubava a conexão nova em laço. Mesmo defeito no T4000Capture.
+  Conserto 42535e946: Domain/ReligacaoNuvem.cs (regra única; espera do FIM da tentativa; socket aberto sem join até 10 s),
+  SupabaseRealtimeChannel.AguardandoEntrada, os 2 laços usam a regra; ReligacaoNuvemTests 3 (controle antigo: 2 reprovam).
+  Domain.Tests 609/609; T4000Capture compila; UI WinUI não compila no Mac (XamlCompiler.exe). Backup .claude-exec/backup-religacao-espera-entrada-20261027.
+  Recado ao notebook atualizado (da840e51d: compilar 42535e946). imac-7c avisada para rebasear.

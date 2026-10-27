@@ -28,6 +28,14 @@
 // esperando o outro lado e o estado segue Open. Sem prazo, um envio preso segurava a trava de
 // envio e o laço da nuvem para sempre — a religação nunca rodava. Agora conectar, enviar e
 // fechar desistem sozinhos; envio que desiste = offline (a religação age).
+// LIMITE CONHECIDO (auditoria 27/10): o envio só trava depois que o buffer do sistema enche;
+// até lá (alguns segundos de amostras) ele "dá certo" com a rede morta e o publisher já tirou
+// essas amostras da fila — somem do ao-vivo (o disco guarda). Fechar isso pede confirmação de
+// entrega por janela, assunto da fila do ao-vivo, não deste fio.
+//
+// UMA CONEXÃO POR VEZ (auditoria 27/10): duas ConnectAsync sobrepostas (conexão inicial lenta +
+// religação) abriam dois sockets e o da perdedora ficava vivo para sempre, com heartbeat próprio.
+// Agora a segunda espera a primeira terminar; e Conectando avisa a religação para não disparar.
 
 using System.Net.WebSockets;
 using System.Text;

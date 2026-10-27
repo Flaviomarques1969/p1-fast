@@ -22,3 +22,11 @@ Sintoma (achado na auto-auditoria): intervalo grande entre amostras (box, religa
 `dt` gigante → aprendizado dava um salto e podia erodir a máxima normal com temperatura de box frio →
 alarme falso na volta seguinte. Correção: teto `DtMaxS=5s` no dt do aprendizado (configurável). Prova:
 396/396 verdes (ATP_06 reescrito pra amostras reais em vez do atalho dt=300).
+
+## 2026-10-27 · CÓDIGO · MainWindow.Live.cs + T4000Capture/Program.cs · religação derrubava a conexão do celular
+Sintoma: teste de rua — no Wi-Fi o ao-vivo funcionava, no celular nunca voltou. Causa: o laço marcava a hora da
+tentativa ANTES do ConnectAsync, que volta antes do phx_reply; conectar no celular > 2 s → o giro seguinte via
+"offline há > 2 s" e derrubava a conexão nova antes da entrada, em laço. Correção 42535e946: Domain/ReligacaoNuvem.cs
+(regra única; espera do FIM da tentativa; socket aberto sem join até 10 s). Prova: ReligacaoNuvemTests 3/3, controle
+com a regra antiga reprova 2; Domain.Tests 609/609. Prova de campo (notebook, troca Wi-Fi → celular): NÃO VERIFICADO.
+Lição: laço de religação nunca conta prazo a partir do INÍCIO de uma tentativa assíncrona que não terminou de verdade.
