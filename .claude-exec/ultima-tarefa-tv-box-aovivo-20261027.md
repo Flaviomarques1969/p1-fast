@@ -283,3 +283,7 @@ Segue do PRÓXIMO (1) da seção E5: ensaio em canal só dele (cockpit-bubi-dev-
   Local 17/0, modo URL (servidor à parte) 17/0. CONTROLE: TV sem papel 'tv' = 16/1 (E7), saída 1.
 - PACOTE .claude-exec/PACOTE-tv-box-ao-vivo.md escrito (ENTRA tv/ 39 + api/room.js + package.json; NÃO ENTRA as 41 do ar etc.).
   guarda-das-mudancas: APROVADO (nada a conferir). Nada publicado. Falta só a frase dele.
+PONTO DE PARADA 1027-1903 (27/10 ~19h03): E5 pronta em DEV (1b9857db6), PACOTE escrito, frase entregue; nada publicado — seguir do PRÓXIMO do passe 20261027-1903.
+- RETOMADA 1027-1903 (27/10, depois do /clear): estado reconferido — HEAD = origin = 1b9857db6, PACOTE sem carimbo MIGRADO, servidor 5199 = 200, sem território desta janela. Nada publicado; aguardando a frase dele.
+- MIGRADO 27/10 19:07: produção p1box = dpl_F3jLYeJ2NmS9g7xQb3Y68mpp4we5; 82/82, escopo exato, ensaio no ar 17/0; mapa atualizado; pendente: favorito da Fire TV e relatório do gps.cmd (janela «P1FAST - GPS TV modo RaceBox}).
+- 19:4x painel p1fast-tv-mac-so-gps-1937: Flávio excluiu ("esquece. já estou vendo"). Notebook atualizado 19:32 (relatório recebidos/20261027-193235.txt, via janela GPS). Obra desta janela encerrada; território liberado.

@@ -1,6 +1,9 @@
 # MIGRAR PARA PRODUÇÃO: P1 Fast TV do box ao vivo no p1box
 
-> Status: PRONTO E PROVADO EM DESENVOLVIMENTO (27/10/2026 ~19h). Nada foi ao ar.
+> Status: MIGRADO em 27/10/2026 19:07 (frase do Flávio no chat, 27/10). Produção do p1box = dpl_F3jLYeJ2NmS9g7xQb3Y68mpp4we5
+> (antes dpl_FNKZphaSJqLyB7bTtC2qz2242V73). Provas no ar: conferir-p1box-no-ar 82/82 APROVADO (2 controles reprovaram);
+> escopo pós = 41 do ar sha256 iguais + 41 novos (tv/ 39, api/room.js, package.json) = ENTRA exato; ensaio ENSAIO_URL=
+> https://p1box.vercel.app 17 ok / 0 falha; /, /tv/?tv=1, vista-piloto, menu = 200. Vínculo .vercel do dist removido.
 > Pedido do Flávio, 27/10/2026: TV do box ao vivo (GPS + câmera + notebook 5G) — "esta tela não está funcionando
 > corretamente". Etapas E1–E4 prontas na branch; esta é a E5 (publicar a TV).
 
