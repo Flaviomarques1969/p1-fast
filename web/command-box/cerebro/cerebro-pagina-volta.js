@@ -12,14 +12,17 @@
 //    guardarVoltas) — corte de volta e setor existem num lugar só;
 //  - G do carro: chaves gLong/gLat/zeroOk que o notebook grava (item 6) — aqui NÃO se refaz G;
 //  - comparação: as duas voltas alinhadas pela FRAÇÃO DO TRAÇADO (mesmo ponto físico da pista),
-//    não pelo tempo; diferença = tempo da volta B menos o da volta A no mesmo ponto.
+//    não pelo tempo; diferença = tempo da volta B menos o da volta A no mesmo ponto;
+//  - "onde ganhou e onde perdeu": pelos TRECHOS DA METODOLOGIA (curva de freada e reta entre elas,
+//    painel p1fast-gps-setores-1228) que a peça da TV já mediu em cada volta — tempo e km/h vêm de lá,
+//    aqui só se subtrai. Pista sem cadastro (ou volta sem os trechos) cai no corte antigo de 20 fatias.
 // ============================================================================
 
 import { criarCerebroGpsTv } from './cerebro-gps-tv.js';
 
 /** Pontos da comparação ao longo da volta (0 = chegada, 1 = chegada de novo). */
 export const PASSOS_COMPARACAO = 500;
-/** "Onde ganhou e onde perdeu": a volta dividida em trechos iguais. */
+/** "Onde ganhou e onde perdeu" SEM cadastro de trechos da pista: a volta dividida em fatias iguais. */
 export const N_TRECHOS = 20;
 /** Conferência da velocidade gravada: janelas de 1 s acima deste km/h (pela distância). */
 export const KMH_MIN_CONFERIR = 15;
@@ -163,7 +166,7 @@ export function montarPaginaVolta(linhas, opts = {}) {
         latMax: v.picosG.latMax, combinadoMax: v.picosG.combinadoMax != null ? r3(v.picosG.combinadoMax) : null } : null,
       melhor: snap.melhorVolta != null && snap.melhorVolta.n === v.n,
       deltaMelhorS: snap.melhorVolta ? r3(v.tempoS - snap.melhorVolta.tempoS) : null,
-      rastro: v.rastro, perfil: v.perfil };
+      trechos: v.trechos || null, rastro: v.rastro, perfil: v.perfil };
   });
   return {
     sessao: {
@@ -177,15 +180,22 @@ export function montarPaginaVolta(linhas, opts = {}) {
     melhorVolta: snap.melhorVolta,
     melhoresSetores: snap.melhoresSetores,
     voltaIdealS: snap.voltaIdealS,
+    trechos: snap.trechos,
   };
 }
 
 /**
  * Compara a volta B com a volta A no mesmo ponto da pista.
  * deltaS > 0 = B chegou ali DEPOIS (mais lenta); < 0 = B na frente.
+ * @param {object} [o]
+ * @param {object[]} [o.trechos]  lista de trechos da pista (pacote.trechos.lista); com ela e com v.trechos nas
+ *   duas voltas, "onde ganhou e onde perdeu" é por trecho da metodologia; sem ela, 20 fatias iguais.
+ * @param {number} [o.passos]     pontos da curva da diferença
  */
-export function compararVoltas(va, vb, passos = PASSOS_COMPARACAO) {
+export function compararVoltas(va, vb, o = {}) {
   if (!va || !vb || !va.perfil || !vb.perfil) return null;
+  const passos = (typeof o === 'number' ? o : o.passos) || PASSOS_COMPARACAO;
+  const lista = (o && Array.isArray(o.trechos)) ? o.trechos : [];
   const A = prepararPerfil(va), B = prepararPerfil(vb);
   const distRef = va.distM || A.D[A.D.length - 1] || 0;
   const serie = [];
@@ -198,7 +208,22 @@ export function compararVoltas(va, vb, passos = PASSOS_COMPARACAO) {
   }
   const deltaEm = q => interp(B.P, B.T, q) - interp(A.P, A.T, q);
   const trechos = [];
-  for (let j = 0; j < N_TRECHOS; j++) {
+  const porTrechos = lista.length > 0 && Array.isArray(va.trechos) && Array.isArray(vb.trechos)
+    && va.trechos.length === lista.length && vb.trechos.length === lista.length;
+  if (porTrechos) {
+    lista.forEach((tr, j) => {
+      const a = va.trechos[j], b = vb.trechos[j];
+      const qm = (tr.de + tr.ate) / 2;
+      const ponto = tr.apice || { x: interp(A.P, A.X, qm), y: interp(A.P, A.Y, qm) };
+      trechos.push({ i: tr.i, nome: tr.nome, tipo: tr.tipo, de: tr.de, ate: tr.ate,
+        mDe: Math.round(tr.de * distRef), mAte: Math.round(tr.ate * distRef),
+        tempoA: a.tempoS, tempoB: b.tempoS, difS: r3(b.tempoS - a.tempoS),
+        kmhMinA: a.kmhMin, kmhMinB: b.kmhMin, kmhEntradaA: a.kmhEntrada, kmhEntradaB: b.kmhEntrada,
+        kmhSaidaA: a.kmhSaida, kmhSaidaB: b.kmhSaida,
+        x: ponto.x != null ? r1(ponto.x) : null, y: ponto.y != null ? r1(ponto.y) : null });
+    });
+  }
+  for (let j = 0; !porTrechos && j < N_TRECHOS; j++) {
     const q0 = j / N_TRECHOS, q1 = (j + 1) / N_TRECHOS, qm = (q0 + q1) / 2;
     trechos.push({ i: j + 1, de: r3(q0), ate: r3(q1), mDe: Math.round(q0 * distRef), mAte: Math.round(q1 * distRef),
       difS: r3(deltaEm(q1) - deltaEm(q0)),
@@ -212,7 +237,7 @@ export function compararVoltas(va, vb, passos = PASSOS_COMPARACAO) {
     setores = va.setoresS.map((a, i) => ({ s: i + 1, a, b: vb.setoresS[i], difS: r3(vb.setoresS[i] - a) }));
   }
   return { a: va.n, b: vb.n, tempoA: va.tempoS, tempoB: vb.tempoS, deltaFinalS: r3(vb.tempoS - va.tempoS),
-    distRefM: Math.round(distRef), serie, trechos, perdeu, ganhou, setores };
+    distRefM: Math.round(distRef), serie, porTrechos, trechos, perdeu, ganhou, setores };
 }
 
 export default { pontosDaGravacao, conferirKmh, montarPaginaVolta, compararVoltas };

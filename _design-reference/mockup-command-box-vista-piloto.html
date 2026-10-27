@@ -8279,7 +8279,10 @@ html,body{
      linha "trocas (provável)"; a tela não procura troca.
      Item 9 (27/10): traseira saiu PROVÁVEL (s.traseira) — triângulo lilás no mapa onde o carro girou além
      do que a curva explica e a linha "traseira (provável · giro a conferir)", só quando chega giro do
-     RaceBox (s.traseira.temGiro); a tela não julga giro. -->
+     RaceBox (s.traseira.temGiro); a tela não julga giro.
+     Trechos da metodologia (27/10, painel p1fast-gps-setores-1228: trecho = onde se freia; pé embaixo = reta):
+     marcas de entrada e saída de cada curva no mapa (a do trecho em curso acesa), a linha do trecho em curso
+     (última / melhor / mínima) e "a última perdeu" — tudo do pacote do cérebro (s.trechos, s.voltaAtual.trechoAtual). -->
 <style>
   .tv-rastro path{fill:none;stroke-linecap:round;stroke-linejoin:round;}
   .tv-rastro .tv-ultima{stroke:#FFFFFF;stroke-opacity:.30;stroke-width:3;}
@@ -8297,6 +8300,7 @@ html,body{
     font-family:'JetBrains Mono','SF Mono',Menlo,monospace;font-size:6px;letter-spacing:.14em;line-height:1.6;
     text-transform:uppercase;color:rgba(212,175,55,0.62);font-variant-numeric:tabular-nums;}
   .tv-consist b{font-weight:400;color:var(--text-1);}
+  .tv-consist .perdeu{color:#FF5A4E;}
   .tv-g{position:absolute;right:8px;bottom:8px;width:100px;z-index:5;pointer-events:none;
     font-family:'JetBrains Mono','SF Mono',Menlo,monospace;}
   .tv-g svg{width:100px;height:100px;display:block;margin-left:auto;}
@@ -8310,7 +8314,7 @@ html,body{
      linha branca fictícia e o "fantasma" de volta de referência que este cérebro não calcula) */
   .b-map.tv-on [data-trechos],.b-map.tv-on [data-traj-live],.b-map.tv-on [data-marker^="ghost"]{display:none;}
   .b-map.tv-parado .tv-setores,.b-map.tv-parado .tv-g,.b-map.tv-parado .tv-rastro,
-  .b-map.tv-parado .tv-consist,.b-map.tv-parado .tv-pancadas,.b-map.tv-parado .tv-trocas,.b-map.tv-parado .tv-traseira{opacity:.45;}
+  .b-map.tv-parado .tv-consist,.b-map.tv-parado .tv-pancadas,.b-map.tv-parado .tv-trechos-mapa,.b-map.tv-parado .tv-trocas,.b-map.tv-parado .tv-traseira{opacity:.45;}
 </style>
 <script type="module">
   import { criarCerebroGpsTv } from '/web/command-box/cerebro/cerebro-gps-tv.js';
@@ -8325,6 +8329,7 @@ html,body{
     return m + ':' + (r < 10 ? '0' : '') + r.toFixed(3);
   }
   function fmtS(s){ return s == null ? '—' : (s >= 60 ? fmt(s) : s.toFixed(2)); }
+  function esc(t){ return String(t).replace(/[&<>"']/g, function(c){ return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]; }); }
   function fmtG(v){ return v == null ? '—' : (v > 0 ? '+' : '') + v.toFixed(2).replace('.', ','); }
   // velocidade → cor (lento azul, médio dourado, rápido vermelho); só quando o ponto não tem G
   function corKmh(k){
@@ -8348,13 +8353,15 @@ html,body{
     grupo.appendChild(gt);
     var gs = document.createElementNS(NS, 'g'); gs.setAttribute('class', 'tv-traseira'); gs.setAttribute('data-tv-traseira', '');
     grupo.appendChild(gs);
+    var gk = document.createElementNS(NS, 'g'); gk.setAttribute('class', 'tv-trechos-mapa'); gk.setAttribute('data-tv-trechos-mapa', '');
+    grupo.insertBefore(gk, g);   // por baixo do rastro: marca a pista sem tampar o carro
     var cons = document.createElement('div'); cons.className = 'tv-consist'; cons.setAttribute('data-tv-consist', '');
     var set = document.createElement('div'); set.className = 'tv-setores'; set.setAttribute('data-tv-setores', '');
     var circ = document.createElement('div'); circ.className = 'tv-g'; circ.setAttribute('data-tv-g', '');
     circ.innerHTML = '<svg viewBox="-60 -60 120 120"></svg><div class="tv-g-txt" data-tv-g-txt></div>';
     var leg = document.createElement('div'); leg.className = 'tv-legenda'; leg.setAttribute('data-tv-legenda', '');
     [set, cons, circ, leg].forEach(function(el){ el.style.display = 'none'; mapa.appendChild(el); });
-    return { mapa: mapa, rastro: g, pancadas: gp, trocas: gt, traseira: gs, cons: cons, set: set, circ: circ, circSvg: circ.querySelector('svg'),
+    return { mapa: mapa, rastro: g, pancadas: gp, trocas: gt, traseira: gs, trechosMapa: gk, cons: cons, set: set, circ: circ, circSvg: circ.querySelector('svg'),
       circTxt: circ.querySelector('[data-tv-g-txt]'), leg: leg };
   }
 
@@ -8446,6 +8453,37 @@ html,body{
       : ts.ultima.map(function(p){ return tri(p, 6, .35); }).join('') + ts.volta.map(function(p){ return tri(p, 8, .9); }).join('');
   }
 
+  // trechos da metodologia: entrada (anel) e saída (ponto) de cada curva de freada; a do trecho em curso acesa
+  function desenharTrechosMapa(el, s){
+    var tr = s.trechos, at = s.voltaAtual, h = '';
+    if(!tr || !tr.lista.length){ el.innerHTML = ''; return; }
+    tr.lista.forEach(function(t){
+      if(t.tipo !== 'curva') return;
+      var aceso = at && at.trechoAtual === t.i, op = aceso ? 1 : .55;
+      h += '<circle cx="' + t.entrada.x + '" cy="' + t.entrada.y + '" r="' + (aceso ? 7 : 5) + '" fill="none" stroke="#D4AF37" stroke-opacity="' + op + '" stroke-width="1.8"/>'
+        + '<circle cx="' + t.saida.x + '" cy="' + t.saida.y + '" r="' + (aceso ? 4.5 : 3.2) + '" fill="#D4AF37" fill-opacity="' + op + '"/>';
+    });
+    el.innerHTML = h;
+  }
+
+  function linhasTrechos(s){
+    var tr = s.trechos, at = s.voltaAtual, ult = s.ultimaVolta, l = [];
+    if(!tr) return l;
+    if(tr.erro){ l.push('trechos — cadastro da pista com problema'); return l; }
+    if(!tr.lista.length) return l;
+    var i = at && at.trechoAtual ? at.trechoAtual - 1 : null;
+    if(i != null && tr.lista[i]){
+      var m = ult && ult.trechos ? ult.trechos[i] : null;
+      l.push('trecho <b>' + esc(tr.lista[i].nome) + '</b> ' + (i + 1) + '/' + tr.lista.length
+        + ' · última <b>' + fmtS(m && m.tempoS) + '</b> · melhor <b>' + fmtS(tr.melhoresS[i]) + '</b>'
+        + (m && m.kmhMin != null ? ' · mín <b>' + Math.round(m.kmhMin) + '</b>' : ''));
+    }
+    if(tr.perdasUltima.length) l.push('a última perdeu: ' + tr.perdasUltima.map(function(p){
+      return '<b>' + esc(p.nome) + '</b> <span class="perdeu">+' + p.difS.toFixed(2).replace('.', ',') + '</span>'; }).join(' · '));
+    if(tr.voltaIdealS != null) l.push('ideal pelos trechos <b>' + fmt(tr.voltaIdealS) + '</b>');
+    return l;
+  }
+
   function desenharConsistencia(ui, s){
     var k = s.consistencia, pc = s.pancadas, l = [];
     if(k) l.push('consistência <b>±' + k.desvioS.toFixed(2).replace('.', ',') + ' s</b> · amplitude <b>'
@@ -8465,7 +8503,8 @@ html,body{
     if(ts && ts.temGiro) l.push('traseira (provável · giro a conferir) <b>' + (s.voltaAtual ? ts.volta.length : 0) + '</b> nesta volta'
       + (ult && ult.traseira != null ? ' · <b>' + ult.traseira + '</b> na última' : '')
       + (ts.sinalAprendido ? '' : ' · aprendendo o giro nas curvas'));
-    ui.cons.innerHTML = l.join('<br>');
+    var lt = linhasTrechos(s);
+    ui.cons.innerHTML = l.join('<br>') + (lt.length ? '<br><span data-tv-trechos>' + lt.join('<br>') + '</span>' : '');
   }
 
   function desenharTempos(s){
@@ -8511,6 +8550,7 @@ html,body{
     desenharPancadas(ui.pancadas, s.pancadas);
     desenharTrocas(ui.trocas, s.trocas);
     desenharTraseira(ui.traseira, s.traseira);
+    desenharTrechosMapa(ui.trechosMapa, s);
     desenharConsistencia(ui, s);
     desenharTempos(s);
     desenharLegenda(ui, s);

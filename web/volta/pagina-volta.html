@@ -71,6 +71,8 @@
   .trecho{display:flex;justify-content:space-between;gap:10px;padding:9px 2px;border-bottom:1px solid var(--line);font-size:13.5px;}
   .trecho .m{color:var(--text-2);font-family:var(--mono);font-size:12px;}
   .trecho .d{font-family:var(--mono);}
+  td.nome{font-family:inherit;font-size:12px;line-height:1.3;white-space:normal;}
+  tr.reta td.nome{color:var(--text-2);}
   .duas{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
   .g-wrap{display:grid;grid-template-columns:140px 1fr;gap:14px;align-items:center;}
   .g-nums div{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--line);font-size:13px;}
@@ -98,6 +100,7 @@
   function fmtD(s){ if(s == null) return '—'; return (s > 0 ? '+' : s < 0 ? '−' : '') + Math.abs(s).toFixed(3).replace('.', ','); }
   function fmtG(v){ return v == null ? '—' : (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(2).replace('.', ',') + ' G'; }
   function fmtKm(v){ return v == null ? '—' : Math.round(v) + ' km/h'; }
+  function fmtN(v){ return v == null ? '—' : String(Math.round(v)); }
   function fmtData(ms){ if(ms == null) return '—'; const d = new Date(ms);
     return d.toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit' }) + ' ' + d.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' }); }
   function fmtDur(s){ if(!s) return '—'; const m = Math.floor(s / 60); return m ? m + ' min ' + Math.round(s - m * 60) + ' s' : Math.round(s) + ' s'; }
@@ -157,6 +160,7 @@
       '<div class="sub">' + esc(fmtDur(se.duracaoS)) + ' · ' + se.nPontos.toLocaleString('pt-BR') + ' pontos de GPS</div>' +
       (dev ? '<span class="selo-dev">DEV · GRAVAÇÃO LOCAL ' + esc(DEV.replace('-', '/')) + ' (NÃO VEIO DA NUVEM)</span>' : '') +
       (se.avisoKmh ? '<div class="aviso" data-aviso-kmh>' + esc(se.avisoKmh) + '</div>' : '') +
+      (p.trechos && p.trechos.erro ? '<div class="aviso" data-erro-trechos>Cadastro de trechos da pista com problema (' + esc(p.trechos.erro) + ') — comparação por fatias iguais.</div>' : '') +
       '<div class="tira"><div><div class="k">Voltas</div><div class="v" data-n-voltas>' + p.voltas.length + '</div></div>' +
       '<div><div class="k">Melhor</div><div class="v melhor" data-melhor>' + esc(fmtT(p.melhorVolta && p.melhorVolta.tempoS)) + '</div></div>' +
       '<div><div class="k">Ideal</div><div class="v" data-ideal>' + esc(fmtT(p.voltaIdealS)) + '</div></div>' +
@@ -238,7 +242,8 @@
     const v = p.voltas.find(x => x.n === estado.voltaN);
     const ref = estado.refN != null ? p.voltas.find(x => x.n === estado.refN) : null;
     // comparação: a volta escolhida (V) contra a referência (R); dif > 0 = V mais lenta ali
-    const cmp = ref ? compararVoltas(ref, v) : null;
+    const listaTrechos = (p.trechos && p.trechos.lista) || [];
+    const cmp = ref ? compararVoltas(ref, v, { trechos: listaTrechos }) : null;
     estado.cmp = cmp;
     const chips = '<button class="chip ' + (ref ? '' : 'on') + '" data-ref="">nenhuma</button>' +
       p.voltas.filter(x => x.n !== v.n).map(x => '<button class="chip ' + (ref && ref.n === x.n ? 'on' : '') + '" data-ref="' + x.n + '">V' + x.n + ' ' + esc(fmtT(x.tempoS)) + '</button>').join('');
@@ -281,7 +286,13 @@
         html += '<div class="secao"><span class="k">Setores</span></div><table data-setores><tr><th>Setor</th><th>V' + v.n + '</th><th>V' + ref.n + '</th><th>Dif.</th></tr>' +
           cmp.setores.map(s => '<tr><td>S' + s.s + '</td><td>' + esc(fmtT(s.b)) + '</td><td>' + esc(fmtT(s.a)) + '</td><td class="' + corDif(s.difS) + '">' + esc(fmtD(s.difS)) + '</td></tr>').join('') + '</table>';
       }
-      const lista = (arr, vazio) => arr.length ? arr.map(t => '<div class="trecho"><span>Trecho ' + t.i + ' <span class="m">' +
+      if (cmp.porTrechos) {
+        html += '<div class="secao"><span class="k">Trechos</span><span class="nota">curva = onde se freia · reta = o resto</span></div>' +
+          '<table data-trechos><tr><th>Trecho</th><th>V' + v.n + '</th><th>V' + ref.n + '</th><th>Dif.</th><th>Mín V' + v.n + '</th><th>Mín V' + ref.n + '</th></tr>' +
+          cmp.trechos.map(t => '<tr class="' + t.tipo + '"><td class="nome">' + esc(t.nome) + '</td><td>' + esc(fmtT(t.tempoB)) + '</td><td>' + esc(fmtT(t.tempoA)) +
+            '</td><td class="' + corDif(t.difS) + '">' + esc(fmtD(t.difS)) + '</td><td>' + esc(fmtN(t.kmhMinB)) + '</td><td>' + esc(fmtN(t.kmhMinA)) + '</td></tr>').join('') + '</table>';
+      }
+      const lista = (arr, vazio) => arr.length ? arr.map(t => '<div class="trecho"><span>' + esc(t.nome || 'Trecho ' + t.i) + ' <span class="m">' +
         t.mDe.toLocaleString('pt-BR') + '–' + t.mAte.toLocaleString('pt-BR') + ' m</span></span><span class="d ' + corDif(t.difS) + '">' + esc(fmtD(t.difS)) + ' s</span></div>').join('')
         : '<div class="trecho"><span class="m">' + vazio + '</span></div>';
       html += '<div class="duas"><div><div class="secao"><span class="k">Onde perdeu</span></div><div data-perdeu>' + lista(cmp.perdeu, 'nenhum trecho') + '</div></div>' +
@@ -289,6 +300,15 @@
     } else if (v.setoresS) {
       html += '<div class="secao"><span class="k">Setores</span></div><table data-setores><tr><th>Setor</th><th>V' + v.n + '</th><th>Melhor</th></tr>' +
         v.setoresS.map((s, i) => '<tr><td>S' + (i + 1) + '</td><td class="' + (s === p.melhoresSetores[i] ? 'melhor' : '') + '">' + esc(fmtT(s)) + '</td><td>' + esc(fmtT(p.melhoresSetores[i])) + '</td></tr>').join('') + '</table>';
+    }
+    if (!cmp && v.trechos && v.trechos.length === listaTrechos.length) {
+      const melhores = p.trechos.melhoresS || [];
+      html += '<div class="secao"><span class="k">Trechos</span><span class="nota">curva = onde se freia · reta = o resto</span></div>' +
+        '<table data-trechos><tr><th>Trecho</th><th>V' + v.n + '</th><th>Melhor</th><th>Entrada</th><th>Mín.</th><th>Saída</th></tr>' +
+        listaTrechos.map((tr, i) => { const m = v.trechos[i];
+          return '<tr class="' + tr.tipo + '"><td class="nome">' + esc(tr.nome) + '</td><td class="' + (m.tempoS === melhores[i] ? 'melhor' : '') + '">' + esc(fmtT(m.tempoS)) +
+            '</td><td>' + esc(fmtT(melhores[i])) + '</td><td>' + esc(fmtN(m.kmhEntrada)) + '</td><td>' + esc(fmtN(m.kmhMin)) + '</td><td>' + esc(fmtN(m.kmhSaida)) + '</td></tr>'; }).join('') + '</table>' +
+        (p.trechos.voltaIdealS != null ? '<div class="legenda" data-ideal-trechos><span>ideal pelos trechos ' + esc(fmtT(p.trechos.voltaIdealS)) + '</span><span>km/h na entrada, mínima e saída</span></div>' : '');
     }
 
     html += '<div class="secao"><span class="k">Força G</span></div>';

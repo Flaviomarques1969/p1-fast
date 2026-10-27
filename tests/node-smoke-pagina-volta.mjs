@@ -81,6 +81,22 @@ const inv = compararVoltas(v2, v1);
 t('controle: trocar A e B inverte o sinal em todo trecho', inv.trechos.every((x, i) => perto(x.difS, -c.trechos[i].difS, 0.002))
   && perto(inv.deltaFinalS, -c.deltaFinalS, 0.001));
 t('volta sem perfil → sem comparação (não inventa)', compararVoltas(v1, { n: 9, tempoS: 60 }) === null);
+// 3b) "onde ganhou e onde perdeu" pelos trechos da metodologia (painel p1fast-gps-setores-1228) — tempos da peça da TV
+const lt = pR.trechos.lista;
+const ct = compararVoltas(v1, v2, { trechos: lt });
+t('trechos: a página traz o cadastro cortado (15 pedaços, sem erro) e cada volta com os seus trechos',
+  lt.length === 15 && pR.trechos.erro === null && pR.voltas.every(v => v.trechos && v.trechos.length === lt.length), lt.length + ' ' + pR.trechos.erro);
+t('trechos: comparação por trecho, com nome, e a soma das diferenças = diferença final (±0,002)', ct.porTrechos
+  && ct.trechos.length === lt.length && ct.trechos.every((x, i) => x.nome === lt[i].nome)
+  && perto(soma(ct.trechos.map(x => x.difS)), ct.deltaFinalS, 0.002), soma(ct.trechos.map(x => x.difS)));
+t('trechos: tempo e mínima de cada lado vêm da volta medida (não refaz)', ct.trechos.every((x, i) =>
+  x.tempoA === v1.trechos[i].tempoS && x.tempoB === v2.trechos[i].tempoS && x.kmhMinA === v1.trechos[i].kmhMin && x.kmhMinB === v2.trechos[i].kmhMin));
+t('trechos: "onde perdeu" é só trecho em que B demorou mais', ct.perdeu.length > 0 && ct.perdeu.every(x => x.difS > 0 && x.nome));
+t('controle: sem a lista de trechos → corte antigo de 20 fatias', c.porTrechos === false && c.trechos.length === N_TRECHOS);
+t('controle: volta sem trechos medidos → corte antigo, mesmo com a lista',
+  compararVoltas(v1, { ...v2, trechos: null }, { trechos: lt }).porTrechos === false);
+const autoT = compararVoltas(v1, v1, { trechos: lt });
+t('controle: volta contra ela mesma por trechos → 0 em todos', autoT.trechos.every(x => x.difS === 0) && !autoT.perdeu.length && !autoT.ganhou.length);
 
 // 4) G do carro: só quando o notebook gravou (zeroOk) — a página não refaz G
 const comG = jsonl.map(l => (l.Tipo === 'gps' ? { ...l, Dados: { ...l.Dados, gLong: -0.4, gLat: 0.2, zeroOk: true } } : l));
@@ -133,6 +149,8 @@ t('notebook: uma conta só de G por fix (canal e disco usam o mesmo valor)',
 // 6) A página só desenha (a conta mora no cérebro)
 const pagina = ler('web/volta/pagina-volta.html');
 t('página: importa o cérebro da página e a porta de leitura', /cerebro-pagina-volta\.js/.test(pagina) && /arquivo-sessoes\.js/.test(pagina));
+t('página: compara pelos trechos do pacote e mostra a tabela por trecho', /compararVoltas\(ref, v, \{ trechos: listaTrechos \}\)/.test(pagina)
+  && /data-trechos/.test(pagina) && /data-erro-trechos/.test(pagina));
 t('página: não refaz volta, setor, G nem distância', !/feedGps|criarCerebroGpsTv|criarDetectorChegada|fracDe\(|Math\.hypot|createClient|\/rest\/v1/.test(pagina));
 
 // 7) Cópia do app do iPhone idêntica, pelo grafo de imports da página (régua nasce da fonte)
