@@ -19,8 +19,12 @@ public sealed record TrechoSegmento(string Id, string Nome, LinhaGps EntradaLine
 // NÃO é longitudinal/lateral ainda (o mapeamento do eixo é calibração de bancada, Flávio 2026-07-07).
 // null quando a fonte não fornece (ex.: replay antigo). Ainda NÃO usado pelo cérebro — só carregado
 // pro dia de bancada ligar a confirmação da troca de marcha pelo "tranco" longitudinal.
+// AccelLongG/AccelLatG (item 1 da ordem de 27/10): G do CARRO pelo AceleracaoCarro — eixos provados
+// (+gx frente, −gy lado) e zero aprendido no box; ZeroOk=false = ainda sem zero (não é medida fina).
+// null quando a fonte não traz aceleração.
 public sealed record AmostraGps(double Lat, double Lng, double Kmh = 0, double T = 0, double? HeadingDeg = null,
-    double? AccelXg = null, double? AccelYg = null, double? AccelZg = null);
+    double? AccelXg = null, double? AccelYg = null, double? AccelZg = null,
+    double? AccelLongG = null, double? AccelLatG = null, bool ZeroOk = false);
 
 public enum TrechoFase { AntesEntrada, EntradaFreio, FreioApice, ApiceSaida, PosSaida }
 

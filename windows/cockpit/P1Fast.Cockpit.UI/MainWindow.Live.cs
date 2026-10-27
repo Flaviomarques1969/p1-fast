@@ -597,7 +597,9 @@ public sealed partial class MainWindow
         // (>=3 m), a MESMA peça que o replay usa. O disco e a nuvem acima já guardaram TODOS os
         // fixes crus; só o maestro recebe o filtrado, pra fix impreciso/jitter parado não gerar
         // curva/ápice/freada falsos na tela do piloto.
-        var cerebro = _gpsFiltro.Aceitar(f.Lat, f.Lng, f.Fix, f.HaccM, tWall, f.HeadingDeg, f.GX, f.GY, f.GZ);
+        // Item 1 (27/10): km/h do PRÓPRIO RaceBox é a velocidade do cérebro (dist/dt só guarda salto).
+        var cerebro = _gpsFiltro.Aceitar(f.Lat, f.Lng, f.Fix, f.HaccM, tWall, f.HeadingDeg, f.GX, f.GY, f.GZ,
+            kmhAparelho: f.Kmh);
 
         // PISTA NOVA (PISTA-C): fix BOM (mesmos gates de qualidade — fix 3D, hacc<50) mas FORA da
         // caixa de Brasília. O filtro do cérebro o reprova (cerebro==null) e continua reprovando; aqui

@@ -41,6 +41,12 @@ public sealed class GpsFiltroAoVivo
 
     private PontoGps? _prev;
     private double _prevT;
+    // Item 1 (27/10): zero no box + eixos do carro. Vive AQUI para o replay e o ao vivo passarem
+    // pela MESMA peça (H3) e para aprender o zero com o carro PARADO (antes da decimação).
+    private readonly AceleracaoCarro _acel = new();
+
+    /// <summary>Zero no box/eixos desta sessão (leitura para diagnóstico e testes).</summary>
+    public AceleracaoCarro Acel => _acel;
 
     /// <summary>Porta de QUALIDADE (sem estado): fix válido, precisão boa e dentro da pista.
     /// Um fix=3 mas hacc>=50 m (comum no início/sob obstrução) NÃO passa — senão gera curva
@@ -50,16 +56,25 @@ public sealed class GpsFiltroAoVivo
         && lat >= LatMin && lat <= LatMax && lon >= LonMin && lon <= LonMax;
 
     /// <summary>Decimação por movimento (com estado), assumindo qualidade JÁ aprovada.
-    /// Devolve a amostra (kmh = dist/dt do GPS) só quando o carro andou >= <see cref="MovimentoMinM"/>
-    /// desde o último ponto aceito; senão <c>null</c> (parado/jitter). A 1ª amostra passa com kmh=0.
+    /// Devolve a amostra só quando o carro andou >= <see cref="MovimentoMinM"/> desde o último ponto
+    /// aceito; senão <c>null</c> (parado/jitter). kmh = do aparelho quando vem; senão dist/dt do GPS
+    /// (a 1ª amostra sem velocidade do aparelho passa com kmh=0).
     /// headingDeg (L2): rumo do PACOTE quando o aparelho fornece (RaceBox headMot) — só
-    /// atravessa, sem inventar; null = cérebro cai no rumo por 2 posições, como sempre.</summary>
+    /// atravessa, sem inventar; null = cérebro cai no rumo por 2 posições, como sempre.
+    /// kmhAparelho (item 1, 27/10): velocidade do PRÓPRIO GPS (RaceBox; provada contra a posição:
+    /// média −0,12 km/h, desvio 0,45). Quando vem, É a velocidade da amostra; dist/dt fica só como
+    /// guarda de salto de posição e como reserva de fonte sem velocidade (replay antigo, iPhone).</summary>
     public AmostraGps? AceitarValido(PontoGps p, double tWall, double? headingDeg = null,
-        double? ax = null, double? ay = null, double? az = null)
+        double? ax = null, double? ay = null, double? az = null, double? kmhAparelho = null)
     {
+        double? kmhAp = kmhAparelho is { } ka && double.IsFinite(ka) && ka >= 0 && ka <= KmhTetoPlausivel
+            ? ka : null;
+        // G do carro ANTES da decimação: é com o carro parado (decimado) que o zero aprende.
+        var g = _acel.Ler(kmhAp, ax, ay);
+
         if (_prev is { } prev && Ghost.DistMeters(prev, p) < MovimentoMinM) return null;
 
-        double kmh = 0;
+        double kmh = kmhAp ?? 0;
         if (_prev is { } prev2)
         {
             // 5.3b: dt implausível (rajada BLE colada no mesmo ms) → usa o nominal de 40 ms em
@@ -67,20 +82,23 @@ public sealed class GpsFiltroAoVivo
             double dtMs = tWall - _prevT;
             double dtS = (dtMs < DtImplausivelMs ? DtNominalMs : dtMs) / 1000.0;
             dtS = Math.Max(0.001, dtS);
-            kmh = Ghost.DistMeters(prev2, p) / dtS * 3.6;
+            double kmhPos = Ghost.DistMeters(prev2, p) / dtS * 3.6;
             // Mesmo com o dt corrigido, um salto de posição impossível não pode virar referência
             // de curva: acima do teto, DESCARTA o par (não avança _prev — compara com o último bom).
-            if (kmh > KmhTetoPlausivel) return null;
+            if (kmhPos > KmhTetoPlausivel) return null;
+            kmh = kmhAp ?? kmhPos;
         }
         _prev = p;
         _prevT = tWall;
-        return new AmostraGps(p.Lat, p.Lng, kmh, tWall, headingDeg, ax, ay, az);
+        return new AmostraGps(p.Lat, p.Lng, kmh, tWall, headingDeg, ax, ay, az,
+            g?.Long, g?.Lat, g?.ZeroOk ?? false);
     }
 
     /// <summary>Fluxo AO VIVO: qualidade + decimação num passo só. Devolve a amostra pro
     /// cérebro ou <c>null</c> (reprovado ou decimado). É o que o MainWindow.Live chama por fix.
-    /// ax/ay/az: aceleração crua do RaceBox (g), só atravessa — o cérebro ainda não usa (bancada).</summary>
+    /// ax/ay/az: aceleração crua do RaceBox (g) — atravessa crua e vira G do carro (AccelLongG/LatG).</summary>
     public AmostraGps? Aceitar(double lat, double lon, double fix, double hacc, double tWall, double? headingDeg = null,
-        double? ax = null, double? ay = null, double? az = null)
-        => QualidadeOk(lat, lon, fix, hacc) ? AceitarValido(new PontoGps(lat, lon), tWall, headingDeg, ax, ay, az) : null;
+        double? ax = null, double? ay = null, double? az = null, double? kmhAparelho = null)
+        => QualidadeOk(lat, lon, fix, hacc)
+            ? AceitarValido(new PontoGps(lat, lon), tWall, headingDeg, ax, ay, az, kmhAparelho) : null;
 }

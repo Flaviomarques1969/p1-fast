@@ -63,7 +63,7 @@ public sealed class SessaoReplay
     public static SessaoReplay Carregar(string sessaoJson)
     {
         var motorList = new List<(double T, double Rpm, AmostraAlerta A)>();
-        var gpsValidos = new List<(PontoGps P, double T)>();
+        var gpsValidos = new List<(PontoGps P, double T, double? Kmh, double? Gx, double? Gy, double? Gz)>();
         int gpsTotal = 0;
 
         void ProcessarAmostra(JsonElement a)
@@ -80,8 +80,10 @@ public sealed class SessaoReplay
                 var lat = GetNum(gd, "lat") ?? 0;
                 var lon = GetNum(gd, "lon") ?? 0;
                 // Mesmo filtro de QUALIDADE do ao vivo (H3): fonte única em GpsFiltroAoVivo.
+                // Item 1 (27/10): km/h do aparelho e G cru seguem para o filtro, IGUAL ao ao vivo (H3).
                 if (GpsFiltroAoVivo.QualidadeOk(lat, lon, fix, hacc))
-                    gpsValidos.Add((new PontoGps(lat, lon), tWall));
+                    gpsValidos.Add((new PontoGps(lat, lon), tWall,
+                        GetNum(gd, "kmh"), GetNum(gd, "gx"), GetNum(gd, "gy"), GetNum(gd, "gz")));
                 return;
             }
 
@@ -127,13 +129,14 @@ public sealed class SessaoReplay
             }
         }
 
-        // Pontos em MOVIMENTO (>=3 m), com velocidade real tirada do GPS (dist/dt).
+        // Pontos em MOVIMENTO (>=3 m), com a velocidade do aparelho quando a gravação a traz
+        // (senão dist/dt do GPS — sessões antigas sem kmh).
         // Decimação pela MESMA peça do ao vivo (H3): GpsFiltroAoVivo.AceitarValido.
         var gpsDet = new List<AmostraGps>();
         var filtroMov = new GpsFiltroAoVivo();
-        foreach (var (p, tw) in gpsValidos)
+        foreach (var (p, tw, kmh, gx, gy, gz) in gpsValidos)
         {
-            var am = filtroMov.AceitarValido(p, tw);
+            var am = filtroMov.AceitarValido(p, tw, null, gx, gy, gz, kmhAparelho: kmh);
             if (am is not null) gpsDet.Add(am);
         }
 

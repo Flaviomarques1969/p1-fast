@@ -66,6 +66,8 @@ public sealed class RaceBoxBleReader
     // 2026-07-11, reforço das conexões automáticas). Prazo maior: o 1º fix pode demorar.
     private const int WatchdogSemPrimeiroFixMs = 10000;
     private long _ultimoFixTick;   // Environment.TickCount64 do último fix decodificado
+    // Relógio dos fixes pelo iTOW do GPS (item 1, 27/10). Reancora sozinho na religação (salto de iTOW).
+    private readonly RelogioGps _relogio = new();
     private long _assinadoTick;    // Environment.TickCount64 de quando a assinatura BLE nasceu
     private Task? _watchdogTask;
 
@@ -250,13 +252,15 @@ public sealed class RaceBoxBleReader
 
         if (decs.Count == 0) return;
 
-        // 5.3a: quando vários frames vêm num MESMO notify, espaça os carimbos pelo iTOW —
-        // senão todos ganham a mesma chegada (dt~0 → km/h absurdo no cérebro).
+        // 5.3a → item 1 (27/10): carimbo de TODO fix pelo relógio do GPS (iTOW) — não só dentro da
+        // rajada. O atraso variável do Bluetooth sai do dt entre notifies (RelogioGps reancora sozinho
+        // em virada de semana, salto > 1 s ou deriva > 1 s da chegada).
         _ultimoFixTick = Environment.TickCount64;
         long chegada = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         var itows = new long[decs.Count];
         for (int k = 0; k < decs.Count; k++) itows[k] = decs[k].ITowMs;
-        var tWalls = RaceBoxUbxParser.EspacarTimestamps(itows, chegada);
+        long[] tWalls;
+        lock (_relogio) tWalls = _relogio.CarimbarRajada(itows, chegada);   // notifies concorrentes
 
         // Entrega FORA do lock (o consumidor re-enfileira pra thread da UI).
         for (int k = 0; k < decs.Count; k++)

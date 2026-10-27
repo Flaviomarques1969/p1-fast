@@ -79,7 +79,8 @@ public sealed partial class MainWindow
         // filtro provado, SEM a caixa de Brasília — a qualidade já foi conferida no OnLiveGps).
         if (_pistaSegmentosAplicados)
         {
-            var amostra = _gpsFiltroPista.AceitarValido(new PontoGps(lat, lng), tWall, heading, ax, ay, az);
+            var amostra = _gpsFiltroPista.AceitarValido(new PontoGps(lat, lng), tWall, heading, ax, ay, az,
+                kmhAparelho: kmh);
             if (amostra is not null)
             {
                 _orquestrador?.IngestGps(amostra);
