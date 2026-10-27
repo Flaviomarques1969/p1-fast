@@ -266,3 +266,11 @@ PONTO DE PARADA 1027-1847 (27/10 ~18h50): E4 commitada (a33294356); E5 no meio s
 
 ### RETOMADA 1027-1847 (27/10, depois do /clear)
 Segue do PRÓXIMO (1) da seção E5: ensaio em canal só dele (cockpit-bubi-dev-ensaio-e5) → catraca do montador + smoke → commit/push → PACOTE-TV-BOX-AO-VIVO.md → frase MIGRAR. Produção intocada.
+- (RETOMADA 1027-1847) ENSAIO no canal só dele (cockpit-bubi-dev-ensaio-e5, ENSAIO_CANAL troca): 15/1 → E1 e E3 passaram (confirma a triagem "outro
+  emissor"). E4 seguiu FAIL = RÉGUA ERRADA (a triagem anterior errou neste item): a rajada tinha tWall 12 s atrás, MAIS VELHO que o último ponto
+  já mostrado (~7 s) → a ponte descarta como repetido (criarFiltroRepetidos, E2) e a TV fica em SEM SINAL, correto. E4 virou dois itens: reenvio
+  mais velho → segue SEM SINAL; fila do buraco (5 s atrás, mais novo que o mostrado) → ATRASADO. Resultado 17 ok / 0 falha, 85 msgs aceitas.
+  CONTROLE: pacote com AO_VIVO_MS=60000 no cérebro do sinal = 14 ok / 3 FAIL (E3, E4, E4), saída 1.
+- CATRACA tests/node-smoke-montar-p1box-tv.mjs 17/17 (1 régua errada consertada: nome fixo da lista p1box-tv-LISTA.sha256). Controles dentro dela:
+  base com 1 byte trocado, arquivo a mais, ar já com tv/, montador sem isolar → todos RECUSADOS saída 1. Somada ao npm run smoke
+  (+ smoke:montar-p1box-tv). Smoke um a um 84/85 (só schema-parity, anterior). arquitetura 39/0.
