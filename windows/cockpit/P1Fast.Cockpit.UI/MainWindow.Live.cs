@@ -694,7 +694,7 @@ public sealed partial class MainWindow
         var pub = _livePublisher!;
         var gpsPub = _liveGpsPublisher!;
         try { await nuvem.ConnectAsync(ct).ConfigureAwait(false); } catch { /* religa abaixo */ }
-        long ultimaTentativa = Environment.TickCount64;
+        var religacao = new ReligacaoNuvem();
         try
         {
             while (!ct.IsCancellationRequested)
@@ -706,16 +706,9 @@ public sealed partial class MainWindow
                 while (_liveCloudGps.TryDequeue(out var fix))
                     gpsPub.Oferecer(fix);
 
-                // 2) Religa se caiu (backoff ~2 s), igual ao console de captura.
-                if (!nuvem.Online)
-                {
-                    long agora = Environment.TickCount64;
-                    if (agora - ultimaTentativa > 2000)
-                    {
-                        ultimaTentativa = agora;
-                        try { await nuvem.ConnectAsync(ct).ConfigureAwait(false); } catch { /* tenta depois */ }
-                    }
-                }
+                // 2) Religa se caiu (backoff ~2 s contado do FIM da tentativa; conexão aberta
+                //    esperando a confirmação da entrada ganha até 10 s) — mesma regra do console.
+                await religacao.GarantirAsync(nuvem, ct).ConfigureAwait(false);
 
                 // 3) Drena motor E GPS (cada um reenvia TODO o acumulado quando a nuvem volta).
                 try { await pub.DrenarAsync(ct).ConfigureAwait(false); }

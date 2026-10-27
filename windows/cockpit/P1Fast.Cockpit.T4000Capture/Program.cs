@@ -352,7 +352,7 @@ internal static class Program
         Console.WriteLine();
 
         var readerTask = reader.RunAsync(cts.Token);
-        long ultimaTentativaNuvem = 0;
+        var religacaoNuvem = new ReligacaoNuvem();
 
         // Painel de saúde ~1x/s + vigia de tecla, no fio principal. Alarme NUNCA silencioso.
         SessionResumo? resultado = null;
@@ -365,15 +365,9 @@ internal static class Program
             // Nuvem: religa sozinho se caiu, depois drena a fila (reenvia o acumulado).
             if (publisher is not null && nuvem is not null)
             {
-                if (!nuvem.Online)
-                {
-                    long agora = Environment.TickCount64;
-                    if (agora - ultimaTentativaNuvem > 2000)
-                    {
-                        ultimaTentativaNuvem = agora;
-                        try { nuvem.ConnectAsync(cts.Token).Wait(4000); } catch { /* tenta depois */ }
-                    }
-                }
+                // Mesma regra do cockpit (ReligacaoNuvem): espera conta do FIM da tentativa e a
+                // conexão aberta aguardando a confirmação da entrada não é derrubada antes de 10 s.
+                try { religacaoNuvem.GarantirAsync(nuvem, cts.Token).Wait(12_000); } catch { /* tenta depois */ }
                 try { publisher.DrenarAsync(cts.Token).Wait(2000); } catch { /* mantém na fila */ }
             }
 

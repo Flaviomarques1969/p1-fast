@@ -107,6 +107,10 @@ public sealed class SupabaseRealtimeChannel : ILiveChannel, IAsyncDisposable
 
     public bool Online => _ws?.State == WebSocketState.Open && _joined;
 
+    /// <summary>Socket aberto, entrada no canal pedida e ainda sem confirmação — religar agora
+    /// derrubaria a conexão que está chegando (ReligacaoNuvem dá um prazo maior a esse estado).</summary>
+    public bool AguardandoEntrada => _ws?.State == WebSocketState.Open && !_joined;
+
     /// <summary>Conecta, entra no canal e liga os laços de recebimento + heartbeat.
     /// Best-effort: lança se nem conectar; quem chama trata e tenta de novo (backoff).</summary>
     public async Task ConnectAsync(CancellationToken ct)
