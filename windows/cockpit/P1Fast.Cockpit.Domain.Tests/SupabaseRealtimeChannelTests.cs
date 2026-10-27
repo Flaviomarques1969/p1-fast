@@ -252,4 +252,63 @@ public class SupabaseRealtimeChannelTests
         lock (fake.Enviadas) mandouBroadcast = fake.Enviadas.Exists(m => m.Contains("\"event\":\"broadcast\""));
         Assert.True(mandouBroadcast, "o broadcast tem que ter ido pro socket");
     }
+
+    // ── 9) TROCA DE REDE no meio do envio (teste de rua 27/10: Wi-Fi → celular e o ao-vivo nunca
+    //    voltou). O WebSocket de verdade, com a rede morta, NÃO erra: o envio fica parado
+    //    esperando o outro lado e o estado segue "Open". Sem limite de tempo, esse envio prendia
+    //    o laço da nuvem para sempre (PublishAsync nunca voltava, a religação nunca rodava).
+    //    Contrato: o envio desiste em tempo curto, o canal se dá por offline e a religação
+    //    com uma rede nova volta a entregar. ──
+    private sealed class SocketDeRedeMorta : IRealtimeSocket
+    {
+        public WebSocketState State { get; private set; } = WebSocketState.None;
+        public bool Morta { get; set; }
+        public Action<SocketDeRedeMorta, string>? AoEnviar { get; set; }
+        private readonly Channel<byte[]> _entrada = Channel.CreateUnbounded<byte[]>();
+        public Task ConnectAsync(Uri uri, CancellationToken ct) { State = WebSocketState.Open; return Task.CompletedTask; }
+        public async ValueTask SendAsync(ReadOnlyMemory<byte> buffer, WebSocketMessageType t, bool fim, CancellationToken ct)
+        {
+            if (Morta) { await Task.Delay(Timeout.Infinite, ct).ConfigureAwait(false); return; }  // como o TCP sem rede: espera
+            AoEnviar?.Invoke(this, Encoding.UTF8.GetString(buffer.Span));
+        }
+        public async ValueTask<ValueWebSocketReceiveResult> ReceiveAsync(Memory<byte> buffer, CancellationToken ct)
+        {
+            var dados = await _entrada.Reader.ReadAsync(ct).ConfigureAwait(false);
+            new ReadOnlySpan<byte>(dados).CopyTo(buffer.Span);
+            return new ValueWebSocketReceiveResult(dados.Length, WebSocketMessageType.Text, true);
+        }
+        public Task CloseAsync(WebSocketCloseStatus s, string? d, CancellationToken ct)
+            => Morta ? Task.Delay(Timeout.Infinite, ct) : Task.CompletedTask;               // fechar também espera
+        public void Dispose() { State = WebSocketState.Closed; _entrada.Writer.TryComplete(); }
+        public void ServidorEnvia(string json) => _entrada.Writer.TryWrite(Encoding.UTF8.GetBytes(json));
+    }
+
+    [Fact]
+    public async Task RedeCaiNoMeioDoEnvio_DesisteEReligaNaRedeNova()
+    {
+        void Servidor(SocketDeRedeMorta s, string msg) { if (Evento(msg) == "phx_join") s.ServidorEnvia(ReplyOk(Topic, RefDe(msg))); }
+        var wifi    = new SocketDeRedeMorta { AoEnviar = Servidor };
+        var celular = new SocketDeRedeMorta { AoEnviar = Servidor };
+        var fila = new Queue<SocketDeRedeMorta>(new[] { wifi, celular });
+        await using var canal = new SupabaseRealtimeChannel(Url, Anon, Canal, socketFactory: () => fila.Dequeue(),
+            heartbeatIntervalo: TimeSpan.FromSeconds(30), envioTimeout: TimeSpan.FromMilliseconds(300));
+
+        await canal.ConnectAsync(CancellationToken.None);
+        Assert.True(await AteAsync(() => canal.Online));
+        Assert.True(await canal.PublishAsync("gps", new { lat = 1 }, CancellationToken.None));
+
+        wifi.Morta = true;   // saiu do Wi-Fi: o socket velho segue "Open", mas nada passa
+        var envio = canal.PublishAsync("gps", new { lat = 2 }, CancellationToken.None);
+        var venceu = await Task.WhenAny(envio, Task.Delay(5000));
+        Assert.True(venceu == envio, "o envio com a rede morta tem que desistir sozinho (antes ficava preso para sempre)");
+        Assert.False(await envio, "envio que não passou não pode contar como entregue");
+        Assert.False(canal.Online, "rede morta = offline, para a religação agir");
+
+        // religação (o laço da nuvem chama ConnectAsync): fechar o socket morto não pode prender
+        var religa = canal.ConnectAsync(CancellationToken.None);
+        Assert.True(await Task.WhenAny(religa, Task.Delay(5000)) == religa, "religar não pode ficar preso fechando o socket morto");
+        await religa;
+        Assert.True(await AteAsync(() => canal.Online), "na rede nova (celular) volta a ficar online");
+        Assert.True(await canal.PublishAsync("gps", new { lat = 3 }, CancellationToken.None));
+    }
 }

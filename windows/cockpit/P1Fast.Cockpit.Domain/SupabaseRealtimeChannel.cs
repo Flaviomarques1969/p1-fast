@@ -22,6 +22,12 @@
 // heartbeat, topic "phoenix"). phx_error/phx_close derrubam o online, e um heartbeat
 // sem resposta (conexão meia-aberta) também — senão o publisher achava que entregou e
 // o ao-vivo se perdia em silêncio (bug de campo 2026-07-09).
+//
+// PRAZO EM TUDO QUE FALA COM A REDE (teste de rua 2026-10-27: saiu do Wi-Fi para o celular e
+// o ao-vivo nunca voltou). Com a rede morta o WebSocket NÃO erra: o envio e o fechamento ficam
+// esperando o outro lado e o estado segue Open. Sem prazo, um envio preso segurava a trava de
+// envio e o laço da nuvem para sempre — a religação nunca rodava. Agora conectar, enviar e
+// fechar desistem sozinhos; envio que desiste = offline (a religação age).
 
 using System.Net.WebSockets;
 using System.Text;
@@ -64,6 +70,9 @@ public sealed class SupabaseRealtimeChannel : ILiveChannel, IAsyncDisposable
     private readonly SemaphoreSlim _sendLock = new(1, 1);
     private readonly Func<IRealtimeSocket> _socketFactory;
     private readonly TimeSpan _heartbeatIntervalo;
+    private readonly TimeSpan _envioTimeout;     // enviar (inclui esperar a vez na trava de envio)
+    private readonly TimeSpan _conexaoTimeout;   // abrir o WebSocket
+    private readonly TimeSpan _fechaTimeout;     // fechar o socket velho na religação
 
     // _ws e _joined são lidos/escritos por 3 threads (quem chama + laço de recebimento +
     // laço de heartbeat). volatile garante que cada thread veja a última escrita das outras.
@@ -79,7 +88,8 @@ public sealed class SupabaseRealtimeChannel : ILiveChannel, IAsyncDisposable
         string anonKey,
         string canal,
         Func<IRealtimeSocket>? socketFactory = null,
-        TimeSpan? heartbeatIntervalo = null)
+        TimeSpan? heartbeatIntervalo = null,
+        TimeSpan? envioTimeout = null)
     {
         if (string.IsNullOrWhiteSpace(supabaseUrl)) throw new ArgumentException("URL vazia", nameof(supabaseUrl));
         if (string.IsNullOrWhiteSpace(anonKey))     throw new ArgumentException("chave anon vazia", nameof(anonKey));
@@ -90,6 +100,9 @@ public sealed class SupabaseRealtimeChannel : ILiveChannel, IAsyncDisposable
         _topic = "realtime:" + canal;
         _socketFactory = socketFactory ?? (() => new ClientWebSocketAdapter());
         _heartbeatIntervalo = heartbeatIntervalo ?? TimeSpan.FromSeconds(25);
+        _envioTimeout   = envioTimeout ?? TimeSpan.FromSeconds(5);
+        _conexaoTimeout = TimeSpan.FromSeconds(10);
+        _fechaTimeout   = TimeSpan.FromSeconds(2);
     }
 
     public bool Online => _ws?.State == WebSocketState.Open && _joined;
@@ -103,7 +116,16 @@ public sealed class SupabaseRealtimeChannel : ILiveChannel, IAsyncDisposable
         _heartbeatPendente = false;
 
         var ws = _socketFactory();
-        await ws.ConnectAsync(_wsUri, ct).ConfigureAwait(false);
+        using (var prazo = CancellationTokenSource.CreateLinkedTokenSource(ct))
+        {
+            prazo.CancelAfter(_conexaoTimeout);
+            try { await ws.ConnectAsync(_wsUri, prazo.Token).ConfigureAwait(false); }
+            catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+            {
+                ws.Dispose();
+                throw new TimeoutException("conexão com a nuvem passou do prazo");
+            }
+        }
         _ws = ws;
 
         // L5: cópia local pros laços — se uma religação trocar _bg no meio, cada laço
@@ -163,13 +185,26 @@ public sealed class SupabaseRealtimeChannel : ILiveChannel, IAsyncDisposable
     private async Task SendRawAsync(object msg, CancellationToken ct)
     {
         var bytes = JsonSerializer.SerializeToUtf8Bytes(msg);
-        await _sendLock.WaitAsync(ct).ConfigureAwait(false);
+        using var prazo = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        prazo.CancelAfter(_envioTimeout);
+        var ws = _ws;
         try
         {
-            var ws = _ws ?? throw new InvalidOperationException("socket não conectado");
-            await ws.SendAsync(bytes, WebSocketMessageType.Text, endOfMessage: true, ct).ConfigureAwait(false);
+            await _sendLock.WaitAsync(prazo.Token).ConfigureAwait(false);
+            try
+            {
+                ws = _ws ?? throw new InvalidOperationException("socket não conectado");
+                await ws.SendAsync(bytes, WebSocketMessageType.Text, endOfMessage: true, prazo.Token).ConfigureAwait(false);
+            }
+            finally { _sendLock.Release(); }
         }
-        finally { _sendLock.Release(); }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            // Prazo estourou (rede morta): este socket não serve mais. Quem chama trata como
+            // falha de envio (offline) — nunca como "encerrando".
+            MarcarDesconectado(ws);
+            throw new TimeoutException("envio para a nuvem passou do prazo");
+        }
     }
 
     private async Task ReceiveLoopAsync(IRealtimeSocket socket, CancellationToken ct)
@@ -274,7 +309,11 @@ public sealed class SupabaseRealtimeChannel : ILiveChannel, IAsyncDisposable
             try
             {
                 if (ws.State == WebSocketState.Open)
-                    await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "bye", CancellationToken.None).ConfigureAwait(false);
+                {
+                    // Com prazo: com a rede morta o "tchau" nunca é respondido (antes prendia a religação).
+                    using var prazo = new CancellationTokenSource(_fechaTimeout);
+                    await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "bye", prazo.Token).ConfigureAwait(false);
+                }
             }
             catch { /* já caiu */ }
             ws.Dispose();
