@@ -56,6 +56,7 @@ Cada cálculo tem UMA casa. Telas usam a casa; **proibido** recriar a conta dent
 | Chegada / linha por GPS | `web/command-box/cerebro/chegada-gps.js` |
 | TV do box: mapa com km/h e G, círculo de G, voltas e setores (item 5 do GPS); pancadas, lugares repetidos e consistência das voltas (item 7) | `web/command-box/cerebro/cerebro-gps-tv.js` |
 | Página da volta e comparação entre 2 voltas no celular (item 6 do GPS; volta/setor vêm da MESMA peça da TV) | `web/command-box/cerebro/cerebro-pagina-volta.js` |
+| Troca de marcha PROVÁVEL pelo G longitudinal (item 8 do GPS; critério da análise de 27/10, em fluxo; só com zero do box; a TV recebe por volta `trocas`/`trocaBuracoMedioS` e `s.trocas` do cérebro da TV) | `web/command-box/cerebro/troca-marcha-g.js` |
 | Frenagem | `web/command-box/frenagem-real.js` · `frenagem-curvas-reais.js` |
 | Passagem (tempo por trecho) | `web/command-box/passagem-real.js` · `passagem-curvas-reais.js` |
 | Mínima de curva (vmin) | `web/command-box/vmin-curvas-reais.js` · `vmin-aprendizado.js` |

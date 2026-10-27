@@ -20,12 +20,16 @@
 //    acaba quando volta abaixo; vale o pico do grupo, no lugar e na volta do pico.
 //  - consistência (item 7): só números das voltas fechadas (média, desvio, amplitude, desvio
 //    por setor, volta mais longe da média). Sem regra de corte (nada de "107%"): quem julga é a equipe.
+//  - troca de marcha (item 8): buraco curto no G longitudinal durante aceleração, pela casa
+//    troca-marcha-g.js (só com o zero do box valendo). Tudo "provável" até a régua da pista; a troca
+//    sai ~1 s depois (o critério olha à frente) e conta na volta onde o G caiu.
 // ============================================================================
 
 import { criarDetectorChegada } from './chegada-gps.js';
 import { geoParaCommandBox } from '../../cockpit/pista-brasilia-commandbox.js';
 import { fracDe } from '../pista-cb-polyline.js';
 import { pontoGpsAceito } from '../../cockpit/gps-fonte-unica.js';
+import { criarDetectorTrocaMarcha } from './troca-marcha-g.js';
 
 /** Linha de chegada oficial de Brasília (tabela marcos, migração 0031 — a mesma da Vista Piloto). */
 export const MARCO_CHEGADA_BRASILIA = {
@@ -162,6 +166,14 @@ export function criarCerebroGpsTv(opts = {}) {
   let distVolta = 0, ultimoGeoVolta = null;
   const pancadas = [];            // item 7: {n volta da borda de subida, p fração, x, y, g pico (com sinal), t}
   let grupoPancada = null;        // pancada em curso (|gVert| ainda acima do limite)
+  const trocas = [];              // item 8: {n volta da queda, x, y, t, kmh, gAntes, buracoS, provavel}
+  const detTroca = criarDetectorTrocaMarcha();
+
+  function contarTrocas(v) {
+    const da = trocas.filter(tr => tr.n === v.n);
+    v.trocas = da.length;
+    v.trocaBuracoMedioS = da.length ? r3(media(da.map(tr => tr.buracoS))) : null;
+  }
 
   function fecharVolta(t) {
     const tempoS = (t - inicioVoltaT) / 1000;
@@ -178,6 +190,7 @@ export function criarCerebroGpsTv(opts = {}) {
     const v = { n: voltaN, tempoS: r3(tempoS), setoresS, picosG: picosVolta.n ? picosVolta : null,
       pancadas: daVolta.length,
       pancadaMaxG: daVolta.length ? daVolta.reduce((m, p) => (Math.abs(p.g) > Math.abs(m) ? p.g : m), 0) : null };
+    contarTrocas(v);
     if (guardarVoltas) { v.perfil = perfilVolta; v.rastro = rastroVolta; v.distM = Math.round(distVolta); }
     voltas.push(v);
     rastroUltima = rastroVolta; gUltima = gVolta; picosUltima = picosVolta.n ? picosVolta : null;
@@ -252,6 +265,16 @@ export function criarCerebroGpsTv(opts = {}) {
           grupoPancada.x = pos ? r1(pos.x) : null; grupoPancada.y = pos ? r1(pos.y) : null;
         }
       } else grupoPancada = null;
+    }
+
+    // 2c) troca de marcha (item 8): só G com zero do box; sem ele o detector zera (não se inventa troca)
+    const achadas = detTroca.ler(zeroOk
+      ? { t, gLong, kmh: kmh != null ? kmh : 0, n: voltaN, x: pos ? r1(pos.x) : null, y: pos ? r1(pos.y) : null }
+      : { t, gLong: null });
+    for (const tr of achadas) {
+      trocas.push(tr);
+      const fechada = voltas.find(v => v.n === tr.n);   // chegou depois de a volta da queda fechar
+      if (fechada) contarTrocas(fechada);
     }
 
     // 3) mapa: rastro da volta com velocidade e fase do G
@@ -331,6 +354,12 @@ export function criarCerebroGpsTv(opts = {}) {
         lugaresRepetidos: lugaresRepetidos(pancadas),
       },
       consistencia: consistenciaDe(voltas, nSetores),
+      trocas: {
+        provavel: true,
+        total: trocas.length,
+        volta: trocas.filter(tr => tr.n === voltaN && tr.x != null).map(tr => ({ x: tr.x, y: tr.y, kmh: tr.kmh, buracoS: tr.buracoS })),
+        ultima: ultima ? trocas.filter(tr => tr.n === ultima.n && tr.x != null).map(tr => ({ x: tr.x, y: tr.y, kmh: tr.kmh, buracoS: tr.buracoS })) : [],
+      },
     };
   }
 

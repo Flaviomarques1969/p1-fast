@@ -4,6 +4,7 @@
 // Cada regra tem um CONTROLE que tem de dar o resultado oposto.
 import { readFileSync } from 'node:fs';
 import { criarCerebroGpsTv, SEM_DADO_MS, PANCADA_G, LUGAR_FRAC } from '../web/command-box/cerebro/cerebro-gps-tv.js';
+import { criarDetectorTrocaMarcha } from '../web/command-box/cerebro/troca-marcha-g.js';
 
 let ok = 0, fail = 0;
 const t = (nome, cond, extra) => { if (cond) { ok++; console.log('  ok ', nome); } else { fail++; console.log('  FAIL', nome, extra ?? ''); } };
@@ -194,6 +195,89 @@ function rodar(cerebro, tempos, { inicioFrac = 0.9, extra = () => ({}), pularEm 
   t('controle real 27/10: mesma gravação sem gVert = 0 pancadas', sem.snapshot().pancadas.total === 0);
 }
 
+// 3d) Item 8 — troca de marcha pelo G (provável). Régua = capacidade2.py da análise de 27/10, copiada
+// em LOTE aqui (zero = média do gx parado; G curto = média de 3; mesma busca); o detector em FLUXO
+// da casa troca-marcha-g.js tem de achar as MESMAS trocas. Análise em Python deu: 2 trocas,
+// 163,4 s/33 km/h e 235,2 s/26 km/h (".claude-exec/analise-gps-20261027/capacidade2.txt").
+{
+  const r = JSON.parse(ler('web/command-box/fixtures/gz-rua-2026-10-27.json'));
+  const n = r.gx.length;
+  const parado = r.kmh.map((v, i) => (v < 0.5 ? i : -1)).filter(i => i >= 0);
+  const z0 = parado.reduce((s, i) => s + r.gx[i], 0) / parado.length;
+  const gx = r.gx.map(v => v - z0);
+  const med1 = (i) => { const sl = gx.slice(Math.max(0, i - 1), i + 2); return sl.reduce((a, b) => a + b, 0) / sl.length; };
+  const gl1 = gx.map((_, i) => med1(i));
+  const lote = [];
+  for (let i = 10; i < n - 25;) {
+    const antes = gl1.slice(i - 8, i).reduce((a, b) => a + b, 0) / 8;
+    if (antes > 0.08 && r.kmh[i] > 12 && gl1[i] < antes * 0.35) {
+      let k = null;
+      for (let j = i + 1; j < Math.min(n, i + 20); j++) if (gl1[j] > antes * 0.6) { k = j; break; }
+      if (k && (r.t[k] - r.t[i]) / 1000 >= 0.12 && (r.t[k] - r.t[i]) / 1000 <= 0.8) { lote.push({ t: r.t[i], kmh: r.kmh[i] }); i = k + 10; continue; }
+    }
+    i++;
+  }
+  t('real 27/10 (régua em lote): 2 trocas em 163,4 s/33 km/h e 235,2 s/26 km/h, igual à análise em Python',
+    r.t.length === n && r.kmh.length === n && lote.length === 2
+    && perto(lote[0].t / 1000, 163.4, 0.05) && Math.round(lote[0].kmh) === 33
+    && perto(lote[1].t / 1000, 235.2, 0.05) && Math.round(lote[1].kmh) === 26, JSON.stringify(lote));
+  const det = criarDetectorTrocaMarcha();
+  const fluxo = [];
+  for (let i = 0; i < n; i++) fluxo.push(...det.ler({ t: r.t[i], gLong: gx[i], kmh: r.kmh[i] }));
+  t('real 27/10: detector em fluxo = régua em lote (mesmos instantes)', fluxo.length === lote.length
+    && fluxo.every((f, i) => f.t === lote[i].t && f.provavel === true), JSON.stringify(fluxo));
+  const c = criarCerebroGpsTv({ marcoChegada: MARCO, projetar });
+  for (let i = 0; i < n; i++) c.feedGps(ponto(0.25, 1_000_000 + r.t[i], { kmh: r.kmh[i], gLong: gx[i], gLat: 0, zeroOk: true }));
+  const sc = c.snapshot();
+  t('real 27/10: cérebro da TV conta as 2 trocas, marcadas "provável"', sc.trocas.total === 2 && sc.trocas.provavel === true
+    && sc.trocas.volta.length === 2 && sc.trocas.volta.every(x => x.buracoS >= 0.12 && x.buracoS <= 0.8), JSON.stringify(sc.trocas));
+  const sz = criarCerebroGpsTv({ marcoChegada: MARCO, projetar });
+  for (let i = 0; i < n; i++) sz.feedGps(ponto(0.25, 1_000_000 + r.t[i], { kmh: r.kmh[i], gLong: gx[i], gLat: 0, zeroOk: false }));
+  t('controle real 27/10: mesmo G sem zero do box = 0 trocas', sz.snapshot().trocas.total === 0);
+}
+// sintético: G 0,20 constante a 80 km/h com um buraco de G ≈0 de `dur` s → só o buraco de 0,12–0,8 s conta
+{
+  const buraco = (dur, gBuraco = 0) => {
+    const d = criarDetectorTrocaMarcha(); const out = [];
+    for (let i = 0; i < 200; i++) { const ts = i * 40; const g = ts >= 3000 && ts < 3000 + dur * 1000 ? gBuraco : 0.2;
+      out.push(...d.ler({ t: ts, gLong: g, kmh: 80 })); }
+    return out;
+  };
+  t('buraco de 0,3 s = 1 troca', buraco(0.3).length === 1, JSON.stringify(buraco(0.3)));
+  t('controle: buraco de 1,2 s (embalo, não troca) = 0', buraco(1.2).length === 0);
+  t('controle: buraco de 0,08 s (ruído) = 0', buraco(0.08).length === 0);
+  t('controle: G que só cai para 60% (sem buraco) = 0', buraco(0.3, 0.12).length === 0);
+  const parado = criarDetectorTrocaMarcha(); let np = 0;
+  for (let i = 0; i < 200; i++) { const ts = i * 40; np += parado.ler({ t: ts, gLong: ts >= 3000 && ts < 3300 ? 0 : 0.2, kmh: 8 }).length; }
+  t('controle: mesmo buraco a 8 km/h (abaixo de 12) = 0', np === 0);
+  // a 10 Hz (RaceBox caindo de taxa) 1,2 s cabe nas 20 leituras da busca: quem barra a borda é o teto de
+  // 0,8 s. LIMITE do critério da análise (copiado fiel): a cauda do buraco longo ainda passa com 0,7 s.
+  const d10 = criarDetectorTrocaMarcha(); const a10 = [];
+  const d10b = criarDetectorTrocaMarcha(); let n10ok = 0;
+  for (let i = 0; i < 120; i++) { const ts = i * 100;
+    a10.push(...d10.ler({ t: ts, gLong: ts >= 3000 && ts < 4200 ? 0 : 0.2, kmh: 80 }));
+    n10ok += d10b.ler({ t: ts, gLong: ts >= 3000 && ts < 3400 ? 0 : 0.2, kmh: 80 }).length; }
+  t('controle: a 10 Hz, nenhuma troca aceita passa de 0,8 s (borda do buraco de 1,2 s recusada); buraco de 0,4 s = 1',
+    a10.length <= 1 && a10.every(x => x.buracoS <= 0.8 && x.t > 3000) && n10ok === 1, JSON.stringify(a10) + ' / ' + n10ok);
+  // leitura sem G no meio (zero do box perdido) zera o histórico: o G de ANTES do vão não vale para depois
+  const dv = criarDetectorTrocaMarcha(); let nv = 0;
+  for (let i = 0; i < 200; i++) { const ts = i * 40;
+    const g = ts < 2000 ? 0.2 : ts < 3000 ? null : ts < 3300 ? 0 : 0.2;
+    nv += dv.ler({ t: ts, gLong: g, kmh: 80 }).length; }
+  t('controle: vão sem G seguido de G baixo não vira troca (histórico zerado)', nv === 0, nv);
+}
+// troca logo antes da chegada: o detector confirma ~1 s depois, com a volta já fechada → conta na volta da queda
+{
+  const c = criarCerebroGpsTv({ marcoChegada: MARCO, projetar });
+  rodar(c, [60, 60, 60], { extra: (tw, fr, v) => ({ gLong: v === 2 && fr > 0.99 && fr < 0.995 ? 0 : 0.2, gLat: 0, zeroOk: true }) });
+  const s = c.snapshot();
+  t('troca que confirma depois da chegada conta na volta 2 (e só nela)', s.voltas.length === 3
+    && s.voltas[0].trocas === 0 && s.voltas[1].trocas === 1 && s.voltas[2].trocas === 0
+    && s.voltas[1].trocaBuracoMedioS >= 0.12 && s.voltas[1].trocaBuracoMedioS <= 0.8 && s.trocas.total === 1,
+    JSON.stringify(s.voltas.map(v => [v.trocas, v.trocaBuracoMedioS])));
+  t('mapa da última volta fechada (a 3) não herda a troca da volta 2', s.trocas.ultima.length === 0);
+}
+
 // 4) Ligações na fonte (quem desligar reprova aqui)
 const live = ler('windows/cockpit/P1Fast.Cockpit.UI/MainWindow.Live.cs');
 const dic = (live.match(/_liveCloudGps\.Enqueue\(new Dictionary[\s\S]{0,1800}?\}\);/) || [''])[0];
@@ -216,6 +300,12 @@ t('TV (item 7): camada desenha pancadas, lugares repetidos e consistência do pa
   && /function quadro\(\)[\s\S]*?desenharPancadas\(ui\.pancadas, s\.pancadas\);[\s\S]*?desenharConsistencia\(ui, s\);[\s\S]*?\n  \}/.test(camada));
 t('TV (item 7): camada não conta pancada nem consistência (sem PANCADA_G/desvio na tela)',
   !/PANCADA_G|gVert\s*[<>]|Math\.sqrt/.test(camada));
+t('TV (item 8): camada desenha as trocas do pacote, dentro do quadro, marcadas "provável"',
+  /s\.trocas/.test(camada) && /trocas \(provável\)/.test(camada)
+  && /function quadro\(\)[\s\S]*?desenharTrocas\(ui\.trocas, s\.trocas\);[\s\S]*?\n  \}/.test(camada));
+t('TV (item 8): camada não procura troca (sem detector, BURACO ou QUEDA na tela)',
+  !/criarDetectorTrocaMarcha|troca-marcha-g|BURACO_|QUEDA_FRAC/.test(camada));
+t('contrato (item 8): casa da troca de marcha registrada', /troca-marcha-g\.js/.test(contrato));
 t('TV: a camada só exibe (não projeta GPS nem refaz G/volta)',
   camada.length > 0 && !/geoParaCommandBox|fracDe\(|criarDetectorChegada|Math\.hypot|createClient/.test(camada));
 
