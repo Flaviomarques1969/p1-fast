@@ -134,6 +134,7 @@ const CASAS = [
   'web/command-box/cerebro/cerebro-painel.js',
   'web/command-box/cerebro/cerebro-vivo.js',
   'web/command-box/cerebro/cerebro-gps-tv.js',
+  'web/command-box/cerebro/cerebro-tv-sinal.js',
   'web/command-box/cerebro/cerebro-pagina-volta.js',
   'web/command-box/cerebro/troca-marcha-g.js',
   'web/command-box/cerebro/traseira-giro.js',

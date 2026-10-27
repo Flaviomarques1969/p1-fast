@@ -18,6 +18,14 @@
     }catch(e){}
   }
 })();
+// MODO TV (E1 da obra TV do box ao vivo, 27/10/2026): a TV do box abre com ?tv=1 ou ?canal=…
+// (?tv=0 desliga). Nele: selo com dono único (cerebro-tv-sinal.js), só dado real, carro congela
+// na queda, layout do ARQUIVO (não o salvo no navegador), quadro escalado para a tela, sem edição.
+(function(){
+  var q = new URLSearchParams(location.search);
+  window.__modoTv = q.get('tv') === '0' ? false : (q.get('tv') === '1' || !!q.get('canal'));
+  if(window.__modoTv) document.documentElement.classList.add('modo-tv');
+})();
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -3995,6 +4003,7 @@ html,body{
   }
 
   function save(){
+    if(window.__modoTv) return;   // TV nunca grava layout
     var data = { positions:{}, customs:[] };
     blocks().forEach(function(el){
       data.positions[el.dataset.blockId] = readBlock(el);
@@ -4023,6 +4032,7 @@ html,body{
   }
 
   function restore(){
+    if(window.__modoTv) return false;   // TV: sempre o layout aprovado do arquivo
     var raw = localStorage.getItem(KEY);
     if(!raw) return false;
     try{
@@ -7070,7 +7080,17 @@ html,body{
       var _real = !!(_pos && !_pos.perdido);
       window.__cbPosDriving = _real;
       if(_real){ liveT = _pos.frac; }
-      if(_real !== _seloReal){
+      if(window.__modoTv){
+        // MODO TV (E1, 27/10): sem relógio de demonstração. Sem sinal, o carro CONGELA no último ponto
+        // (acinzentado); antes do 1º ponto, não aparece. O selo é do dono único (cerebro-tv-sinal.js).
+        if(_pos) liveT = _pos.frac;
+        var _mapaTv = document.querySelector('.b-map');
+        if(_mapaTv){
+          _mapaTv.classList.toggle('tv-carro-ausente', !_pos);
+          _mapaTv.classList.toggle('tv-carro-parado', !!_pos && !_real);
+        }
+      }
+      else if(_real !== _seloReal){
         _seloReal = _real;
         var _selo = document.getElementById('cb-live-selo');
         if(_selo && _real){
@@ -7087,8 +7107,10 @@ html,body{
       if(ghostT >= 1) ghostT -= 1;
 
       // Live segue posição com offset lateral (GPS real); ghost fica no centerline ideal
-      var liveInfo = _liveOffsetFn ? _offsetPositionAt(path, totalLen, liveT, _liveOffsetFn) : { x: 0, y: 0, offset: 0 };
-      var liveP    = _liveOffsetFn ? liveInfo : path.getPointAtLength(liveT  * totalLen);
+      // modo TV: o carro fica na linha da pista (o desvio lateral da demonstração não é medido)
+      var _offFn   = window.__modoTv ? null : _liveOffsetFn;
+      var liveInfo = _offFn ? _offsetPositionAt(path, totalLen, liveT, _offFn) : { x: 0, y: 0, offset: 0 };
+      var liveP    = _offFn ? liveInfo : path.getPointAtLength(liveT  * totalLen);
       var ghostP   = path.getPointAtLength(ghostT * totalLen);
 
       setMarkerPos('live',  liveP.x,  liveP.y);
@@ -7100,7 +7122,8 @@ html,body{
       // Cor do live: branco se off-track, senão verde/vermelho conforme delta
       var segIdx       = Math.floor(liveT * SEGMENT_COUNT);
       var currentDelta = SEGMENT_DELTAS[segIdx];
-      setLiveColor(currentDelta < 0, offTrack, hasAnyCritical(liveT));
+      if(window.__modoTv) setLiveColor(false, false, false);   // TV: sem delta/alarme de demonstração na cor do carro
+      else setLiveColor(currentDelta < 0, offTrack, hasAnyCritical(liveT));
 
       detectLapWrap(liveT);
       updateReveal(liveT);
@@ -7119,6 +7142,10 @@ html,body{
       // ITEM 5 do GPS (27/10): com o cérebro da TV recebendo o carro (ou a volta gravada DEV),
       // os tempos do canto são DELE (camada TV-GPS no fim do body) — a demonstração não escreve.
       if(window.__tvGps && window.__tvGps.ativo) return;
+      if(window.__modoTv){   // TV sem dado do cérebro ainda: nada de tempo de demonstração
+        [liveOv, ghostOv, deltaOv].forEach(function(el){ if(el && el.textContent !== '—') el.textContent = '—'; });
+        return;
+      }
       var liveSec  = MAP_CFG.liveLapSec  * liveT;
       var ghostSec = MAP_CFG.ghostLapSec * liveT;
       var delta    = liveSec - ghostSec;
@@ -7531,6 +7558,7 @@ html,body{
     });
 
     document.addEventListener('keydown', function(e){
+      if(window.__modoTv) return;   // TV: controle remoto não edita nem troca volta de demonstração
       if(e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
       if(e.metaKey || e.ctrlKey || e.altKey) return;
       if(e.key === 'e') toggleEdit();
@@ -7735,13 +7763,17 @@ html,body{
     // calculada pelo notebook (ligado no T4000+GPS) e enviada pela web. O Command
     // Box só EXIBE (não recalcula) — arquitetura Flávio 15/06 (não duplicar análise).
     var REAL = { fresh:false, ts:0, rpm:null, kmh:null, lambda:null, water:null, mapBar:null, tps:null, bat:null, lat:null, lng:null, sv:null, marcha:null, rpmLuz:null };
+    window.__cbReal = REAL;   // modo TV: o dono do sinal diz quando o dado vale (REAL.fresh)
 
     // selo de estado de conexão (canto superior direito, não depende do layout)
     var selo = document.createElement('div');
     selo.id = 'cb-live-selo'; selo.className = 'cb-wait';
     selo.innerHTML = '<span class="cb-dot"></span><span class="cb-txt">CONECTANDO…</span>';
     document.body.appendChild(selo);
-    function setEstado(cls, txt){ selo.className = cls; selo.querySelector('.cb-txt').textContent = txt; }
+    function setEstado(cls, txt){
+      if(window.__modoTv) return;   // TV: o selo tem dono único (camada SINAL DA TV no fim do body)
+      selo.className = cls; selo.querySelector('.cb-txt').textContent = txt;
+    }
 
     // CSS honesto: "ao vivo" (verde) nos blocos reais, "sem dado real" (âmbar, esmaecido) no resto.
     var st = document.createElement('style');
@@ -7866,6 +7898,7 @@ html,body{
 
     // watchdog: sem amostra há >2,5s → "aguardando"
     setInterval(function(){
+      if(window.__modoTv) return;   // TV: quem decide é o dono do sinal
       if(!window.__cbPosDriving && REAL.ts && (performance.now()-REAL.ts>2500)){ REAL.fresh=false; setEstado('cb-wait','AO VIVO · aguardando o carro'); }
     }, 1000);
 
@@ -7918,7 +7951,9 @@ html,body{
     // (docs/CONTRATO_DADOS.md). O cérebro (mais abaixo) ouve a MESMA ponte/conexão.
     import('/web/cockpit/cloud-bridge.js').then(function(cb){
       cb.onSample(onSample);
-      cb.onGpsPoint(onGps);
+      // modo TV: o GPS chega pelo dono do sinal (só o ponto bom MAIS NOVO, 5×/s) — rajada da fila e
+      // ponto velho não mexem no HUD nem no carro
+      if(!window.__modoTv) cb.onGpsPoint(onGps);
       // ITEM 3 (18/06): POSIÇÃO PRONTA calculada pela NUVEM — a tela só exibe (não projeta).
       cb.onPosicao(function(p){
         if(p && window.__cbPos && typeof p.frac === 'number'){ window.__cbPos.pushPronto(p.frac); REAL.fresh = true; REAL.ts = performance.now(); }
@@ -8546,7 +8581,7 @@ html,body{
     }
     ui.mapa.classList.toggle('tv-parado', !s.fresco);
     window.__tvGps.fresco = s.fresco; window.__tvGps.dev = !!rotuloDev;
-    if(rotuloDev){   // demonstração: o selo nunca pode dizer "ao vivo" com dado gravado na tela
+    if(rotuloDev && !window.__modoTv){   // demonstração: o selo nunca pode dizer "ao vivo" com dado gravado na tela
       var selo = document.getElementById('cb-live-selo'), txt = selo && selo.querySelector('.cb-txt');
       if(txt && txt.textContent !== rotuloDev){ selo.className = 'cb-wait'; txt.textContent = rotuloDev; }
     }
@@ -8583,6 +8618,7 @@ html,body{
         var tAgora = t0;
         relogio = function(){ return tAgora; };
         rotuloDev = 'DEV · VOLTA GRAVADA ' + mRep[1].replace('-', '/') + ' (não é ao vivo)';
+        window.__tvGps.rotuloDev = rotuloDev;   // modo TV: o dono do selo mostra este rótulo
         if(window.__cbPos) window.__cbPos.rotuloReplay = rotuloDev;
         (function passo(){
           var dec = (performance.now() - inicio) * speed;
@@ -8627,13 +8663,16 @@ html,body{
     background:#14161c;color:#7d828c;font:700 9px/1 -apple-system,Segoe UI,sans-serif;letter-spacing:.08em;
     text-transform:uppercase;padding:4px 9px;border-radius:999px;border:1px solid #262a33;pointer-events:none;}
   body.tv-racebox .b-header .messages{visibility:hidden;}
+  body.tv-racebox [data-block-id="video"].tv-nao-racebox::after{content:"câmera ainda não ligada à TV"!important;}
+  /* bloco estreito: o aviso quebra linha dentro do bloco em vez de sair cortado pela borda */
+  body.tv-racebox [data-block-id].tv-nao-racebox::after{white-space:normal!important;max-width:calc(100% - 10px);text-align:center;line-height:1.35!important;}
 </style>
 <script type="module">
   (function(){
     // Blocos que mostram dado do RaceBox; o resto é coberto. Header: só GPS (satélites) e REC.
     var DO_RACEBOX = { mapa:1, hud:1, header:1 };
     var est = { ativo:false, sats:null, km:0, ult:null };
-    window.__tvRacebox = false;
+    window.__tvRacebox = !!window.__modoTv;   // modo TV: só o real desde o 1º quadro
 
     function raio(a,b){   // metros entre 2 pontos (haversine)
       var R=6371000, r=Math.PI/180, dLa=(b.lat-a.lat)*r, dLo=(b.lng-a.lng)*r;
@@ -8649,8 +8688,10 @@ html,body{
       document.querySelectorAll('.b-header .health .h-cell').forEach(function(c){
         var k = (c.querySelector('.h-key')||{}).textContent, v = c.querySelector('.h-val');
         if(!v) return;
-        if(k === 'GPS') v.textContent = est.sats != null ? est.sats + 'sat' : '—';
-        else if(k !== 'REC') { v.textContent = '—'; c.classList.remove('ok'); }
+        // modo TV: satélites só enquanto o dado vale (sem sinal = "—", nunca o último número congelado)
+        var semDado = window.__modoTv && !(window.__tvSinalEstado && window.__tvSinalEstado.temDado);
+        if(k === 'GPS') v.textContent = (est.sats != null && !semDado) ? est.sats + 'sat' : '—';
+        else if(k !== 'REC' || window.__modoTv) { v.textContent = '—'; c.classList.remove('ok'); }
       });
     }
     function cobrir(){
@@ -8680,11 +8721,73 @@ html,body{
       pintarOdometro();
     }
     window.__tvRaceboxFeed = feed;   // prova fora do ar entra pelo mesmo caminho
+    if(window.__modoTv) ligar();     // TV: cobre o que não tem fonte já no 1º quadro
     window.__tvRaceboxEstado = function(){ return { ativo:est.ativo, sats:est.sats, km:+est.km.toFixed(3) }; };
     import('/web/cockpit/cloud-bridge.js').then(function(cb){
       cb.onGpsPoint(feed);
       cb.startCloudBridge().catch(function(){});
     }).catch(function(e){ console.warn('[MODO RACEBOX] ponte indisponível:', e); });
+  })();
+</script>
+<!-- SINAL DA TV — modo TV (E1 da obra TV do box ao vivo, Flávio 27/10/2026: "esta tela não está
+     funcionando corretamente"). Liga com ?tv=1 ou ?canal=… (chave no início da página).
+     - DONO ÚNICO do selo: o estado vem do cérebro web/command-box/cerebro/cerebro-tv-sinal.js
+       (AO VIVO / ATRASADO / GPS SEM POSIÇÃO / SEM SINAL HÁ X s / AGUARDANDO O CARRO / SEM CONEXÃO);
+       os outros escritores do selo ficam calados no modo TV.
+     - HUD e carro recebem só o ponto bom MAIS NOVO, 5×/s: rajada da fila e ponto velho não voltam a tela.
+       O cérebro da TV (mapa, voltas) segue recebendo tudo pela ponte.
+     - Quadro 1280×720 escalado para a tela inteira (32" = 1920×1080), sem barra de edição nem rodapé.
+     - Ponte não carregou (sem internet ao ligar a TV) → avisa e recarrega a página em 15 s. -->
+<style>
+  html.modo-tv, html.modo-tv body{overflow:hidden;background:#02030A;min-height:0;}
+  html.modo-tv .edit-toolbar, html.modo-tv .export-panel, html.modo-tv .page-meta, html.modo-tv .legend,
+  html.modo-tv #atelier-salvar-wrap, html.modo-tv .vista-toggle{display:none!important;}
+  html.modo-tv .page-wrap{padding:0;min-height:0;}
+  html.modo-tv .stage{position:fixed;left:50%;top:50%;width:1280px;height:720px;aspect-ratio:auto;border:none;box-shadow:none;
+    transform:translate(-50%,-50%) scale(var(--tv-escala,1));transform-origin:center center;}
+  html.modo-tv #cb-live-selo{top:14px;right:18px;padding:10px 18px;gap:12px;font-size:22px;}
+  html.modo-tv #cb-live-selo .cb-dot{width:16px;height:16px;}
+  html.modo-tv .b-map [data-trechos], html.modo-tv .b-map [data-traj-live], html.modo-tv .b-map [data-marker^="ghost"]{display:none;}
+  .b-map.tv-carro-ausente [data-marker^="live"]{display:none;}
+  .b-map.tv-carro-parado [data-marker^="live"]{opacity:.35;filter:grayscale(1);}
+</style>
+<script type="module">
+  import { criarSinalTv } from '/web/command-box/cerebro/cerebro-tv-sinal.js';
+  (function(){
+    if(!window.__modoTv) return;
+    var raiz = document.documentElement;
+    function escalar(){ raiz.style.setProperty('--tv-escala', String(Math.min(innerWidth / 1280, innerHeight / 720))); }
+    escalar(); addEventListener('resize', escalar);
+
+    var sinal = criarSinalTv(), novo = null, entregue = null, recarregaEm = null;
+    window.__tvSinal = sinal;
+    function pintar(){
+      var agora = Date.now(), e = sinal.estado(agora);
+      var rot = window.__tvGps && window.__tvGps.rotuloDev;
+      if(rot) e = { codigo:'demonstracao', texto:rot, classe:'cb-wait', temDado:false };
+      else if(e.codigo === 'sem-conexao' && recarregaEm) e = Object.assign({}, e, { texto: e.texto + ' · nova tentativa em ' + Math.max(0, Math.ceil((recarregaEm - agora) / 1000)) + ' s' });
+      window.__tvSinalEstado = e;
+      if(window.__cbReal) window.__cbReal.fresh = !!e.temDado;   // HUD: sem dado que vale = "—"
+      var selo = document.getElementById('cb-live-selo'), txt = selo && selo.querySelector('.cb-txt');
+      if(!txt) return;
+      if(selo.className !== e.classe) selo.className = e.classe;
+      if(txt.textContent !== e.texto) txt.textContent = e.texto;
+    }
+    setInterval(function(){
+      if(novo && novo !== entregue && typeof window.__cbFeedGps === 'function'){ entregue = novo; window.__cbFeedGps(novo); }
+      pintar();
+    }, 200);
+    pintar();
+    import('/web/cockpit/cloud-bridge.js').then(function(cb){
+      cb.onGpsPoint(function(p){ if(sinal.chegou(p, Date.now()).maisNovo) novo = p; });
+      var lerStatus = function(){ sinal.conexao(cb.getStatus()); };
+      lerStatus(); setInterval(lerStatus, 500);
+      cb.startCloudBridge().catch(function(){});
+    }).catch(function(e){
+      console.warn('[SINAL DA TV] ponte não carregou — recarrego em 15 s:', e);
+      sinal.conexao('sem-ponte'); recarregaEm = Date.now() + 15000;
+      setTimeout(function(){ location.reload(); }, 15000);
+    });
   })();
 </script>
 </body>
