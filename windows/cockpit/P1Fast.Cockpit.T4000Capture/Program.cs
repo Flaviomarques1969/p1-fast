@@ -353,6 +353,7 @@ internal static class Program
 
         var readerTask = reader.RunAsync(cts.Token);
         var religacaoNuvem = new ReligacaoNuvem();
+        Task religandoNuvem = Task.CompletedTask;   // a religação corre FORA deste fio (painel/alarme a 1 Hz)
 
         // Painel de saúde ~1x/s + vigia de tecla, no fio principal. Alarme NUNCA silencioso.
         SessionResumo? resultado = null;
@@ -367,7 +368,10 @@ internal static class Program
             {
                 // Mesma regra do cockpit (ReligacaoNuvem): espera conta do FIM da tentativa e a
                 // conexão aberta aguardando a confirmação da entrada não é derrubada antes de 10 s.
-                try { religacaoNuvem.GarantirAsync(nuvem, cts.Token).Wait(12_000); } catch { /* tenta depois */ }
+                // Sem esperar aqui: conectar no celular pode levar até ~17 s e o painel/alarme não
+                // pode ficar mudo (auditoria 27/10). Uma religação por vez.
+                if (religandoNuvem.IsCompleted)
+                    religandoNuvem = religacaoNuvem.GarantirAsync(nuvem, cts.Token);
                 try { publisher.DrenarAsync(cts.Token).Wait(2000); } catch { /* mantém na fila */ }
             }
 

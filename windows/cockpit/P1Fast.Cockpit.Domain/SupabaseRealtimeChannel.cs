@@ -76,6 +76,8 @@ public sealed class SupabaseRealtimeChannel : ILiveChannel, IAsyncDisposable
     private readonly Uri _wsUri;
     private readonly string _topic;
     private readonly SemaphoreSlim _sendLock = new(1, 1);
+    private readonly SemaphoreSlim _conexaoLock = new(1, 1); // uma ConnectAsync por vez
+    private int _conectando;                                 // ConnectAsync em curso (ou na fila)
     private readonly Func<IRealtimeSocket> _socketFactory;
     private readonly TimeSpan _heartbeatIntervalo;
     private readonly TimeSpan _envioTimeout;     // enviar (inclui esperar a vez na trava de envio)
@@ -97,7 +99,8 @@ public sealed class SupabaseRealtimeChannel : ILiveChannel, IAsyncDisposable
         string canal,
         Func<IRealtimeSocket>? socketFactory = null,
         TimeSpan? heartbeatIntervalo = null,
-        TimeSpan? envioTimeout = null)
+        TimeSpan? envioTimeout = null,
+        TimeSpan? conexaoTimeout = null)
     {
         if (string.IsNullOrWhiteSpace(supabaseUrl)) throw new ArgumentException("URL vazia", nameof(supabaseUrl));
         if (string.IsNullOrWhiteSpace(anonKey))     throw new ArgumentException("chave anon vazia", nameof(anonKey));
@@ -109,7 +112,7 @@ public sealed class SupabaseRealtimeChannel : ILiveChannel, IAsyncDisposable
         _socketFactory = socketFactory ?? (() => new ClientWebSocketAdapter());
         _heartbeatIntervalo = heartbeatIntervalo ?? TimeSpan.FromSeconds(25);
         _envioTimeout   = envioTimeout ?? TimeSpan.FromSeconds(5);
-        _conexaoTimeout = TimeSpan.FromSeconds(10);
+        _conexaoTimeout = conexaoTimeout ?? TimeSpan.FromSeconds(10);
         _fechaTimeout   = TimeSpan.FromSeconds(2);
     }
 
@@ -119,9 +122,25 @@ public sealed class SupabaseRealtimeChannel : ILiveChannel, IAsyncDisposable
     /// derrubaria a conexão que está chegando (ReligacaoNuvem dá um prazo maior a esse estado).</summary>
     public bool AguardandoEntrada => _ws?.State == WebSocketState.Open && !_joined;
 
+    /// <summary>Há uma ConnectAsync em curso — religar agora só empilharia outra.</summary>
+    public bool Conectando => Volatile.Read(ref _conectando) > 0;
+
     /// <summary>Conecta, entra no canal e liga os laços de recebimento + heartbeat.
-    /// Best-effort: lança se nem conectar; quem chama trata e tenta de novo (backoff).</summary>
+    /// Best-effort: lança se nem conectar; quem chama trata e tenta de novo (backoff).
+    /// Uma por vez: chamada sobreposta espera a anterior terminar.</summary>
     public async Task ConnectAsync(CancellationToken ct)
+    {
+        Interlocked.Increment(ref _conectando);
+        try
+        {
+            await _conexaoLock.WaitAsync(ct).ConfigureAwait(false);
+            try { await ConectarAsync(ct).ConfigureAwait(false); }
+            finally { _conexaoLock.Release(); }
+        }
+        finally { Interlocked.Decrement(ref _conectando); }
+    }
+
+    private async Task ConectarAsync(CancellationToken ct)
     {
         await DisposeSocketAsync().ConfigureAwait(false);
         _joined = false;
@@ -337,7 +356,11 @@ public sealed class SupabaseRealtimeChannel : ILiveChannel, IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        // Espera (curto) uma ConnectAsync em curso terminar, senão o socket dela nasceria
+        // depois do descarte e ficaria vivo. Quem encerra cancela o token dela, então é rápido.
+        bool peguei = await _conexaoLock.WaitAsync(_fechaTimeout + TimeSpan.FromSeconds(1)).ConfigureAwait(false);
         await DisposeSocketAsync().ConfigureAwait(false);
+        if (peguei) _conexaoLock.Release();
         _sendLock.Dispose();
         _bg?.Dispose();
     }

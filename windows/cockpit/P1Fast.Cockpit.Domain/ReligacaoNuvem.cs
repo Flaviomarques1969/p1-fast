@@ -35,7 +35,7 @@ public sealed class ReligacaoNuvem
 
     public bool DeveReligar(SupabaseRealtimeChannel nuvem)
     {
-        if (nuvem.Online) return false;
+        if (nuvem.Online || nuvem.Conectando) return false;   // conexão em curso: não empilha outra
         var espera = nuvem.AguardandoEntrada ? _esperaEntrada : _intervalo;
         return _relogioMs() - _fimUltimaTentativa > (long)espera.TotalMilliseconds;
     }

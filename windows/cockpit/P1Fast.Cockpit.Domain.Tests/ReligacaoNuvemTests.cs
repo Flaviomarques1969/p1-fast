@@ -34,11 +34,14 @@ public class ReligacaoNuvemTests
         public int ConfirmarEntradaMs { get; init; }
         public bool Mudo { get; init; }
         public bool Falha { get; init; }
+        public Action? AoConectar { get; init; }           // ex.: avança o relógio falso
+        public bool Descartado { get; private set; }
         public WebSocketState State { get; private set; } = WebSocketState.None;
 
         public async Task ConnectAsync(Uri uri, CancellationToken ct)
         {
-            await Task.Delay(ConectarMs, ct).ConfigureAwait(false);
+            await Task.Delay(ConectarMs, ct).ConfigureAwait(false);   // -1 = rede que nunca responde
+            AoConectar?.Invoke();
             if (Falha) throw new WebSocketException("sem rede");
             State = WebSocketState.Open;
         }
@@ -69,7 +72,7 @@ public class ReligacaoNuvemTests
         }
 
         public Task CloseAsync(WebSocketCloseStatus s, string? d, CancellationToken ct) { State = WebSocketState.Closed; return Task.CompletedTask; }
-        public void Dispose() { State = WebSocketState.Closed; _entrada.Writer.TryComplete(); }
+        public void Dispose() { Descartado = true; State = WebSocketState.Closed; _entrada.Writer.TryComplete(); }
         public void ServidorFecha() => _entrada.Writer.TryWrite(null);
     }
 
@@ -89,7 +92,7 @@ public class ReligacaoNuvemTests
 
     // ── 1) O BUG: rede caiu, a religação no celular demora mais que o intervalo. Tem que ficar
     //    online com UMA conexão nova — o código antigo abria uma atrás da outra e nunca entrava. ──
-    [Fact]
+    [Fact(Timeout = 10_000)]
     public async Task ConexaoLenta_NaoDerrubaAntesDaConfirmacao_FicaOnlineComUmaReligacao()
     {
         var wifi = new SocketLento { ConectarMs = 0, ConfirmarEntradaMs = 0 };
@@ -115,7 +118,7 @@ public class ReligacaoNuvemTests
 
     // ── 2) Servidor mudo (socket abre, entrada nunca confirmada): não fica preso — religa depois
     //    do prazo de espera da entrada, não antes. ──
-    [Fact]
+    [Fact(Timeout = 10_000)]
     public async Task ServidorMudo_ReligaSoDepoisDoPrazoDaEntrada()
     {
         var criados = new List<SocketLento>();
@@ -135,7 +138,7 @@ public class ReligacaoNuvemTests
     }
 
     // ── 3) Sem rede nenhuma (conectar falha): tenta de novo a cada intervalo, sem martelar. ──
-    [Fact]
+    [Fact(Timeout = 10_000)]
     public async Task SemRede_TentaNoIntervaloSemMartelar()
     {
         var criados = new List<SocketLento>();
@@ -150,6 +153,88 @@ public class ReligacaoNuvemTests
         Assert.False(canal.AguardandoEntrada);
         // ~1300 / (200 + 50) ≈ 5; o código sem intervalo daria ~14 (uma por giro de 40 ms + 50)
         Assert.InRange(regra.Tentativas, 3, 6);
+    }
+
+    // ── Auditoria 27/10: os buracos que a 1ª bateria não pegava. ──
+
+    // 4) A espera conta do FIM da tentativa (relógio falso, sem depender de tempo de máquina):
+    //    conectar levou 3 s e falhou; 1 s depois do fim (4 s depois do começo) ainda NÃO religa.
+    [Fact(Timeout = 10_000)]
+    public async Task EsperaContaDoFimDaTentativa_NaoDoComeco()
+    {
+        long relogio = 0;
+        await using var canal = new SupabaseRealtimeChannel(Url, Anon, Canal,
+            socketFactory: () => new SocketLento { ConectarMs = 0, Falha = true, AoConectar = () => relogio += 3000 },
+            heartbeatIntervalo: TimeSpan.FromSeconds(30));
+        var regra = new ReligacaoNuvem(TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(10), () => relogio);
+
+        relogio = 2500;
+        Assert.True(await regra.GarantirAsync(canal, CancellationToken.None));   // tentou; terminou em 5500
+        Assert.Equal(5500, relogio);
+
+        relogio = 6500;                                     // 1 s do fim, 4 s do começo
+        Assert.False(regra.DeveReligar(canal), "contar do começo religaria aqui");
+        relogio = 7600;                                     // 2,1 s do fim
+        Assert.True(regra.DeveReligar(canal));
+    }
+
+    // 5) Prazo de conectar: rede que nunca responde ao abrir o socket desiste no prazo.
+    [Fact(Timeout = 10_000)]
+    public async Task ConectarSemResposta_DesisteNoPrazo()
+    {
+        var criados = new List<SocketLento>();
+        await using var canal = new SupabaseRealtimeChannel(Url, Anon, Canal,
+            socketFactory: () => Add(criados, new SocketLento { ConectarMs = -1 }),
+            heartbeatIntervalo: TimeSpan.FromSeconds(30), conexaoTimeout: TimeSpan.FromMilliseconds(300));
+
+        var conecta = canal.ConnectAsync(CancellationToken.None);
+        Assert.True(await Task.WhenAny(conecta, Task.Delay(3000)) == conecta, "conectar sem resposta tem que desistir sozinho");
+        await Assert.ThrowsAsync<TimeoutException>(() => conecta);
+        Assert.False(canal.Online);
+        Assert.False(canal.Conectando);
+        Assert.True(criados[0].Descartado, "socket que não abriu tem que ser descartado");
+    }
+
+    // 6) Duas ConnectAsync sobrepostas (conexão inicial lenta + religação): no fim só UM socket
+    //    pode estar vivo e, depois do descarte, nenhum. Antes, o da perdedora ficava aberto para sempre.
+    [Fact(Timeout = 10_000)]
+    public async Task DuasConexoesSobrepostas_NaoDeixamSocketOrfao()
+    {
+        var criados = new List<SocketLento>();
+        var demoras = new Queue<int>(new[] { 600, 300 });
+        var canal = new SupabaseRealtimeChannel(Url, Anon, Canal,
+            socketFactory: () => Add(criados, new SocketLento { ConectarMs = demoras.Dequeue(), ConfirmarEntradaMs = 10 }),
+            heartbeatIntervalo: TimeSpan.FromSeconds(30));
+
+        var a = canal.ConnectAsync(CancellationToken.None);
+        await Task.Delay(50);
+        Assert.True(canal.Conectando);
+        var b = canal.ConnectAsync(CancellationToken.None);
+        await Task.WhenAll(a, b);
+
+        Assert.True(await Ate(() => canal.Online));
+        lock (criados) Assert.Equal(1, criados.FindAll(s => !s.Descartado).Count);
+        await canal.DisposeAsync();
+        lock (criados) Assert.All(criados, s => Assert.True(s.Descartado, "socket órfão depois do descarte"));
+    }
+
+    // 7) Enquanto uma ConnectAsync está em curso (conexão inicial lenta do console), a regra não
+    //    dispara outra — mesmo passado o intervalo.
+    [Fact(Timeout = 10_000)]
+    public async Task ConexaoEmCurso_RegraNaoEmpilhaOutra()
+    {
+        var criados = new List<SocketLento>();
+        await using var canal = new SupabaseRealtimeChannel(Url, Anon, Canal,
+            socketFactory: () => Add(criados, new SocketLento { ConectarMs = 900, ConfirmarEntradaMs = 10 }),
+            heartbeatIntervalo: TimeSpan.FromSeconds(30));
+        var regra = Regra();
+        var inicial = canal.ConnectAsync(CancellationToken.None);
+
+        await GirarLacoAsync(regra, canal, 700);           // intervalo (200 ms) já passou várias vezes
+        Assert.Equal(0, regra.Tentativas);
+        await inicial;
+        Assert.True(await Ate(() => canal.Online));
+        Assert.Single(criados);
     }
 
     private static SocketLento Add(List<SocketLento> lista, SocketLento s) { lock (lista) lista.Add(s); return s; }

@@ -283,7 +283,7 @@ public class SupabaseRealtimeChannelTests
         public void ServidorEnvia(string json) => _entrada.Writer.TryWrite(Encoding.UTF8.GetBytes(json));
     }
 
-    [Fact]
+    [Fact(Timeout = 20_000)] // sem prazo de fechar, o descarte do socket morto travava a bateria em vez de reprovar
     public async Task RedeCaiNoMeioDoEnvio_DesisteEReligaNaRedeNova()
     {
         void Servidor(SocketDeRedeMorta s, string msg) { if (Evento(msg) == "phx_join") s.ServidorEnvia(ReplyOk(Topic, RefDe(msg))); }
