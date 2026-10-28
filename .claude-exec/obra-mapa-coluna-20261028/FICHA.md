@@ -65,3 +65,9 @@ Passe /Users/imac/.claude/retomadas/20261028-1108-p1fast.md; seguir "Falta (atua
 
 ## RETOMADA 1028-1108 (11h19)
 Retomado do passe /Users/imac/.claude/retomadas/20261028-1108-p1fast.md (mesma janela ttys003, território p1fast-mapa-coluna desta janela). Seguindo "Falta (atualizado)" item 1.
+
+### 28/10 11h45 — FALTA zerada
+- Item 1 ideal: cérebro validas.voltaIdealS (21/06 = 159,597 = volta 2; todas = 158,172) + 3 provas (106/0); protótipo: rodapé "Ideal pelos trechos 2:39,6" ao lado da soma, lido do cérebro da TV (provar-rodape.mjs no scratchpad do servidor 5201: APROVADO, pior caso gap 101 px; controle sem volta válida = não aparece).
+- Achado: ACEL/FREIO do G com 3,9 px na coluna (régua cega media SVG pela escala da coluna) → rótulos ao lado (9,76 px), régua mede SVG real + ::before/::after, controle --controle-antigo acusa 3,9.
+- Smokes: montar 17/0, arquitetura 39/0, tv-blocos 25/0; ensaio do pacote 17/0; conferir × dpl_F3jLY (o que está no ar): 79 iguais, 3 diferentes = ENTRA.
+- imac-9c avisada (SendMessage). Commit 4b866482f. PACOTE-tv-box-coluna-mapa.md pronto.
