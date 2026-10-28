@@ -8499,6 +8499,15 @@ html,body{
   .tv-quadro .qc-agora::before{content:"";position:absolute;left:-12px;top:7px;bottom:7px;width:2px;border-radius:2px;background:#f2b33d;box-shadow:0 0 8px rgba(242,179,61,.55);}
   .tv-quadro .qc-agora .qc-nome span{color:#f2b33d;}
   .tv-quadro .qc-aguardando .qc-nome b{color:#aab0bb;}
+  /* itens 2 e 3 do painel p1fast-tv-quadro-melhorias-1425: a curva em que a última volta válida mais perdeu (barra e
+     subtítulo vermelhos; a curva em curso mantém a barra âmbar) e a passagem AO VIVO da curva em curso */
+  .tv-quadro .qc-maisperdeu:not(.qc-agora)::before{content:"";position:absolute;left:-12px;top:7px;bottom:7px;width:2px;border-radius:2px;background:#ff5a52;}
+  .tv-quadro .qc-maisperdeu .qc-nome span em{font-style:normal;color:#ff5a52;}
+  .tv-quadro .qc-tag i.qc-vivo{color:#f2b33d;opacity:1;}
+  .tv-quadro .qc-perda{flex:0 0 24px;display:flex;align-items:center;gap:14px;padding:0 17px;border-top:1px solid rgba(255,255,255,.11);
+    font-size:9.5px;color:#a7adb8;letter-spacing:.03em;white-space:nowrap;overflow:hidden;}
+  .tv-quadro .qc-perda > span{flex:0 0 auto;} .tv-quadro .qc-perda .qc-rot{color:#ff5a52;}
+  .tv-quadro .qc-perda b{font-weight:700;color:#eef1f5;} .tv-quadro .qc-perda .qc-fora{color:#7d8491;font-style:italic;}
   /* a linha reta na base da curva: trilho apagado da curva inteira e, por cima, até onde o carro chegou */
   .tv-quadro .qc-lin > .qc-trilho{position:absolute;left:0;right:0;bottom:-1px;height:2px;padding:0!important;background:rgba(255,255,255,.07);border-radius:2px;}
   .tv-quadro .qc-lin > .qc-prog{position:absolute;left:0;bottom:-1px;height:2px;padding:0!important;border-radius:2px;}
@@ -8693,6 +8702,14 @@ html,body{
       }
     });
     el.innerHTML = h;
+    // ápice perto da borda direita do mapa: o texto passa para o lado esquerdo da cruz (28/10: «15,1 m do ápice» saía
+    // cortado na borda — o giro da pista põe curvas encostadas na beira)
+    var caixa = el.closest && el.closest('.b-map'), C = caixa && caixa.getBoundingClientRect();
+    if(C) [].forEach.call(el.querySelectorAll('[data-tv-apice-m]'), function(tx){
+      if(tx.getBoundingClientRect().right <= C.right - 2) return;
+      var ax = +tx.getAttribute('x') - 9;
+      tx.setAttribute('x', ax - 9); tx.setAttribute('text-anchor', 'end');
+    });
   }
 
   // linha do trecho e "a última perdeu", na coluna ao lado do mapa (curtas: a coluna é estreita).
@@ -8854,10 +8871,12 @@ html,body{
       h += '<div class="qc-grade qc-cab"><div class="qc-rot">Curva</div><div></div>'
         + QC.map(function(col){ return '<div class="qc-rot">' + col.rot + '<span class="qc-un">' + col.un + '</span></div>'; }).join('') + '</div>';
       h += '<div class="qc-corpo">' + q.curvas.map(function(c){
-        var sub = c.estado === 'agora' ? 'passando agora' + (c.ultimaVolta ? ' · volta ' + c.ultimaVolta : '')
+        var sub = c.estado === 'agora' ? 'passando agora' + (c.aoVivo ? ' · ao vivo' : c.ultimaVolta ? ' · volta ' + c.ultimaVolta : '')
           : c.ultima ? 'volta ' + c.ultimaVolta + (c.ehRef ? ' · é a referência' : '') : 'aguardando';
-        var lin = '<div class="qc-grade qc-lin' + (c.estado === 'agora' ? ' qc-agora' : c.estado === 'aguardando' ? ' qc-aguardando' : '') + '" data-qc-curva="' + c.i + '">'
-          + '<div class="qc-nome"><b>' + esc(c.nome) + '</b><span>' + sub + '</span></div><div class="qc-tag"><i>Melhor</i><i>Última</i></div>';
+        if(c.maisPerdeu && q.perda) sub += ' · <em>mais perdeu na volta ' + q.perda.volta + '</em>';
+        var lin = '<div class="qc-grade qc-lin' + (c.estado === 'agora' ? ' qc-agora' : c.estado === 'aguardando' ? ' qc-aguardando' : '')
+          + (c.maisPerdeu ? ' qc-maisperdeu' : '') + '" data-qc-curva="' + c.i + '"' + (c.aoVivo ? ' data-qc-vivo' : '') + (c.maisPerdeu ? ' data-qc-maisperdeu' : '') + '>'
+          + '<div class="qc-nome"><b>' + esc(c.nome) + '</b><span>' + sub + '</span></div><div class="qc-tag"><i>Melhor</i>' + (c.aoVivo ? '<i class="qc-vivo">Ao vivo</i>' : '<i>Última</i>') + '</div>';
         QC.forEach(function(col, i){
           var m = c.melhor ? c.melhor[col.k] : null, u = c.ultima ? c.ultima[col.k] : null, dl = c.delta ? c.delta[col.k] : null, dt = '', cls = 'qc-neutro';
           if(c.ehRef && u != null) { dt = i === QC.length - 1 ? 'REF' : ''; cls = 'qc-chip'; }
@@ -8869,7 +8888,10 @@ html,body{
         if(c.estado === 'agora') lin += '<div class="qc-trilho"></div><div class="qc-prog" data-qc-prog style="width:' + ((c.progresso || 0) * 100).toFixed(1) + '%;background:' + qcTrilha(c) + '"></div>';
         return lin + '</div>';
       }).join('') + '</div>';
-      var s = q.somaDeltaS;
+      var s = q.somaDeltaS, pd = q.perda;   // onde mais perdeu: frase pronta do cérebro (pacote().quadro.perda)
+      h += '<div class="qc-perda" data-qc-perda>' + (pd
+        ? '<span class="qc-rot">Onde mais perdeu · volta ' + pd.volta + '</span><span data-qc-perda-frase><b>' + esc(pd.frase.split(':')[0]) + '</b>' + esc(pd.frase.slice(pd.frase.indexOf(':'))) + '</span>'
+        : '<span class="qc-rot">Onde mais perdeu</span><span class="qc-fora">' + (q.refVolta ? 'nenhuma curva perdeu para a melhor na última volta válida' : 'aguardando uma volta válida') + '</span>') + '</div>';
       h += '<div class="qc-pe"><span><b style="color:#86c9a2">MELHOR</b> = volta nº ' + (q.refVolta || '—') + ' · <b>ÚLTIMA</b> = passagem mais recente · diferença = última − melhor</span>'
         + '<span><i style="background:#38BCFF"></i>acelera <i style="background:#FF5A4E;margin-left:8px"></i>freia</span>'
         + '<span class="qc-soma">' + (s == null ? '' : 'Soma · última − melhor <b class="' + (Math.abs(s) < 0.05 ? 'qc-neutro' : s < 0 ? 'qc-ganhou' : 'qc-perdeu') + '">' + qcSinal(s, 2) + ' s</b>')

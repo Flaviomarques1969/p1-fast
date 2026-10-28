@@ -41,3 +41,7 @@ reprova). Prova de campo no notebook: NÃO VERIFICADO. Lição: aviso de "saí d
 O que era: ao levar o círculo G para a coluna (52 px), os rótulos de dentro do desenho caíram de ~7,5 para 3,9 px na tela; a régua provar-coluna.mjs dava 9 px porque media letra de SVG pela escala da coluna, não do desenho (régua cega).
 Correção: na coluna os rótulos saem do desenho e ficam ao lado (::before/::after, 9,76 px); régua mede SVG pela escala real e mede os ::before/::after.
 Prova: provar-coluna.mjs fim e --pior: 0 letras < 9,7 px, 0 cobertos/cortes/fora; controle --controle-antigo acusa ACEL/FREIO 3,9 px.
+
+## 2026-10-28 · CÓDIGO · TV do box (mockup, desenharTrechosMapa) · «N,N m do ápice» cortado na borda direita do mapa
+O que era: texto sempre à direita da cruz; curva encostada na beira direita (giro da pista) saía cortada. medir-apice.mjs só olhava UM instante (fim do 21/06), onde não acontecia — régua cega.
+Correção: texto que passa da borda da .b-map vai para a esquerda da cruz (text-anchor end). Prova: medir-perda-vivo.mjs seção C (cena sintética da volta 4 reproduz o corte) APROVADO; TV anterior REPROVA («15,1 m do ápice» sai do mapa). CORRIGIDO.

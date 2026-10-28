@@ -20,7 +20,7 @@
 //    km/h ao cruzar a entrada, menor km/h (com o lugar), km/h ao cruzar a saída e a distância ao ÁPICE (Flávio
 //    28/10: "distância do carro ao ápice no mapa") = menor distância de um ponto do GPS da curva ao ápice do
 //    cadastro, com a MESMA conta do carro (distMeters do TrechoDetector); na curva em curso, a menor até agora
-//    (voltaAtual.apiceAgoraM). A freada medida fica no carro (TrechoDetector) — aqui não se refaz essa conta.
+//    (voltaAtual.apiceAgoraM) e, ao vivo, a entrada e a menor km/h até agora (voltaAtual.trechoAgora). A freada medida fica no carro (TrechoDetector) — aqui não se refaz essa conta.
 //  - pancadas (item 7): chave gVert que o notebook publica (gz − zero de gz da parada, mesma
 //    peça AceleracaoCarro). Pancada = |gVert| passa de PANCADA_G (borda de subida); o grupo
 //    acaba quando volta abaixo; vale o pico do grupo, no lugar e na volta do pico.
@@ -476,7 +476,11 @@ export function criarCerebroGpsTv(opts = {}) {
       const mAgora = trechos.length ? trechoMedidas[cruzTrechoT.length] : null;
       atual = { n: voltaN, decorridoS: r3((agora.t - inicioVoltaT) / 1000), setoresS: parciais,
         setorAtual: parciais.length + 1, trechoAtual: trechos.length ? cruzTrechoT.length + 1 : null, trechos: trechosFeitos,
-        apiceAgoraM: mAgora && mAgora.apiceM != null ? r1(mAgora.apiceM) : null };
+        apiceAgoraM: mAgora && mAgora.apiceM != null ? r1(mAgora.apiceM) : null,
+        // passagem do trecho em curso, ao vivo (Flávio 28/10, item 3 de p1fast-tv-quadro-melhorias-1425): km/h ao cruzar
+        // a entrada e a menor até agora — as MESMAS medidas que viram volta.trechos[i] quando o carro sai
+        trechoAgora: mAgora ? { kmhEntrada: mAgora.kmhEntrada != null ? r1(mAgora.kmhEntrada) : null,
+          kmhMin: mAgora.kmhMin != null ? r1(mAgora.kmhMin) : null } : null };
     }
     const melhoresTrechos = trechos.map((_, i) => melhor(voltas, v => (v.trechos ? v.trechos[i].tempoS : null)));
     const idealTrechos = trechos.length && melhoresTrechos.every(s => s != null)

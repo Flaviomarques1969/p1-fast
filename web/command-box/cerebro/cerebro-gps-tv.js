@@ -20,7 +20,7 @@
 //    km/h ao cruzar a entrada, menor km/h (com o lugar), km/h ao cruzar a saída e a distância ao ÁPICE (Flávio
 //    28/10: "distância do carro ao ápice no mapa") = menor distância de um ponto do GPS da curva ao ápice do
 //    cadastro, com a MESMA conta do carro (distMeters do TrechoDetector); na curva em curso, a menor até agora
-//    (voltaAtual.apiceAgoraM). A freada medida fica no carro (TrechoDetector) — aqui não se refaz essa conta.
+//    (voltaAtual.apiceAgoraM) e, ao vivo, a entrada e a menor km/h até agora (voltaAtual.trechoAgora). A freada medida fica no carro (TrechoDetector) — aqui não se refaz essa conta.
 //  - pancadas (item 7): chave gVert que o notebook publica (gz − zero de gz da parada, mesma
 //    peça AceleracaoCarro). Pancada = |gVert| passa de PANCADA_G (borda de subida); o grupo
 //    acaba quando volta abaixo; vale o pico do grupo, no lugar e na volta do pico.

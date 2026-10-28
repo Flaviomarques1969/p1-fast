@@ -22,7 +22,9 @@
 //   quadro      quadro de curvas (Flávio 28/10, a tela «comparativo por trecho» de 27/10 levada à TV): por curva, na
 //               ordem da volta, MELHOR (passagem da melhor volta) × ÚLTIMA (a mais recente, já desta volta quando o
 //               carro saiu da curva) — entrada, freada (só com G medido), mínima, saída, tempo — e a diferença; na
-//               curva em curso, progresso e trilha acelera/freia (G da faixa); soma das diferenças e ideal pelos trechos
+//               curva em curso, progresso e trilha acelera/freia (G da faixa) e a passagem AO VIVO (entrada e mínima até
+//               agora); soma das diferenças e ideal pelos trechos; a curva em que a última volta válida mais perdeu
+//               para a melhor e o motivo medido (perda)
 //   plano       o plano do stint aprovado no celular (envelopes_seguranca_stint, lido pela porta de
 //               web/cockpit/treino-stint.js) × o que o carro fez: voltas planejadas, feitas, faltam, próxima
 //               parada. Plano de outro dia não vale para o stint de hoje: sai só como "último plano, de <dia>".
@@ -214,6 +216,21 @@ function casasDaVolta(perfil, fechada) {
 
 function tom(difS) { return difS == null ? null : difS <= 0 ? 'ganhou' : difS < 0.1 ? 'perto' : 'perdeu'; }
 
+// o porquê de uma passagem ter perdido para a referência, só com o que foi medido: mínima, saída e (com G medido nas
+// duas) onde começou a frear. u/r = passagens {kmhMin, kmhSaida}; fu/fr = frenagens (medirFrenagem) ou null.
+// Casa única do motivo — coach e quadro de curvas dizem a mesma coisa.
+function motivosDaPerda(u, r, fu, fr) {
+  const motivos = [];
+  if (!u || !r) return motivos;
+  if (u.kmhMin != null && r.kmhMin != null && u.kmhMin < r.kmhMin - 1) motivos.push({ tipo: 'minima', texto: `mínima ${virg(r1(r.kmhMin - u.kmhMin))} km/h abaixo da sua melhor` });
+  if (u.kmhSaida != null && r.kmhSaida != null && u.kmhSaida < r.kmhSaida - 1) motivos.push({ tipo: 'saida', texto: `saída ${virg(r1(r.kmhSaida - u.kmhSaida))} km/h mais lenta` });
+  if (fu && fr && fu.ok && fr.ok && fu.inicioFreadaM != null && fr.inicioFreadaM != null) {
+    const cedo = r1(fr.inicioFreadaM - fu.inicioFreadaM);
+    if (cedo > 5) motivos.push({ tipo: 'freada', texto: `freou ${virg(cedo)} m mais cedo` });
+  }
+  return motivos;
+}
+
 /**
  * Plano do stint × o que o carro fez. `lido` = o que a porta de leitura devolveu:
  *   undefined → ainda não leu; null → nenhum plano gravado; { plano, dia, deHoje } → o último plano do carro.
@@ -327,17 +344,9 @@ export function criarCerebroTvBlocosGps() {
       let ref = null;
       for (const v of validas) if (v.trechos && v.trechos[i] && (ref == null || v.trechos[i].tempoS < ref.trechos[i].tempoS)) ref = v;
       const u = ultima.trechos[i], r = ref ? ref.trechos[i] : null;
-      const motivos = [];
-      if (r) {
-        if (u.kmhMin != null && r.kmhMin != null && u.kmhMin < r.kmhMin - 1) motivos.push({ tipo: 'minima', texto: `mínima ${virg(r1(r.kmhMin - u.kmhMin))} km/h abaixo da sua melhor` });
-        if (u.kmhSaida != null && r.kmhSaida != null && u.kmhSaida < r.kmhSaida - 1) motivos.push({ tipo: 'saida', texto: `saída ${virg(r1(r.kmhSaida - u.kmhSaida))} km/h mais lenta` });
-        const mu = lista[i].tipo === 'curva' ? medidas(ultima, lista)[i] : null;
-        const mr = mu && ref ? medidas(ref, lista)[i] : null;
-        if (mu && mr && mu.frenagem.ok && mr.frenagem.ok && mu.frenagem.inicioFreadaM != null && mr.frenagem.inicioFreadaM != null) {
-          const cedo = r1(mr.frenagem.inicioFreadaM - mu.frenagem.inicioFreadaM);
-          if (cedo > 5) motivos.push({ tipo: 'freada', texto: `freou ${virg(cedo)} m mais cedo` });
-        }
-      }
+      const mu = r && lista[i].tipo === 'curva' ? medidas(ultima, lista)[i] : null;
+      const mr = mu && ref ? medidas(ref, lista)[i] : null;
+      const motivos = motivosDaPerda(u, r, mu && mu.frenagem, mr && mr.frenagem);
       coach = { trecho: maior.i, nome: maior.nome, perdeuS: maior.difS, volta: ultima.n, refVolta: ref ? ref.n : null,
         frase: `${maior.nome}: perdeu ${String(maior.difS.toFixed(2)).replace('.', ',')} s`, motivos };
     }
@@ -388,9 +397,14 @@ export function criarCerebroTvBlocosGps() {
     const curvas = [];
     lista.forEach((tr, i) => {
       if (tr.tipo !== 'curva') return;
-      let u = null, uN = null, uFr = null;
-      if (feitos[i]) {
-        u = feitos[i]; uN = at.n;
+      const agora = !!at && iAgora === i;
+      let u = null, uN = null, uFr = null, aoVivo = false;
+      if (feitos[i] || (agora && at.trechoAgora)) {
+        // já feita nesta volta, ou AO VIVO (Flávio 28/10, item 3 de p1fast-tv-quadro-melhorias-1425: "a linha ÚLTIMA da
+        // curva em que o carro está mostra a passagem atual — entrada assim que entra, mínima baixando em tempo real")
+        aoVivo = !feitos[i];
+        u = aoVivo ? { kmhEntrada: at.trechoAgora.kmhEntrada, kmhMin: at.trechoAgora.kmhMin, kmhSaida: null, tempoS: null } : feitos[i];
+        uN = at.n;
         const rc = s.perfilAtual ? recorte(s.perfilAtual, tr.de, tr.ate, ANTES_DA_ENTRADA_M) : null;
         uFr = rc ? medirFrenagem(rc.pts, rc.dEnt) : null;
       } else if (ultimaV && ultimaV.trechos) {
@@ -403,10 +417,12 @@ export function criarCerebroTvBlocosGps() {
       let delta = null;
       if (pu && pm && !ehRef) {
         delta = {};
-        for (const k of Object.keys(pu)) delta[k] = pu[k] != null && pm[k] != null ? (k === 'tempoS' ? r3 : r1)(pu[k] - pm[k]) : null;
+        // ao vivo só a entrada (e a freada) já são definitivas: a mínima ainda pode baixar, saída e tempo nem existem —
+        // diferença de número que ainda vai mudar não se mostra
+        for (const k of Object.keys(pu)) delta[k] = pu[k] != null && pm[k] != null && (!aoVivo || k === 'entrada' || k === 'freadaM')
+          ? (k === 'tempoS' ? r3 : r1)(pu[k] - pm[k]) : null;
         if (delta.tempoS != null) somaDeltaS = r3((somaDeltaS || 0) + delta.tempoS);
       }
-      const agora = !!at && iAgora === i;
       let progresso = null, trilha = null;
       if (agora && faixa && faixa.cursor != null) {
         const vol = (a, b) => (b >= a ? b - a : b + 1 - a);   // curva que cruza a chegada
@@ -428,9 +444,28 @@ export function criarCerebroTvBlocosGps() {
         }
       }
       curvas.push({ i: i + 1, nome: tr.nome, estado: agora ? 'agora' : u ? 'feita' : 'aguardando',
-        ultimaVolta: uN, ehRef, melhor: pm, ultima: pu, delta, progresso, trilha });
+        ultimaVolta: uN, ehRef, aoVivo, maisPerdeu: false, melhor: pm, ultima: pu, delta, progresso, trilha });
     });
+    // onde mais perdeu (Flávio 28/10, item 2 de p1fast-tv-quadro-melhorias-1425): a curva em que a ÚLTIMA VOLTA VÁLIDA
+    // fechada mais perdeu para a MELHOR do quadro (a mesma referência da coluna MELHOR — o número bate com a linha) e o
+    // motivo medido, no formato «<curva>: perdeu X s — mínima N km/h abaixo da sua melhor». Última = melhor → nada.
+    let perda = null;
+    if (ref && ultimaV && ultimaV.trechos && ultimaV.n !== ref.n) {
+      lista.forEach((tr, i) => {
+        if (tr.tipo !== 'curva' || !ultimaV.trechos[i] || !ref.trechos[i]) return;
+        const difS = r3(ultimaV.trechos[i].tempoS - ref.trechos[i].tempoS);
+        if (difS > 0 && (perda == null || difS > perda.perdeuS)) perda = { i: i + 1, nome: tr.nome, perdeuS: difS };
+      });
+      if (perda) {
+        const k = perda.i - 1, mu = medidas(ultimaV, lista)[k], mr = medidas(ref, lista)[k];
+        const motivos = motivosDaPerda(ultimaV.trechos[k], ref.trechos[k], mu && mu.frenagem, mr && mr.frenagem);
+        perda = { ...perda, volta: ultimaV.n, refVolta: ref.n, motivos,
+          frase: `${perda.nome}: perdeu ${virg(perda.perdeuS.toFixed(2))} s` + (motivos.length ? ' — ' + motivos.map(m => m.texto).join(' · ') : '') };
+        curvas.find(c => c.i === perda.i).maisPerdeu = true;
+      }
+    }
     return {
+      perda,
       volta: at ? { n: at.n, decorridoS: at.decorridoS, deltaAgoraS: faixa ? faixa.deltaAgoraS : null } : null,
       kmh: s.fresco && s.agora && typeof s.agora.kmh === 'number' ? r1(s.agora.kmh) : null,
       ultimaS: stint.ultimaS, melhor: vMelhor ? { n: vMelhor.n, tempoS: vMelhor.tempoS } : null, refVolta: ref ? ref.n : null,
