@@ -312,3 +312,6 @@ PONTO DE PARADA 1027-1903 (27/10 ~19h03): E5 pronta em DEV (1b9857db6), PACOTE e
   (não passa pela Vercel). max_participants fica 4: com as abas fechadas e o laço consertado, TV + notebook = 2 vagas; sem decisão a pedir.
 - 28/10 13h18: ponto de parada RETOMAR 1028-1318 — quadro de curvas provado no cérebro (d4efae0b2); tela escrita, conferência pendente (ver FICHA da obra-mapa-coluna-20261028).
 - 28/10 14h31 ponto de parada RETOMAR 1028-1431: corrigir descarte de voltas no quadro (ver FICHA obra-mapa-coluna-20261028).
+- 28/10 14:57: ponto de parada RETOMAR 1028-1457 (passe ~/.claude/retomadas/20261028-1457-p1fast.md): itens a528b1bc0 + 336c06de9 prontos; próximo = faixa de velocidade, depois ápice, depois itens 2 e 3.
+
+- 28/10 15h20 (ponto de parada 1028-1520): faixa de velocidade PRONTA (bd6d4b241); ápice no cérebro escrito sem commit (bak-apice/); queixa nova dele: gráfico das voltas sobrepostas vazando — próximo passo 1. Migração SEGURADA.

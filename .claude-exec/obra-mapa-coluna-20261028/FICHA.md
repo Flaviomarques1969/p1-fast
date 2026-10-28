@@ -183,7 +183,7 @@ quadro: última = última válida quando a curva ainda não foi feita nesta volt
 "sem volta válida ainda". Prova nova na tv-quadro-curvas + mutação. Depois refazer o painel (B, C, D, E). Backup em
 bak-descarte/ (cérebro, prova, mockup). Migração SEGURADA. Fora: tabela do stint (stint.melhor/deltaS) — histórico de
 todas as voltas, já marca o descarte; fica como está.
-- 28/10 ~15h (conversa 1028-1431): DESVIO CORRIGIDO. cerebro-tv-blocos-gps.js pacote(): validas = voltas sem v.descarte;
+- 28/10 14h4x (conversa 1028-1431): DESVIO CORRIGIDO. cerebro-tv-blocos-gps.js pacote(): validas = voltas sem v.descarte;
   curva (ref), coach (validas.perdasUltima + ref válida), faixa (vMelhor = melhor válida) e quadro (última = última
   válida, topo Melhor = melhor válida, voltasFechadas) — sem volta válida não há referência nem diferença. Tela: "melhor
   volta válida · nº N" / "sem volta válida ainda (aquecimento não conta)". Lista do stint e Δ acumulado ficam com todas.
@@ -193,4 +193,47 @@ todas as voltas, já marca o descarte; fica como está.
   mesma gravação sem descarte). medir-quadro.mjs APROVADO (volta 2 na tela sem MELHOR/diferença + volta 3 70 números);
   controle tela antiga REPROVA (1: texto). gps-tv 106, honesta 37, tv-video 46. Smoke 87/88 (schema-parity 11/4 = já existia).
   Próximo: refazer o painel p1fast-tv-quadro-melhorias-1425 (B, C, D, E).
-- 28/10 ~15h30: ITEM 1 do painel p1fast-tv-quadro-melhorias-1425 (ordem dele: 1 plano, 2 onde mais perdeu, 3 curva ao vivo; freada estimada FORA — ele: «só vamos usar o GPS do Racebox»). Plano do stint numa linha .qc-plano abaixo do topo do quadro (pacote().plano). medir-quadro APROVADO com plano falso de hoje + controle 10/07; tela sem a linha REPROVA. Backup bak-plano/. Pedido NOVO dele no meio: distância do carro ao ÁPICE no mapa da TV.
+- 28/10 14h5x: ITEM 1 do painel p1fast-tv-quadro-melhorias-1425 (ordem dele: 1 plano, 2 onde mais perdeu, 3 curva ao vivo; freada estimada FORA — ele: «só vamos usar o GPS do Racebox»). Plano do stint numa linha .qc-plano abaixo do topo do quadro (pacote().plano). medir-quadro APROVADO com plano falso de hoje + controle 10/07; tela sem a linha REPROVA. Backup bak-plano/. Pedido NOVO dele no meio: distância do carro ao ÁPICE no mapa da TV.
+- 28/10 14h5x — DOIS PEDIDOS NOVOS DELE (nada escrito ainda; árvore limpa no commit 336c06de9):
+  (1) FAIXA DA BASE «não faz sentido» (ele viu ?tv=1&replay-gps=21-06&speed=4): o G tirado da velocidade sai serrilhado,
+      vermelho/azul alternando ("frenagem em V", "freando e acelerando ao mesmo tempo") e não viu a melhor volta.
+      FAZER: trocar a faixa por LINHA DE VELOCIDADE (km/h por posição) com a MELHOR VÁLIDA e a ATUAL sobrepostas e o
+      TRECHO DE FRENAGEM marcado só onde a velocidade cai de verdade (alisar + tamanho mínimo da queda, sem picos).
+      Casa: casasDaVolta() em cerebro-tv-blocos-gps.js (FAIXA_BINS 200; acrescentar kmh médio por casa + zonas de freada
+      com histerese) e desenharFaixa() no mockup. Na 21/06 a melhor só existe a partir da volta 3 (a 1 é aquecimento):
+      dizer isso a ele. Provas: tv-faixa-volta, medir-quadro (faixa), controles.
+  (2) ÁPICE NO MAPA DA TV: distância (m) do ponto mais próximo do carro ao ápice de cada curva. O ápice JÁ está
+      cadastrado (apice_gps em web/command-box/trechos-brasilia.js; trechos-volta.js já calcula apice {x,y} no mapa).
+      FAZER: levar apiceGps para a lista de trechos; no feed do cerebro-gps-tv.js, na medida da curva em curso, menor
+      distância ponto-segmento (GPS do RaceBox) ao ápice → trechos[i].apiceM (fechada e em curso); desenharTrechosMapa()
+      marca o ápice e escreve «N,N m do ápice». O cockpit já tem a bolinha do ápice ao vivo (web/cockpit/live-data-bridge.js
+      ~300-341) como referência. Prova nova com 21/06 (conta independente) + controle.
+  Depois: itens 2 (onde mais perdeu) e 3 (curva ao vivo) do painel. Migração SEGURADA.
+
+## RETOMADA 1028-1457 (28/10 tarde) — conversa nova
+Escopo: (1) faixa da base vira LINHA DE VELOCIDADE (melhor válida × atual) com trecho de frenagem marcado só onde a
+velocidade cai de verdade; (2) distância ao ÁPICE por curva no mapa da TV. Depois itens 2 e 3 do painel. Backups em
+bak-faixa-vel/ e bak-apice/. Migração SEGURADA.
+- 28/10 ~15h (conversa 1028-1457): FAIXA VIROU LINHA DE VELOCIDADE — commit bd6d4b241. cerebro-tv-blocos-gps.js:
+  zonasDeFreada (pico→vale com histerese 2 km/h; queda ≥ 8 km/h; pico de desaceleração ≥ 0,25 G; bordas a −0,12 G) e
+  casasDaVolta com kmh por casa + freadas; G da faixa saiu (temGMedido/fonte medido removidos; fonte 'gps'); trilha do quadro
+  = dentro de uma freada. Calibração na 21/06 volta 2: 7 freadas = 7 curvas (quedas 42–60 km/h), tirar o pé 151→141 a 0,09 G
+  fica de fora. Mockup: dourada melhor válida, azul atual, vermelho só nas freadas da atual, barrinhas de freada (melhor
+  dourada, atual vermelha), escala "80–160 km/h · GPS RaceBox". Provas: tv-faixa-volta 37/0 (casas = média independente,
+  1 freada por curva, queda real ≥ 8, casos à mão: reto/ondulação/tirar o pé/freada/aberta); tv-quadro-curvas 23/0 (sem "V").
+  Controles: cérebro antigo e sabotagem sem histerese REPROVAM (4); TV com freadas trocadas REPROVA. medir-quadro APROVADO
+  (200 pontos dourados, 49 azuis = cérebro). Smoke 87/88 (schema-parity 11/4 = já existia). Backup bak-faixa-vel/.
+  Próximo: ÁPICE no mapa (bak-apice/).
+- 28/10 ~15h15: ÁPICE no cérebro ESCRITO, SEM COMMIT (backup bak-apice/): trechos-volta.js leva apiceGps; cerebro-gps-tv.js
+  medirApice = menor distância de ponto GPS ao ápice com distMeters do TrechoDetector do carro (mesma conta da bolinha do
+  cockpit) → trechos[i].apiceM (fechada e feitos) e voltaAtual.apiceAgoraM (curva em curso). 21/06 volta 2: 01 15,1 m ·
+  2 2,6 · Junção 7,7 · Bruxa 8,0 · Reta Oposta 0,4 · Placar 0,9 · "S" 10,4 (volta 1: 01 = 103 m, saída do box).
+  FALTA: prova nova em tests (conta independente + controle) e desenhar no mapa (desenharTrechosMapa: marca do ápice +
+  «N,N m do ápice» na curva em curso e na última feita), commit.
+  QUEIXA NOVA DELE (~15h15): "o gráfico de voltas sobrepostas está VAZANDO do próprio gráfico" — provável a faixa de
+  velocidade (linhas saindo da caixa do svg/da faixa); conferir na tela dele (largura real) e corrigir ANTES do ápice.
+
+## RETOMADA 1028-1520 (28/10 tarde) — conversa nova
+Escopo: (1) consertar o "gráfico de voltas sobrepostas VAZANDO" (faixa de velocidade); (2) ápice: prova + desenho no
+mapa + commit; (3) itens 2 e 3 do painel p1fast-tv-quadro-melhorias-1425. Migração SEGURADA.
+- 28/10 15h4x: queixa 'voltas sobrepostas vazando' = gráfico do comparativo.html (porta 5198) da janela «P1FAST - GPS TV modo RaceBox» (imac-9c), aberto às 15h17; a faixa da TV oficial não vaza (varri 295 quadros, 9 tamanhos). Recado enviado a ela por SendMessage; nada mexido aqui.

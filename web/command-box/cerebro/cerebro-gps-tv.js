@@ -17,8 +17,10 @@
 //    (ADR-006: "3 setores macro"); a posição exata das linhas é configurável (setoresFrac).
 //  - trechos (metodologia P1, painel p1fast-gps-setores-1228): cada curva de freada do cadastro aprovado
 //    (o MESMO BARRAS do carro) e a reta entre elas, cortados pela casa trechos-volta.js. Por volta: tempo,
-//    km/h ao cruzar a entrada, menor km/h (com o lugar) e km/h ao cruzar a saída. Freada e ápice medidos
-//    ficam no carro (TrechoDetector) — aqui não se refaz essa conta.
+//    km/h ao cruzar a entrada, menor km/h (com o lugar), km/h ao cruzar a saída e a distância ao ÁPICE (Flávio
+//    28/10: "distância do carro ao ápice no mapa") = menor distância de um ponto do GPS da curva ao ápice do
+//    cadastro, com a MESMA conta do carro (distMeters do TrechoDetector); na curva em curso, a menor até agora
+//    (voltaAtual.apiceAgoraM). A freada medida fica no carro (TrechoDetector) — aqui não se refaz essa conta.
 //  - pancadas (item 7): chave gVert que o notebook publica (gz − zero de gz da parada, mesma
 //    peça AceleracaoCarro). Pancada = |gVert| passa de PANCADA_G (borda de subida); o grupo
 //    acaba quando volta abaixo; vale o pico do grupo, no lugar e na volta do pico.
@@ -47,6 +49,7 @@ import { criarDetectorTraseira } from './traseira-giro.js';
 import { montarTrechosDaVolta } from './trechos-volta.js';
 import { TRECHOS_BRASILIA } from '../trechos-brasilia.js';
 import { TIPO_POR_CURVA } from '../tipos-curva-brasilia.js';
+import { distMeters } from '../../cockpit/trecho-detector.js';
 
 /** Linha de chegada oficial de Brasília (tabela marcos, migração 0031 — a mesma da Vista Piloto). */
 export const MARCO_CHEGADA_BRASILIA = {
@@ -209,13 +212,20 @@ export function criarCerebroGpsTv(opts = {}) {
   const detTraseira = criarDetectorTraseira();
   let viuGiro = false;
   let cruzTrechoT = [];           // carimbos dos cruzamentos das fronteiras de trecho da volta corrente
-  let trechoMedidas = [];         // por trecho da volta corrente: {kmhEntrada, kmhMin, minX, minY, kmhSaida}
+  let trechoMedidas = [];         // por trecho da volta corrente: {kmhEntrada, kmhMin, minX, minY, kmhSaida, apiceM}
   let kmhPonto = null;            // km/h do ponto em curso (a chegada fecha a volta antes de o ponto somar)
   let paradoDesdeT = null, paradoProg = null, paradoVoltaN = null, paradaContada = false;   // parada em curso
   let aquecerProxima = false;     // a próxima volta a fechar é a 1ª depois de uma parada
   let voltaTeveParada = false;    // a volta corrente tem uma parada dentro
 
-  function novaMedida(kmhEntrada) { return { kmhEntrada, kmhMin: null, minX: null, minY: null, kmhSaida: null }; }
+  function novaMedida(kmhEntrada) { return { kmhEntrada, kmhMin: null, minX: null, minY: null, kmhSaida: null, apiceM: null }; }
+  // ápice: o ponto chega mais perto do ápice cadastrado da curva i do que os anteriores? (mesma conta do carro)
+  function medirApice(i, m, lat, lng) {
+    const tr = trechos[i];
+    if (!tr || tr.tipo !== 'curva' || !tr.apiceGps) return;
+    const d = distMeters({ lat, lng }, tr.apiceGps);
+    if (m.apiceM == null || d < m.apiceM) m.apiceM = d;
+  }
 
   function contarTrocas(v) {
     const da = trocas.filter(tr => tr.n === v.n);
@@ -256,7 +266,7 @@ export function criarCerebroGpsTv(opts = {}) {
         const m = trechoMedidas[i];
         return { tempoS: r3(d), kmhEntrada: m.kmhEntrada != null ? r1(m.kmhEntrada) : null,
           kmhMin: m.kmhMin != null ? r1(m.kmhMin) : null, minX: m.minX, minY: m.minY,
-          kmhSaida: m.kmhSaida != null ? r1(m.kmhSaida) : null };
+          kmhSaida: m.kmhSaida != null ? r1(m.kmhSaida) : null, apiceM: m.apiceM != null ? r1(m.apiceM) : null };
       });
     }
     contarTrocas(v);
@@ -348,10 +358,12 @@ export function criarCerebroGpsTv(opts = {}) {
           const sai = trechoMedidas[trechoMedidas.length - 1];
           sai.kmhSaida = kmh;   // o ponto da fronteira vale para os dois trechos (inclusive no menor km/h)
           if (kmh != null && (sai.kmhMin == null || kmh < sai.kmhMin)) { sai.kmhMin = kmh; sai.minX = r1(pos.x); sai.minY = r1(pos.y); }
+          medirApice(trechoMedidas.length - 1, sai, g.lat, lng);
           trechoMedidas.push(novaMedida(kmh));
         }
         const m = trechoMedidas[trechoMedidas.length - 1];
         if (kmh != null && (m.kmhMin == null || kmh < m.kmhMin)) { m.kmhMin = kmh; m.minX = r1(pos.x); m.minY = r1(pos.y); }
+        medirApice(trechoMedidas.length - 1, m, g.lat, lng);
       }
       progAnterior = prog;
       if (guardarVoltas && inicioVoltaT != null && perfilVolta.length < TETO_PERFIL_VOLTA) {
@@ -459,10 +471,12 @@ export function criarCerebroGpsTv(opts = {}) {
         ini = c;
         return { tempoS: r3(d), kmhEntrada: m.kmhEntrada != null ? r1(m.kmhEntrada) : null,
           kmhMin: m.kmhMin != null ? r1(m.kmhMin) : null, minX: m.minX, minY: m.minY,
-          kmhSaida: m.kmhSaida != null ? r1(m.kmhSaida) : null };
+          kmhSaida: m.kmhSaida != null ? r1(m.kmhSaida) : null, apiceM: m.apiceM != null ? r1(m.apiceM) : null };
       }) : null;
+      const mAgora = trechos.length ? trechoMedidas[cruzTrechoT.length] : null;
       atual = { n: voltaN, decorridoS: r3((agora.t - inicioVoltaT) / 1000), setoresS: parciais,
-        setorAtual: parciais.length + 1, trechoAtual: trechos.length ? cruzTrechoT.length + 1 : null, trechos: trechosFeitos };
+        setorAtual: parciais.length + 1, trechoAtual: trechos.length ? cruzTrechoT.length + 1 : null, trechos: trechosFeitos,
+        apiceAgoraM: mAgora && mAgora.apiceM != null ? r1(mAgora.apiceM) : null };
     }
     const melhoresTrechos = trechos.map((_, i) => melhor(voltas, v => (v.trechos ? v.trechos[i].tempoS : null)));
     const idealTrechos = trechos.length && melhoresTrechos.every(s => s != null)
