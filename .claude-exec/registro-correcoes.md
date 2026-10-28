@@ -30,3 +30,9 @@ tentativa ANTES do ConnectAsync, que volta antes do phx_reply; conectar no celul
 (regra única; espera do FIM da tentativa; socket aberto sem join até 10 s). Prova: ReligacaoNuvemTests 3/3, controle
 com a regra antiga reprova 2; Domain.Tests 609/609. Prova de campo (notebook, troca Wi-Fi → celular): NÃO VERIFICADO.
 Lição: laço de religação nunca conta prazo a partir do INÍCIO de uma tentativa assíncrona que não terminou de verdade.
+
+## 2026-10-27 — CÓDIGO — web/teste-aparelhos/index.html (vídeo do notebook: laço entra/sai na sala, 429, sala lotada)
+Sintoma: "câmera não entrou no TV box", Meeting is full + /api/room 429. Causa: daily-js 0.93.0 emite 'left-meeting' quando a própria página
+destrói a chamada velha; onVideoDown tratava como queda nova (laço), e 'error' + join rejeitado agendavam 2 religações. Correção c399a9fc3:
+geração por chamada + uma religação marcada. Prova: tests/node-smoke-religacao-video-notebook.mjs 8/8 (558→4 e 202→2 entradas; controle 1b9857db6
+reprova). Prova de campo no notebook: NÃO VERIFICADO. Lição: aviso de "saí da sala" de chamada que EU destruí nunca é queda.

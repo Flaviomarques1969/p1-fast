@@ -298,3 +298,15 @@ PONTO DE PARADA 1027-1903 (27/10 ~19h03): E5 pronta em DEV (1b9857db6), PACOTE e
   PRÓXIMO: provar a hipótese em DEV (página do notebook contra sala de ensaio com Daily falso/contador de joins), corrigir (1 religação por
   queda, guarda de reentrada), e levar ao Flávio a decisão de subir o limite de vagas (fam-racing = produção, só com a frase).
 - PONTO DE PARADA 1027-2105: diagnóstico da sala cheia anotado acima; seguir do PRÓXIMO do passe 20261027-2105.
+
+### RETOMADA 1027-2105 (27/10 ~21h1x, depois do /clear)
+- 21:07 janela GPS (imac-9c): sala destravada por ordem do Flávio — Chrome sem janela 33885 encerrado + 4 abas de prova do Claude no Chrome dele
+  fechadas (3 entravam como "Box"). Espectador 21:07 viu "Piloto" 960x540, 12,1 q/s, perda 0%. Causa principal = nossas abas do Mac.
+- HIPÓTESE PROVADA E CONSERTADA (página do notebook, web/teste-aparelhos/index.html): daily-js 0.93.0 (baixada do unpkg, sha384 = integrity da
+  página) faz destroy → leave → emite 'left-meeting' a quem ouve; a página tratava como queda nova → laço. 'error' + join rejeitado = 2 religações.
+  Catraca tests/node-smoke-religacao-video-notebook.mjs (trecho real da página + Daily falsa + relógio simulado): antes = sala lotada 3x 558 entradas
+  em 10 min, troca de sala 202; depois = 4 e 2. 8/8; CONTROLE na 1b9857db6 reprova (queda de rede simples não laçava: régua desse controle tirada).
+  Conserto: videoGeracao + videoReligarT (uma religação por vez), abdicar() invalida a geração. Backup .claude-exec/index.html.bak-20261027-antes-religacao.
+  npm run smoke + smoke:religacao-video-notebook; um a um 85/86 (só schema-parity, antiga); arquitetura 39/0. Commit c399a9fc3 + push.
+- Entrega no notebook: gps.cmd (BR = esta branch) puxa no próximo clique — avisado à janela GPS (imac-9c). Vercel/produção NÃO tocadas; sem PACOTE
+  (não passa pela Vercel). max_participants fica 4: com as abas fechadas e o laço consertado, TV + notebook = 2 vagas; sem decisão a pedir.
