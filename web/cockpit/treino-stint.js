@@ -100,6 +100,19 @@ export function validarPlanoStint(plano, origem) {
  * (O cache local do navegador do chefe mantém a semântica antiga.)
  */
 export async function buscarPlanoStintDaNuvem({ carroId, fetchFn, url, anonKey, agoraIso } = {}) {
+  const lido = await lerUltimoPlanoStint({ carroId, fetchFn, url, anonKey, agoraIso });
+  if (!lido || !lido.plano || !lido.deHoje) return null;
+  return validarPlanoStint(lido.plano, 'nuvem');
+}
+
+/**
+ * Porta de leitura do ÚLTIMO plano do stint do carro, com o dia da aprovação (fuso Brasília) — a mesma
+ * consulta do painel da pista. A TV do box mostra o plano de hoje e, sem ele, o último com a data
+ * (pedido Flávio 28/10: "plano do stint feito no celular aparecer na TV").
+ * Devolve null se não deu para ler (sem rede, erro HTTP), { plano: null } se o carro não tem plano gravado,
+ * ou { plano, dia: 'AAAA-MM-DD', deHoje }.
+ */
+export async function lerUltimoPlanoStint({ carroId, fetchFn, url, anonKey, agoraIso } = {}) {
   if (!carroId) return null;
   const f = fetchFn ?? (typeof fetch !== 'undefined' ? fetch : null);
   if (!f) return null;
@@ -113,7 +126,7 @@ export async function buscarPlanoStintDaNuvem({ carroId, fetchFn, url, anonKey, 
     if (!resp.ok) return null;
     const rows = await resp.json();
     const envelope = Array.isArray(rows) ? rows[0] : null;
-    if (!envelope || !envelope.plano_stint) return null;
+    if (!envelope || !envelope.plano_stint) return { plano: null };
     const diaSP = (iso) => {
       try {
         const d = new Date(iso);
@@ -121,10 +134,9 @@ export async function buscarPlanoStintDaNuvem({ carroId, fetchFn, url, anonKey, 
         return d.toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
       } catch { return null; }
     };
-    const aprovadoDia = diaSP(envelope.created_at ?? envelope.plano_stint.aprovadoEm);
+    const dia = diaSP(envelope.created_at ?? envelope.plano_stint.aprovadoEm);
     const hoje = diaSP(agoraIso ?? new Date().toISOString());
-    if (!aprovadoDia || aprovadoDia !== hoje) return null;
-    return validarPlanoStint(envelope.plano_stint, 'nuvem');
+    return { plano: envelope.plano_stint, dia, deHoje: !!dia && dia === hoje };
   } catch {
     return null;
   }

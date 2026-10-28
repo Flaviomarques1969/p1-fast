@@ -74,7 +74,10 @@ export const PANCADA_G = 0.15;
 export const LUGAR_FRAC = 0.006;
 
 export const PARADO_KMH = 5;      // abaixo disto o carro está parado
-export const PARADA_S = 20;       // parado tanto tempo seguido = parada (box)
+export const PARADA_S = 20;
+// km rodados na sessão (o odômetro do velocímetro da TV; a conta morava na tela até 28/10): só com o carro
+// andando, sem buraco grande entre pontos, precisão boa e sem salto de posição
+export const KM_KMH_MIN = 3, KM_BURACO_MS = 2000, KM_PRECISAO_M = 10, KM_SALTO_M = 60;       // parado tanto tempo seguido = parada (box)
 export const RESFRIA_FRAC = 0.25; // parou antes de andar 1/4 da volta seguinte = a volta que acabou de fechar foi a de entrada
 const PRECISAO_MAX_M = 50;     // mesmo gate do cerebro-vivo / filtro do notebook (hacc < 50)
 const SALTO_FRAC_MAX = 0.05;   // passo maior que isto entre 2 pontos = projeção pulou: não vale como cruzamento
@@ -197,6 +200,7 @@ export function criarCerebroGpsTv(opts = {}) {
   let picosUltima = null;
   let perfilVolta = [];           // opção guardarVoltas: pontos da volta corrente
   let distVolta = 0, ultimoGeoVolta = null;
+  let kmSessaoM = 0, ultimoGeoKm = null;   // odômetro da sessão
   const pancadas = [];            // item 7: {n volta da borda de subida, p fração, x, y, g pico (com sinal), t}
   let grupoPancada = null;        // pancada em curso (|gVert| ainda acima do limite)
   const trocas = [];              // item 8: {n volta da queda, x, y, t, kmh, gAntes, buracoS, provavel}
@@ -316,6 +320,14 @@ export function criarCerebroGpsTv(opts = {}) {
     const gVert = typeof g.gVert === 'number' && Number.isFinite(g.gVert) ? g.gVert : null;
     const progAqui = pos ? mod1(sentido * (pos.frac - fracChegada)) : null;
     verParada(t, kmh, progAqui);
+
+    // 1b) km rodados na sessão
+    const aquiKm = { lat: g.lat, lng, t };
+    if (ultimoGeoKm && t - ultimoGeoKm.t < KM_BURACO_MS && (kmh || 0) >= KM_KMH_MIN && !(prec > KM_PRECISAO_M)) {
+      const d = distM(ultimoGeoKm, aquiKm);
+      if (d < KM_SALTO_M) kmSessaoM += d;
+    }
+    ultimoGeoKm = aquiKm;
 
     // 2) setores — pela fração do traçado contada da chegada
     if (pos) {
@@ -463,7 +475,10 @@ export function criarCerebroGpsTv(opts = {}) {
     return {
       fresco,
       agora,
+      kmSessao: r3(kmSessaoM / 1000),
       nSetores,
+      // opção guardarVoltas: o perfil da volta em curso (a faixa da volta inteira na TV compara com a melhor)
+      perfilAtual: guardarVoltas && inicioVoltaT != null ? perfilVolta : null,
       voltas: voltas.slice(),
       ultimaVolta: ultima,
       melhorVolta: melhorVolta ? { n: melhorVolta.n, tempoS: melhorVolta.tempoS } : null,
