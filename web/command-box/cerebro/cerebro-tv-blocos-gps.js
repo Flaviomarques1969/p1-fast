@@ -26,6 +26,9 @@
 //   plano       o plano do stint aprovado no celular (envelopes_seguranca_stint, lido pela porta de
 //               web/cockpit/treino-stint.js) × o que o carro fez: voltas planejadas, feitas, faltam, próxima
 //               parada. Plano de outro dia não vale para o stint de hoje: sai só como "último plano, de <dia>".
+// Referência de curva, coach, faixa e quadro = só voltas VÁLIDAS (sem v.descarte: aquecimento, resfriamento, parada —
+// Flávio 28/10, item 6 de p1fast-mapa-tv-2045); sem volta válida fechada, não há referência nem diferença. A lista do
+// stint e o Δ acumulado continuam com todas as voltas (é o histórico; cada volta leva o seu descarte).
 // Sem o zero do box (zeroOk) o G não vale: a frenagem sai null com o motivo, o resto continua.
 // Cada volta fechada é medida UMA vez (cache pelo número da volta).
 
@@ -245,13 +248,17 @@ export function criarCerebroTvBlocosGps() {
       }
     }
     let curva = null;
-    const ultima = voltas.length ? voltas[voltas.length - 1] : null;
+    // referência e "última" só entre as voltas que VALEM (Flávio 28/10, item 6 do painel p1fast-mapa-tv-2045: descartar a
+    // volta de aquecimento e a de resfriamento — o cérebro do GPS marca v.descarte; parada também não vale)
+    const validas = voltas.filter(v => !v.descarte);
+    const ultima = validas.length ? validas[validas.length - 1] : null;
+    const melhorV = validas.reduce((m, v) => (m == null || v.tempoS < m.tempoS ? v : m), null);
     if (iCurva >= 0) {
       const tr = lista[iCurva];
       curva = { i: iCurva + 1, nome: tr.nome, tipoCurva: tr.tipoCurva || null, passagem: null, frenagem: null, vmin: null };
-      // referência = a volta com a passagem MAIS RÁPIDA deste trecho
+      // referência = a volta válida com a passagem MAIS RÁPIDA deste trecho
       let ref = null;
-      for (const v of voltas) if (v.trechos && v.trechos[iCurva] && (ref == null || v.trechos[iCurva].tempoS < ref.trechos[iCurva].tempoS)) ref = v;
+      for (const v of validas) if (v.trechos && v.trechos[iCurva] && (ref == null || v.trechos[iCurva].tempoS < ref.trechos[iCurva].tempoS)) ref = v;
       if (ultima && ultima.trechos && ref) {
         const u = ultima.trechos[iCurva], r = ref.trechos[iCurva];
         const dif = (a, b) => (a != null && b != null ? r1(a - b) : null);
@@ -280,12 +287,12 @@ export function criarCerebroTvBlocosGps() {
 
     // coach: a maior perda da última volta e o motivo medido
     let coach = null;
-    const perdas = (s.trechos && s.trechos.perdasUltima) || [];
+    const perdas = (s.trechos && s.trechos.validas && s.trechos.validas.perdasUltima) || [];
     const maior = perdas.find(p => lista[p.i - 1] && lista[p.i - 1].tipo === 'curva') || perdas[0] || null;
     if (maior && ultima && ultima.trechos) {
       const i = maior.i - 1;
       let ref = null;
-      for (const v of voltas) if (v.trechos && v.trechos[i] && (ref == null || v.trechos[i].tempoS < ref.trechos[i].tempoS)) ref = v;
+      for (const v of validas) if (v.trechos && v.trechos[i] && (ref == null || v.trechos[i].tempoS < ref.trechos[i].tempoS)) ref = v;
       const u = ultima.trechos[i], r = ref ? ref.trechos[i] : null;
       const motivos = [];
       if (r) {
@@ -303,7 +310,7 @@ export function criarCerebroTvBlocosGps() {
     }
 
     // faixa: a volta inteira (atual × melhor)
-    const vMelhor = melhor ? voltas.find(v => v.n === melhor.n) : null;
+    const vMelhor = melhorV;
     const perfilAtual = s.perfilAtual && s.perfilAtual.length ? s.perfilAtual : null;
     let faixa = null;
     if (perfilAtual || (vMelhor && vMelhor.perfil)) {
@@ -333,18 +340,17 @@ export function criarCerebroTvBlocosGps() {
       };
     }
 
-    return { stint, deltaAcum, curva, coach, faixa, quadro: montarQuadro(s, lista, voltas, vMelhor, faixa, stint),
+    return { stint, deltaAcum, curva, coach, faixa, quadro: montarQuadro(s, lista, ultima, vMelhor, faixa, stint),
       plano: planoDoStint(opts.plano, stint) };
   }
 
-  // quadro: uma linha por CURVA, na ordem da volta — MELHOR (a passagem da melhor volta) × ÚLTIMA (a mais recente:
-  // desta volta se o carro já saiu da curva, senão da volta anterior) e a diferença; na curva em que o carro está,
-  // o progresso e a trilha (onde acelerou e onde freou, pelo G da faixa da volta em curso)
-  function montarQuadro(s, lista, voltas, vMelhor, faixa, stint) {
+  // quadro: uma linha por CURVA, na ordem da volta — MELHOR (a passagem da melhor volta VÁLIDA) × ÚLTIMA (a mais
+  // recente: desta volta se o carro já saiu da curva, senão da última volta válida) e a diferença; na curva em que o
+  // carro está, o progresso e a trilha (onde acelerou e onde freou, pelo G da faixa da volta em curso)
+  function montarQuadro(s, lista, ultimaV, vMelhor, faixa, stint) {
     if (!lista.length) return null;
     const at = s.voltaAtual, feitos = (at && at.trechos) || [];
     const iAgora = at && at.trechoAtual ? at.trechoAtual - 1 : null;
-    const ultimaV = voltas.length ? voltas[voltas.length - 1] : null;
     const ref = vMelhor && vMelhor.trechos ? vMelhor : null;
     const passagem = (m, fr) => (m ? { entrada: m.kmhEntrada, freadaM: fr && fr.ok && fr.inicioFreadaM != null ? fr.inicioFreadaM : null,
       vmin: m.kmhMin, saida: m.kmhSaida, tempoS: m.tempoS } : null);
@@ -395,7 +401,8 @@ export function criarCerebroTvBlocosGps() {
     return {
       volta: at ? { n: at.n, decorridoS: at.decorridoS, deltaAgoraS: faixa ? faixa.deltaAgoraS : null } : null,
       kmh: s.fresco && s.agora && typeof s.agora.kmh === 'number' ? r1(s.agora.kmh) : null,
-      ultimaS: stint.ultimaS, melhor: stint.melhor, refVolta: ref ? ref.n : null,
+      ultimaS: stint.ultimaS, melhor: vMelhor ? { n: vMelhor.n, tempoS: vMelhor.tempoS } : null, refVolta: ref ? ref.n : null,
+      voltasFechadas: stint.feitas,   // > 0 sem referência = só voltas descartadas até agora (a tela diz "sem volta válida")
       idealTrechosS: s.trechos && s.trechos.validas ? s.trechos.validas.voltaIdealS : null,
       somaDeltaS, fonteG: faixa ? faixa.fonte : null, curvas,
     };

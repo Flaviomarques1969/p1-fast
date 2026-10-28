@@ -3,7 +3,7 @@
 // cada número MELHOR/ÚLTIMA/diferença na tela = o valor do cérebro (ida e volta), a curva "agora" tem a linha
 // azul acelera / vermelha freia do tamanho do progresso, a faixa da volta inteira fica na BASE com o nome das curvas,
 // velocímetro/coach/painel de voltas/Δ acumulado/passagem/frenagem/vmin/coluna do mapa saem, nada se sobrepõe, nada
-// sai da tela, texto sem corte e letra ≥ 11 px na tela.
+// sai da tela, texto sem corte e letra ≥ 11 px na tela. Na volta 2 (a 1 é aquecimento) não há referência: "sem volta válida".
 // Substitui medir-b.mjs (que provava o desenho anterior, c54f8a585, e agora reprova de propósito: o hud saiu).
 // Controles: editor (?tv=0) sem quadro e com os 16 blocos; a TV de c54f8a585 (bak-quadro/, argv[2]) tem de REPROVAR.
 import { createRequire } from 'node:module';
@@ -19,9 +19,25 @@ const FICAM = ['header','video','mapa','stint-bar'];
 const pg = await nav.newPage({ viewport:{ width:1920, height:1080 } }); await pg.route('**/api/room', r => r.abort());
 const errosPg = []; pg.on('pageerror', e => errosPg.push(e.message));
 await pg.goto(base + '?tv=1&replay-gps=21-06&speed=20&fim=parar');
-// momento certo: volta ≥ 2, uma curva "agora" passada da metade e com freada E aceleração na trilha
+// volta 2 de 21/06: a volta 1 é aquecimento e NÃO é referência (Flávio 28/10, item 6 de p1fast-mapa-tv-2045) → a tela diz
+// "sem volta válida ainda", nenhuma coluna MELHOR tem número e nenhuma diferença aparece
+const v2 = await pg.waitForFunction(() => { const q = window.__tvGps && window.__tvGps.blocos && window.__tvGps.blocos.quadro;
+  return !!q && q.volta && q.volta.n === 2 && q.volta.decorridoS > 40; }, null, { timeout: 150000, polling: 100 }).then(() => true, () => false);
+if(!v2) erros.push('a volta 2 não apareceu no quadro em 150 s');
+else {
+  await pg.waitForTimeout(400);   // um redesenho (250 ms) depois do cérebro
+  const r2 = await pg.evaluate(() => { const qEl = document.querySelector('[data-tv-quadro]');
+    return { ref: (qEl.querySelector('.qc-ref .qc-v') || {}).textContent || '', n: (qEl.querySelector('[data-qc="volta"]') || {}).textContent,
+      melhorComNumero: [...qEl.querySelectorAll('.qc-m .qc-n')].filter(e => !e.classList.contains('qc-vazio')).length,
+      difs: [...qEl.querySelectorAll('.qc-u .qc-d')].filter(e => e.textContent.trim()).length }; });
+  console.log('volta 2 na tela: referência «' + r2.ref + '» · MELHOR com número ' + r2.melhorComNumero + ' · diferenças ' + r2.difs);
+  if(r2.n !== '2') erros.push('volta 2: a tela mostra a volta ' + r2.n);
+  if(!/sem volta válida ainda/.test(r2.ref)) erros.push('volta 2: a referência não diz "sem volta válida ainda" (a volta 1 é aquecimento): «' + r2.ref + '»');
+  if(r2.melhorComNumero || r2.difs) erros.push('volta 2: a coluna MELHOR ou a diferença usa a volta de aquecimento (' + r2.melhorComNumero + ' números, ' + r2.difs + ' diferenças)');
+}
+// momento certo: volta ≥ 3 (a primeira com referência válida), uma curva "agora" passada da metade e com freada E aceleração na trilha
 const achou = await pg.waitForFunction(() => { const q = window.__tvGps && window.__tvGps.blocos && window.__tvGps.blocos.quadro;
-  return !!q && q.volta && q.volta.n >= 2 && q.curvas.some(c => c.estado === 'agora' && c.progresso > 0.5 && c.trilha
+  return !!q && q.volta && q.volta.n >= 3 && q.curvas.some(c => c.estado === 'agora' && c.progresso > 0.5 && c.trilha
     && c.trilha.some(t => t.tom === 'freia') && c.trilha.some(t => t.tom === 'acelera')); }, null, { timeout: 150000, polling: 100 }).then(() => true, () => false);
 if(!achou) erros.push('a curva "agora" com freada e aceleração não apareceu em 150 s (cérebro sem quadro ou replay parado)');
 

@@ -74,10 +74,20 @@ t('real: curva da vez é um trecho de CURVA do cadastro', b0.curva && s0.trechos
 t('real: passagem = os km/h medidos pelo cérebro na última volta', b0.curva.passagem.minima.kmh === s0.ultimaVolta.trechos[b0.curva.i - 1].kmhMin, b0.curva.passagem);
 t('real: sem G na gravação → frenagem diz "sem G do RaceBox" (não inventa)', b0.curva.frenagem && b0.curva.frenagem.ok === false && /sem G/.test(b0.curva.frenagem.motivo), b0.curva.frenagem);
 t('real: gráfico de km/h da curva sai mesmo sem G', b0.curva.vmin.serie && b0.curva.vmin.serie.length === 24, b0.curva.vmin);
-t('real: coach aponta o trecho de maior perda do cérebro', b0.coach && b0.coach.perdeuS > 0 && b0.coach.nome === s0.trechos.lista[b0.coach.trecho - 1].nome, b0.coach);
+// coach só entre voltas VÁLIDAS (Flávio 28/10, item 6 de p1fast-mapa-tv-2045): em 21/06 a volta 1 é aquecimento e só a
+// volta 2 vale → não há com quem comparar. Para provar a conta do coach, a mesma gravação SEM a marca de descarte
+// (todas as voltas valem → as listas "válidas" do cérebro são as de todas as voltas)
+const semDescarte = (s) => ({ ...s, voltas: s.voltas.map(v => ({ ...v, descarte: null })),
+  trechos: { ...s.trechos, validas: { ...s.trechos.validas, perdasUltima: s.trechos.perdasUltima } } });
+t('real: só uma volta válida (a 1 é aquecimento) → coach não compara com o aquecimento (null)',
+  s0.voltas[0].descarte === 'aquecimento' && b0.coach === null, b0.coach);
+const b0v = criarCerebroTvBlocosGps().pacote(semDescarte(s0));
+t('real: coach aponta o trecho de maior perda do cérebro', b0v.coach && b0v.coach.perdeuS > 0 && b0v.coach.nome === s0.trechos.lista[b0v.coach.trecho - 1].nome
+  && b0v.coach.perdeuS === s0.trechos.perdasUltima.find(x => x.i === b0v.coach.trecho).difS, b0v.coach);
 
 const s1 = rodar(true);
 const b1 = criarCerebroTvBlocosGps().pacote(s1);
+const b1v = criarCerebroTvBlocosGps().pacote(semDescarte(s1));
 const fr = b1.curva.frenagem;
 t('real + G: frenagem medida na curva da vez', fr && fr.ok === true, fr);
 t('real + G: série do G da última volta e da referência para o gráfico', fr.serie && fr.serie.length === 24 && fr.serieRef && fr.serieRef.length === 24, fr && [fr.serie && fr.serie.length, fr.serieRef && fr.serieRef.length]);
@@ -96,7 +106,7 @@ t('real + G: mínima medida = mínima do cérebro', fr.kmhMin === s1.ultimaVolta
 
 // ── 4) Texto da TV em pt-BR: número com vírgula (a 1ª versão escreveu "freou 78.2 m", 27/10) ──
 {
-  const textos = [b0, b1].flatMap(p => [p.coach && p.coach.frase].concat(p.coach ? p.coach.motivos.map(m => m.texto) : [])).filter(Boolean);
+  const textos = [b0v, b1v].flatMap(p => [p.coach && p.coach.frase].concat(p.coach ? p.coach.motivos.map(m => m.texto) : [])).filter(Boolean);
   t('coach: frases com número decimal usam vírgula, nunca ponto', textos.length >= 2 && textos.every(x => !/\d\.\d/.test(x)) && textos.some(x => /\d,\d/.test(x)), textos);
 }
 

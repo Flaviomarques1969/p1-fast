@@ -45,67 +45,66 @@ const pts = fx.amostras.filter(a => a.tipo === 'gps').map(a => ({ ...a, lng: a.l
   t('controle: andando 10 m em 40 ms soma ~0,010 km', Math.abs(c2.snapshot().kmSessao - 0.010) <= 0.001, c2.snapshot().kmSessao);
 }
 
-// ── 2) faixa da volta inteira (21/06, sem G medido → G pela velocidade) ──
+// ── 2) faixa da volta inteira (21/06, sem G medido → G pela velocidade). A volta 1 é de aquecimento e NÃO é referência
+// (Flávio 28/10, item 6 de p1fast-mapa-tv-2045): na volta 2 a faixa só desenha a volta em curso; a comparação começa na
+// volta 3 contra a volta 2 (a primeira válida) ──
 {
   const c = criarCerebroGpsTv({ guardarVoltas: true });
   const casa = criarCerebroTvBlocosGps();
-  let ultimaDaVolta2 = null, meioVolta2 = null, saida = null;
+  let ultimaDaVolta3 = null, meioVolta2 = null, saida = null;
   for (const p of pts) {
     c.feedGps(p);
     const s = c.snapshot();
     if (!s.voltaAtual && !saida && s.agora) saida = casa.pacote(s);
-    if (s.voltaAtual && s.voltaAtual.n === 2) {
-      if (!meioVolta2 && s.voltaAtual.decorridoS > 70) meioVolta2 = { s, b: casa.pacote(s) };
-      ultimaDaVolta2 = s;
-    }
+    if (s.voltaAtual && s.voltaAtual.n === 2 && !meioVolta2 && s.voltaAtual.decorridoS > 70) meioVolta2 = { s, b: casa.pacote(s) };
+    if (s.voltaAtual && s.voltaAtual.n === 3) ultimaDaVolta3 = s;
   }
-  const fim2 = casa.pacote(ultimaDaVolta2);
   const sF = c.snapshot();
-  const fx2 = fim2.faixa;
-  t('saída do box (ainda sem volta) → sem faixa', saida && saida.faixa === null, saida && saida.faixa);
-  t('faixa: fonte = velocidade (a gravação não tem G medido)', fx2 && fx2.fonte === 'velocidade', fx2 && fx2.fonte);
-  t('faixa: melhor = a única volta fechada (1), atual = 2', fx2.melhor.n === 1 && fx2.atual.n === 2, [fx2.melhor.n, fx2.atual.n]);
-  t('faixa: ' + FAIXA_BINS + ' casas e a melhor cobre ≥ 95% da volta', fx2.melhor.g.length === FAIXA_BINS && fx2.melhor.g.filter(x => x != null).length >= FAIXA_BINS * 0.95,
-    fx2.melhor.g.filter(x => x != null).length);
-  const difVoltas = sF.voltas[1].tempoS - sF.voltas[0].tempoS;
-  t('Δ no fim da volta 2 ≈ tempo da volta 2 − tempo da volta 1 (±0,3 s)', Math.abs(fx2.deltaAgoraS - difVoltas) <= 0.3, [fx2.deltaAgoraS, difVoltas]);
+  const fx3 = casa.pacote(ultimaDaVolta3).faixa;
   const m = meioVolta2.b.faixa;
+  t('saída do box (ainda sem volta) → sem faixa', saida && saida.faixa === null, saida && saida.faixa);
+  t('controle: a volta 1 de 21/06 é aquecimento', sF.voltas[0].descarte === 'aquecimento' && !sF.voltas[1].descarte, sF.voltas.map(v => v.descarte));
+  t('volta 2: a faixa desenha a volta em curso, mas SEM referência (a volta 1 é aquecimento) e sem Δ',
+    m && m.atual && m.atual.n === 2 && m.melhor === null && m.delta === null && m.deltaAgoraS === null, m && [m.melhor, m.deltaAgoraS]);
+  t('faixa: fonte = velocidade (a gravação não tem G medido)', fx3 && fx3.fonte === 'velocidade', fx3 && fx3.fonte);
+  t('faixa: melhor = a primeira volta válida (2), atual = 3', fx3.melhor && fx3.melhor.n === 2 && fx3.atual.n === 3, fx3.melhor && [fx3.melhor.n, fx3.atual.n]);
+  t('faixa: ' + FAIXA_BINS + ' casas e a melhor cobre ≥ 95% da volta', fx3.melhor.g.length === FAIXA_BINS && fx3.melhor.g.filter(x => x != null).length >= FAIXA_BINS * 0.95,
+    fx3.melhor.g.filter(x => x != null).length);
+  // Δ no ponto do carro, conta independente: tempo da volta 3 até aqui − tempo da volta 2 no mesmo ponto da volta
+  const pa = ultimaDaVolta3.perfilAtual, pAgora = pa[pa.length - 1].p, pr = sF.voltas[1].perfil;
+  const k = pr.findIndex(q => q.p >= pAgora), q0 = pr[k - 1], q1 = pr[k];
+  const tRef = (q0.t + (q1.t - q0.t) * (pAgora - q0.p) / (q1.p - q0.p)) / (pr[pr.length - 1].t > 1000 ? 1000 : 1);
+  const tAt = pa[pa.length - 1].t / (pr[pr.length - 1].t > 1000 ? 1000 : 1);
+  t('Δ no carro (volta 3, ' + Math.round(pAgora * 100) + '% da volta) ≈ tempo da volta 3 − tempo da volta 2 no mesmo ponto (±0,3 s)',
+    Math.abs(fx3.deltaAgoraS - (tAt - tRef)) <= 0.3, [fx3.deltaAgoraS, tAt - tRef]);
   t('meio da volta: atual só até o carro (casas depois do cursor vazias)', m.atual.ate < FAIXA_BINS - 20 && m.atual.g.slice(m.atual.ate + 1).every(x => x == null), m.atual.ate);
   t('meio da volta: cursor na casa do carro', Math.floor(m.cursor * FAIXA_BINS) === m.atual.ate, [m.cursor, m.atual.ate]);
   // o G pela velocidade tem o sinal da velocidade: onde a melhor volta mais perde km/h numa casa, freia
-  const perf = sF.voltas[0].perfil;
-  const g = fx2.melhor.g;
+  const perf = sF.voltas[1].perfil;
+  const g = fx3.melhor.g;
   const minG = Math.min(...g.filter(x => x != null)), maxG = Math.max(...g.filter(x => x != null));
   t('G pela velocidade em faixa física (freia −0,3…−1,6 G; acelera +0,1…+0,8 G)', minG < -0.3 && minG > -1.6 && maxG > 0.1 && maxG < 0.8, [minG, maxG]);
   const kFreia = g.indexOf(minG);
   const naCasa = perf.filter(q => Math.floor(q.p * FAIXA_BINS) === kFreia && q.d > 300);
   t('na casa de maior freada a velocidade cai de verdade', naCasa.length > 1 && naCasa[naCasa.length - 1].kmh < naCasa[0].kmh, naCasa.map(q => q.kmh));
-  t('curvas do cadastro vão junto (marcas da faixa)', fx2.curvas.length > 5 && fx2.curvas.every(cv => cv.de >= 0 && cv.de < 1), fx2.curvas.length);
+  t('curvas do cadastro vão junto (marcas da faixa)', fx3.curvas.length > 5 && fx3.curvas.every(cv => cv.de >= 0 && cv.de < 1), fx3.curvas.length);
 }
 
-// ── 2b) G MEDIDO: as duas voltas com zero do box → fonte medido; uma sem → as duas pela velocidade ──
+// ── 2b) G MEDIDO: a melhor válida (2) e a atual (3) com zero do box → fonte medido; a atual sem → as duas pela velocidade ──
 {
-  function rodar(zeroNaVolta2) {
+  function rodar(zeroNaVolta3) {
     const c = criarCerebroGpsTv({ guardarVoltas: true }), casa = criarCerebroTvBlocosGps();
     let ult = null;
     for (const p of pts) {
-      c.feedGps({ ...p, gLong: 0.2, gLat: 0, zeroOk: true });
+      const naVolta3 = !!(ult && ult.voltaAtual && ult.voltaAtual.n === 3);
+      c.feedGps({ ...p, gLong: 0.2, gLat: 0, zeroOk: zeroNaVolta3 || !naVolta3 });
       const s = c.snapshot();
-      if (s.voltaAtual && s.voltaAtual.n === 2) { ult = s; if (!zeroNaVolta2) break; }
-    }
-    if (!zeroNaVolta2) {   // a volta 2 segue sem o zero do box
-      let seguir = false;
-      for (const p of pts) {
-        if (p.tWall <= ult.agora.t) continue;
-        seguir = c.feedGps({ ...p, gLong: 0.2, gLat: 0, zeroOk: false }) || seguir;
-        const s = c.snapshot();
-        if (s.voltaAtual && s.voltaAtual.n === 2) ult = s; else if (s.voltaAtual) break;
-      }
+      if (s.voltaAtual && s.voltaAtual.n === 3) ult = s;
     }
     return casa.pacote(ult).faixa;
   }
   const med = rodar(true);
-  t('as duas voltas com G medido → fonte medido e o G é o do RaceBox (+0,20)', med.fonte === 'medido' && med.melhor.g.filter(x => x != null).every(x => x === 0.2), [med.fonte, med.melhor.g.slice(0, 3)]);
+  t('as duas voltas com G medido → fonte medido e o G é o do RaceBox (+0,20)', med.fonte === 'medido' && med.melhor.n === 2 && med.melhor.g.filter(x => x != null).every(x => x === 0.2), [med.fonte, med.melhor && med.melhor.g.slice(0, 3)]);
   const mis = rodar(false);
   t('controle: volta atual sem o zero do box → as DUAS pela velocidade (nunca uma de cada)', mis.fonte === 'velocidade' && mis.melhor.g.some(x => x != null && x !== 0.2), mis.fonte);
 }

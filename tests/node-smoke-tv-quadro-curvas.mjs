@@ -3,7 +3,7 @@
 // linhazinha que passa a partir do ponto de entrada, AZUL acelerando, VERMELHO freando"). Casas: voltaAtual.trechos em
 // web/command-box/cerebro/cerebro-gps-tv.js e pacote().quadro em cerebro-tv-blocos-gps.js. Gravação REAL de 21/06; offline.
 // Prova de IDA E VOLTA: a passagem que o quadro mostra durante a volta tem de ser a MESMA que o cérebro guarda quando a
-// volta fecha. Mutação: QUADRO_BLOCOS=<cópia do cerebro-tv-blocos-gps.js> roda a prova contra outra versão.
+// volta fecha. Volta descartada (aquecimento) nunca é referência (seção 3b). Mutação: QUADRO_BLOCOS=<cópia do cerebro-tv-blocos-gps.js> roda a prova contra outra versão.
 import { readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { criarCerebroGpsTv } from '../web/command-box/cerebro/cerebro-gps-tv.js';
@@ -21,7 +21,7 @@ const casa = criarCerebroTvBlocosGps();
 let antes = null;                 // primeiro quadro com a volta 1 em curso (nenhuma volta fechada)
 const vistos = new Map();         // "volta:i" → passagem ÚLTIMA mostrada durante a volta (a última vez que apareceu)
 const agoraPorCurva = new Map();  // "volta:i" → [{progresso, trilha, g da faixa}] enquanto o carro estava nela
-let meio3 = null, nAgoraErrado = 0, nQuadros = 0;
+let meio2 = null, meio3 = null, nAgoraErrado = 0, nQuadros = 0;
 for (const p of pts) {
   c.feedGps(p);
   const s = c.snapshot();
@@ -29,6 +29,7 @@ for (const p of pts) {
   const q = casa.pacote(s).quadro;
   nQuadros++;
   if (!antes && s.voltaAtual.n === 1 && s.voltaAtual.decorridoS > 120) antes = { s, q };
+  if (s.voltaAtual.n === 2 && !meio2 && s.voltaAtual.decorridoS > 60) meio2 = { s, p: casa.pacote(s), q };
   if (s.voltaAtual.n === 3 && !meio3 && s.voltaAtual.decorridoS > 40) meio3 = { s, q };
   const ag = q.curvas.filter(x => x.estado === 'agora');
   const lista = s.trechos.lista, iAg = s.voltaAtual.trechoAtual - 1;
@@ -84,6 +85,22 @@ t('soma das diferenças = soma das curvas com diferença', Math.abs(q3.somaDelta
 t('ideal pelos trechos = o do cérebro (voltas que valem)', q3.idealTrechosS === meio3.s.trechos.validas.voltaIdealS, [q3.idealTrechosS]);
 t('freada = "—" na gravação de 21/06 (sem G do RaceBox; nunca inventada)', q3.curvas.every(x => (!x.melhor || x.melhor.freadaM === null) && (!x.ultima || x.ultima.freadaM === null)));
 t('cabeçalho: volta 3, tempo decorrido e Δ da faixa', q3.volta.n === 3 && q3.volta.decorridoS === meio3.s.voltaAtual.decorridoS && q3.volta.deltaAgoraS != null, q3.volta);
+
+// ── 3b) volta de aquecimento NÃO é referência (Flávio 28/10, item 6 de p1fast-mapa-tv-2045: "descartar a primeira volta
+// que é de aquecimento e a última ... de resfriamento"). 21/06: a volta 1 é aquecimento; durante a volta 2 não há volta
+// válida fechada → sem referência, sem MELHOR, sem diferença, em todos os blocos que comparam ──
+const d2 = meio2 && meio2.s.trechos.validas.descartadas;
+t('controle: na volta 2 o cérebro do GPS já marcou a volta 1 como aquecimento', d2 && d2.length === 1 && d2[0].n === 1 && d2[0].motivo === 'aquecimento', d2);
+t('volta 2: quadro sem referência e sem MELHOR no topo (só a volta 1 fechada, e ela é aquecimento)',
+  meio2.q.refVolta === null && meio2.q.melhor === null && meio2.q.voltasFechadas === 1, [meio2.q.refVolta, meio2.q.melhor, meio2.q.voltasFechadas]);
+t('volta 2: nenhuma curva com MELHOR nem diferença; soma e Δ do topo vazios',
+  meio2.q.curvas.every(x => x.melhor === null && x.delta === null && !x.ehRef) && meio2.q.somaDeltaS === null && meio2.q.volta.deltaAgoraS === null,
+  meio2.q.curvas.map(x => [x.melhor && x.melhor.tempoS, x.delta && x.delta.tempoS]));
+t('volta 2: curva já feita mostra a passagem DESTA volta; à frente = aguardando (a volta 1 não aparece como "última")',
+  meio2.q.curvas.every(x => x.ultimaVolta !== 1) && meio2.q.curvas.some(x => x.ultimaVolta === 2), meio2.q.curvas.map(x => x.ultimaVolta));
+t('volta 2: faixa sem volta de referência, curva da vez e coach sem referência na volta de aquecimento',
+  meio2.p.faixa && meio2.p.faixa.melhor === null && (meio2.p.curva == null || meio2.p.curva.passagem === null) && meio2.p.coach === null,
+  [meio2.p.faixa && meio2.p.faixa.melhor, meio2.p.curva && meio2.p.curva.passagem, meio2.p.coach]);
 
 // ── 4) linhazinha da curva em curso: progresso anda com o carro, trilha tem o tom do G da faixa ──
 let curvasComTrilha = 0, progOk = 0, tomOk = 0, tomTot = 0, bicolor = 0;

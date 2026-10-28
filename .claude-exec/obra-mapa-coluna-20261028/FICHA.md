@@ -159,3 +159,37 @@ smoke, CONTRATO_DADOS §2 (quadro), provas antigas, abrir a TV no navegador dele
   Smoke 88 provas uma a uma: 87 passam; schema-parity 11 ok/4 fail IGUAL no commit limpo (git archive HEAD) — já existia,
   fora desta obra. TV: quadro 17, faixa 28, blocos 25, gps-tv 106, montar 17, arquitetura 39, honesta 37, tv-video 46 — 0 falha.
   Migração SEGURADA (ordem dele). Falta: ele olhar a TV.
+- 28/10 ~14h40 (conversa 1028-1318): ele perguntou "o que podemos melhorar?". Painel p1fast-tv-quadro-melhorias-1425 MONTADO
+  (.claude-perguntas/pendentes/, 5 itens ordenar: A referência provisória, B plano do stint no topo, C onde mais perdeu,
+  D curva ao vivo, E freada estimada pelo GPS) e revisado — NÃO ABERTO: o revisor achou 3 erros (histórico invertido; C traria
+  o "CURVA 01 perdeu 1,38 s" da volta de aquecimento; "ganhou em tudo" falso — o enganoso é só o Δ do topo, −30/−35 s).
+  ACHADO = DESVIO DE DECISÃO DELE (conferido em ~/Downloads/resposta-perguntar-p1fast-mapa-tv-2045.txt ITEM 6: "descartar a
+  primeira volta que é de aquecimento e a última ... de resfriamento"): o cérebro já marca descarte (21/06: v1 = aquecimento)
+  e tem s.trechos.validas, mas cerebro-tv-blocos-gps.js usa s.melhorVolta (todas as voltas) em vMelhor (faixa, linha ~306)
+  → quadro (refVolta, MELHOR, Δ topo) e coach. O rodapé "ideal pelos trechos" já usa validas (incoerente).
+  PRÓXIMO: corrigir direto (regra "erro achado se corrige", não vai para o painel): no pacote(), melhorValida = menor tempoS
+  entre voltas sem descarte → vMelhor da faixa/quadro; montarQuadro: ultimaV = última volta VÁLIDA; stint.melhor/topo do
+  quadro = melhor válida (sem válida: "sem referência válida ainda", Δ "—"); coach com validas.perdasUltima e ref só válida.
+  Backup antes (bak-quadro/ tem o cérebro de 12:30; fazer bak-descarte/). Prova nova em tests/node-smoke-tv-quadro-curvas.mjs:
+  21/06 durante a volta 2 → refVolta null e Δ null; volta 3 → ref = 2; mutação (usar s.melhorVolta) reprova. Rodar faixa 28,
+  blocos 25, gps-tv 106, medir-quadro.mjs. Depois refazer o painel SÓ com B, C (já com voltas válidas), D (expor
+  trechoMedidas ao vivo — mudança pequena), E ("sem G medido", exige G + zero do box), corrigindo os textos do revisor
+  (B: hoje mostraria "último plano 10/07 · não é de hoje"), abrir e ligar a escuta.
+
+## RETOMADA 1028-1431 (28/10 tarde) — conversa nova
+Escopo: corrigir o desvio da decisão dele (item 6 de p1fast-mapa-tv-2045: descartar aquecimento/resfriamento) no
+cérebro dos blocos — curva, coach, faixa e quadro passam a usar só voltas válidas (sem descarte) como referência;
+quadro: última = última válida quando a curva ainda não foi feita nesta volta; topo "Melhor" = melhor válida; tela:
+"sem volta válida ainda". Prova nova na tv-quadro-curvas + mutação. Depois refazer o painel (B, C, D, E). Backup em
+bak-descarte/ (cérebro, prova, mockup). Migração SEGURADA. Fora: tabela do stint (stint.melhor/deltaS) — histórico de
+todas as voltas, já marca o descarte; fica como está.
+- 28/10 ~15h (conversa 1028-1431): DESVIO CORRIGIDO. cerebro-tv-blocos-gps.js pacote(): validas = voltas sem v.descarte;
+  curva (ref), coach (validas.perdasUltima + ref válida), faixa (vMelhor = melhor válida) e quadro (última = última
+  válida, topo Melhor = melhor válida, voltasFechadas) — sem volta válida não há referência nem diferença. Tela: "melhor
+  volta válida · nº N" / "sem volta válida ainda (aquecimento não conta)". Lista do stint e Δ acumulado ficam com todas.
+  Provas: tv-quadro-curvas 22/22 (5 novas na volta 2 de 21/06); controles HEAD e sabotagem (validas = voltas) 18/4 REPROVAM.
+  Triagem de 2 provas antigas que reprovaram = RÉGUA (exigiam o aquecimento como referência): faixa-volta 30/0 (agora volta
+  3 × volta 2, Δ por conta independente no perfil), blocos-gps 26/0 (coach null com 1 volta válida + conta do coach na
+  mesma gravação sem descarte). medir-quadro.mjs APROVADO (volta 2 na tela sem MELHOR/diferença + volta 3 70 números);
+  controle tela antiga REPROVA (1: texto). gps-tv 106, honesta 37, tv-video 46. Smoke 87/88 (schema-parity 11/4 = já existia).
+  Próximo: refazer o painel p1fast-tv-quadro-melhorias-1425 (B, C, D, E).

@@ -8803,7 +8803,7 @@ html,body{
         + '<div><span class="qc-rot">Velocidade</span><span class="qc-v" data-qc="kmh">' + (q.kmh == null ? '—' : Math.round(q.kmh) + ' km/h') + '</span></div>'
         + '<div><span class="qc-rot">Última</span><span class="qc-v">' + qcRelogio(q.ultimaS) + '</span></div>'
         + '<div><span class="qc-rot">Melhor</span><span class="qc-v qc-ganhou">' + qcRelogio(q.melhor && q.melhor.tempoS) + '</span></div>'
-        + '<div class="qc-ref"><span class="qc-rot">Referência</span><span class="qc-v">' + (q.refVolta ? 'melhor volta · nº ' + q.refVolta : 'depois da 1ª volta completa') + '</span></div>'
+        + '<div class="qc-ref"><span class="qc-rot">Referência</span><span class="qc-v">' + (q.refVolta ? 'melhor volta válida · nº ' + q.refVolta : q.voltasFechadas ? 'sem volta válida ainda (aquecimento não conta)' : 'depois da 1ª volta completa') + '</span></div>'
         + '</div>';
       h += '<div class="qc-grade qc-cab"><div class="qc-rot">Curva</div><div></div>'
         + QC.map(function(col){ return '<div class="qc-rot">' + col.rot + '<span class="qc-un">' + col.un + '</span></div>'; }).join('') + '</div>';
