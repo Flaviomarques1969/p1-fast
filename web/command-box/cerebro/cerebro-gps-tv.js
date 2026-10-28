@@ -30,6 +30,12 @@
 //  - traseira saiu (item 9): chave giroZ que o notebook publica (giro cru do RaceBox, °/s) contra
 //    o giro que a curva explica (gLat ÷ velocidade), pela casa traseira-giro.js. Só com zero do box;
 //    "provável" e "a conferir" (offset do giro ainda não conferido em gravação). Saída de frente NÃO.
+//  - voltas descartadas da linha do trecho e de "a última perdeu" (Flávio 28/10, painel p1fast-mapa-tv-2045:
+//    "descartar a primeira volta que é de aquecimento e a última volta que é de resfriamento"). Quem marca é a
+//    PARADA (box), não o tempo — continua sem regra de corte: parada = km/h abaixo de PARADO_KMH por PARADA_S
+//    seguidos. 'aquecimento' = 1ª volta fechada depois de uma parada; 'parada' = volta que tem a parada dentro
+//    (entrada + box + saída); 'resfriamento' = volta fechada logo antes de uma parada que começou antes de
+//    RESFRIA_FRAC da volta seguinte (box depois da linha). Nas outras contas a volta continua valendo.
 // ============================================================================
 
 import { criarDetectorChegada } from './chegada-gps.js';
@@ -67,6 +73,9 @@ export const PANCADA_G = 0.15;
 /** Duas pancadas de voltas diferentes a até esta fração da volta = mesmo lugar (±0,006 ≈ ±13 m em 2,1 km). */
 export const LUGAR_FRAC = 0.006;
 
+export const PARADO_KMH = 5;      // abaixo disto o carro está parado
+export const PARADA_S = 20;       // parado tanto tempo seguido = parada (box)
+export const RESFRIA_FRAC = 0.25; // parou antes de andar 1/4 da volta seguinte = a volta que acabou de fechar foi a de entrada
 const PRECISAO_MAX_M = 50;     // mesmo gate do cerebro-vivo / filtro do notebook (hacc < 50)
 const SALTO_FRAC_MAX = 0.05;   // passo maior que isto entre 2 pontos = projeção pulou: não vale como cruzamento
 const TETO_PONTOS_VOLTA = 6000;
@@ -198,6 +207,9 @@ export function criarCerebroGpsTv(opts = {}) {
   let cruzTrechoT = [];           // carimbos dos cruzamentos das fronteiras de trecho da volta corrente
   let trechoMedidas = [];         // por trecho da volta corrente: {kmhEntrada, kmhMin, minX, minY, kmhSaida}
   let kmhPonto = null;            // km/h do ponto em curso (a chegada fecha a volta antes de o ponto somar)
+  let paradoDesdeT = null, paradoProg = null, paradoVoltaN = null, paradaContada = false;   // parada em curso
+  let aquecerProxima = false;     // a próxima volta a fechar é a 1ª depois de uma parada
+  let voltaTeveParada = false;    // a volta corrente tem uma parada dentro
 
   function novaMedida(kmhEntrada) { return { kmhEntrada, kmhMin: null, minX: null, minY: null, kmhSaida: null }; }
 
@@ -227,6 +239,8 @@ export function criarCerebroGpsTv(opts = {}) {
     const v = { n: voltaN, tempoS: r3(tempoS), setoresS, picosG: picosVolta.n ? picosVolta : null,
       pancadas: daVolta.length,
       pancadaMaxG: daVolta.length ? daVolta.reduce((m, p) => (Math.abs(p.g) > Math.abs(m) ? p.g : m), 0) : null };
+    v.descarte = voltaTeveParada ? 'parada' : (aquecerProxima ? 'aquecimento' : null);
+    if (!voltaTeveParada) aquecerProxima = false;
     v.trechos = null;
     if (trechos.length && cruzTrechoT.length === linhasTrecho.length && trechoMedidas.length === trechos.length) {
       const fim = trechoMedidas[trechoMedidas.length - 1];
@@ -258,7 +272,22 @@ export function criarCerebroGpsTv(opts = {}) {
     trechoMedidas = trechos.length ? [novaMedida(kmhPonto)] : [];
     rastroVolta = []; gVolta = []; picosVolta = novosPicos();
     perfilVolta = []; distVolta = 0; ultimoGeoVolta = null;
+    voltaTeveParada = false;
   });
+
+  // parada (box): marca as voltas que saem da linha do trecho e de "a última perdeu"
+  function verParada(t, kmh, prog) {
+    if (kmh == null) return;
+    if (kmh >= PARADO_KMH) { paradoDesdeT = null; paradaContada = false; return; }
+    if (paradoDesdeT == null) { paradoDesdeT = t; paradoProg = prog; paradoVoltaN = voltaN; }
+    if (paradaContada || t - paradoDesdeT < PARADA_S * 1000) return;
+    paradaContada = true;
+    aquecerProxima = true;
+    if (inicioVoltaT == null || paradoVoltaN !== voltaN) return;
+    voltaTeveParada = true;
+    const ant = voltas[voltas.length - 1];
+    if (ant && ant.n === voltaN - 1 && !ant.descarte && paradoProg != null && paradoProg < RESFRIA_FRAC) ant.descarte = 'resfriamento';
+  }
 
   /** Ponto do evento 'gps' do canal (RaceBox). Devolve true se entrou. */
   function feedGps(g) {
@@ -286,6 +315,7 @@ export function criarCerebroGpsTv(opts = {}) {
 
     const gVert = typeof g.gVert === 'number' && Number.isFinite(g.gVert) ? g.gVert : null;
     const progAqui = pos ? mod1(sentido * (pos.frac - fracChegada)) : null;
+    verParada(t, kmh, progAqui);
 
     // 2) setores — pela fração do traçado contada da chegada
     if (pos) {
@@ -420,6 +450,16 @@ export function criarCerebroGpsTv(opts = {}) {
       ? ultima.trechos.map((m, i) => ({ i: i + 1, nome: trechos[i].nome, difS: r3(m.tempoS - melhoresTrechos[i]) }))
         .filter(x => x.difS > 0).sort((a, b) => b.difS - a.difS).slice(0, 3)
       : [];
+    // o mesmo, só com as voltas que valem para a linha do trecho e "a última perdeu" (sem aquecimento/resfriamento/parada)
+    const validas = voltas.filter(v => !v.descarte), ultimaValida = validas.length ? validas[validas.length - 1] : null;
+    const melhoresValidos = trechos.map((_, i) => melhor(validas, v => (v.trechos ? v.trechos[i].tempoS : null)));
+    const perdasValida = ultimaValida && ultimaValida.trechos
+      ? ultimaValida.trechos.map((m, i) => ({ i: i + 1, nome: trechos[i].nome, difS: r3(m.tempoS - melhoresValidos[i]) }))
+        .filter(x => x.difS > 0).sort((a, b) => b.difS - a.difS).slice(0, 3)
+      : [];
+    // "ideal pelos trechos" (rodapé do quadro de curvas): soma do melhor de cada trecho entre as voltas que valem
+    const idealValidas = trechos.length && melhoresValidos.every(s => s != null)
+      ? r3(melhoresValidos.reduce((s, v) => s + v, 0)) : null;
     return {
       fresco,
       agora,
@@ -431,7 +471,10 @@ export function criarCerebroGpsTv(opts = {}) {
       melhoresSetores,
       voltaIdealS: ideal,
       voltaAtual: atual,
-      trechos: { lista: trechos, erro: cortes.erro, melhoresS: melhoresTrechos, voltaIdealS: idealTrechos, perdasUltima },
+      trechos: { lista: trechos, erro: cortes.erro, melhoresS: melhoresTrechos, voltaIdealS: idealTrechos, perdasUltima,
+        validas: { melhoresS: melhoresValidos, voltaIdealS: idealValidas, ultimaN: ultimaValida ? ultimaValida.n : null,
+          ultimaTrechos: ultimaValida ? ultimaValida.trechos : null, perdasUltima: perdasValida,
+          descartadas: voltas.filter(v => v.descarte).map(v => ({ n: v.n, motivo: v.descarte })) } },
       mapa: { volta: rastroVolta, ultima: rastroUltima },
       circuloG: {
         vivo: agora && agora.gLong != null ? { l: agora.gLong, a: agora.gLat, zeroOk: agora.zeroOk } : null,

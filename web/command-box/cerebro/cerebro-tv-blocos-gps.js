@@ -144,6 +144,7 @@ export function criarCerebroTvBlocosGps() {
       ultimaS: voltas.length ? voltas[voltas.length - 1].tempoS : null,
       mediaS: tempos.length ? r3(tempos.reduce((a, b) => a + b, 0) / tempos.length) : null,
       totalS: tempos.length ? r3(tempos.reduce((a, b) => a + b, 0)) : null,
+      consistencia: s.consistencia || null,   // repassa a conta do cérebro do GPS (a tela do stint só exibe)
     };
     let acum = 0;
     const deltaAcum = {

@@ -3,7 +3,7 @@
 // Casa da conta: web/command-box/cerebro/cerebro-gps-tv.js. Offline, sem rede.
 // Cada regra tem um CONTROLE que tem de dar o resultado oposto.
 import { readFileSync } from 'node:fs';
-import { criarCerebroGpsTv, SEM_DADO_MS, PANCADA_G, LUGAR_FRAC } from '../web/command-box/cerebro/cerebro-gps-tv.js';
+import { criarCerebroGpsTv, SEM_DADO_MS, PANCADA_G, LUGAR_FRAC, PARADO_KMH, PARADA_S, RESFRIA_FRAC } from '../web/command-box/cerebro/cerebro-gps-tv.js';
 import { criarDetectorTrocaMarcha } from '../web/command-box/cerebro/troca-marcha-g.js';
 import { criarDetectorTraseira, giroEsperadoDps, APRENDER_MIN } from '../web/command-box/cerebro/traseira-giro.js';
 
@@ -344,6 +344,60 @@ function rodar(cerebro, tempos, { inicioFrac = 0.9, extra = () => ({}), pularEm 
     sg.traseira.temGiro === false && sg.traseira.total === 0);
 }
 
+// 3f) Voltas descartadas da linha do trecho e de "a última perdeu" (Flávio 28/10, painel p1fast-mapa-tv-2045):
+// a 1ª depois de uma parada (aquecimento), a que tem a parada dentro e a que fecha logo antes de uma parada
+// que começa antes de RESFRIA_FRAC da volta seguinte (resfriamento, box depois da linha). Quem marca é a parada.
+{
+  // cada passo = [fração inicial, fração final (pode passar de 1), segundos, km/h]; km/h 0 = parado no lugar
+  const sessao = (passos) => {
+    const c = criarCerebroGpsTv({ marcoChegada: MARCO, projetar }); let tw = 1_000_000;
+    for (const [de, ate, seg, kmh] of passos) {
+      const n = Math.round(seg * 25);
+      for (let i = 1; i <= n; i++) { tw += 40; const fr = (de + (ate - de) * i / n) % 1; c.feedGps(ponto(fr + 1e-6, tw, { kmh })); }
+    }
+    return c.snapshot();
+  };
+  const motivos = (s) => s.voltas.map(v => v.descarte);
+  t('constantes da parada: abaixo de 5 km/h por 20 s; resfriamento antes de 1/4 da volta seguinte',
+    PARADO_KMH === 5 && PARADA_S === 20 && RESFRIA_FRAC === 0.25);
+  // box ANTES da linha (como Brasília em 21/06: parado a 0,4% da chegada): a volta de entrada nunca fecha
+  const a = sessao([[0.996, 0.996, 30, 0], [0.996, 1, 0.2, 40], [0, 1, 70, 80], [0, 1, 60, 80], [0, 1, 61, 80], [0, 0.95, 55, 80], [0.95, 0.95, 30, 0]]);
+  t('box antes da linha: 1ª volta = aquecimento, as outras valem', JSON.stringify(motivos(a)) === JSON.stringify(['aquecimento', null, null]), JSON.stringify(motivos(a)));
+  t('controle: parada a 95% da volta NÃO descarta a volta anterior (ela foi lançada)', a.trechos.validas.ultimaN === 3, a.trechos.validas.ultimaN);
+  t('lista de descartadas no pacote', JSON.stringify(a.trechos.validas.descartadas) === JSON.stringify([{ n: 1, motivo: 'aquecimento' }]));
+  // box DEPOIS da linha (o carro já entra andando: a 1ª volta vale): a volta de resfriamento fecha e o carro para logo depois da chegada; sai de novo e volta à pista
+  const b = sessao([[0.5, 1, 30, 80], [0, 1, 62, 80], [0, 1, 60, 80], [0, 1, 75, 80], [0, 0.05, 4, 40], [0.05, 0.05, 30, 0],
+    [0.05, 1, 60, 80], [0, 1, 66, 80], [0, 1, 61, 80], [0, 0.3, 18, 80]]);
+  t('box depois da linha: resfriamento, a volta com a parada e a 1ª depois dela saem; o resto vale',
+    JSON.stringify(motivos(b)) === JSON.stringify([null, null, 'resfriamento', 'parada', 'aquecimento', null]), JSON.stringify(motivos(b)));
+  t('última que vale = a 6ª (não a de aquecimento nem a de resfriamento)', b.trechos.validas.ultimaN === 6, b.trechos.validas.ultimaN);
+  // controle: lentidão abaixo de 5 km/h por 10 s (menos que a parada) não descarta nada
+  const c = sessao([[0.5, 1, 30, 80], [0, 0.4, 24, 80], [0.4, 0.401, 10, 3], [0.401, 1, 36, 80], [0, 1, 60, 80], [0, 0.2, 12, 80]]);
+  t('controle: 10 s devagar não é parada — nenhuma volta descartada', JSON.stringify(motivos(c)) === JSON.stringify([null, null]), JSON.stringify(motivos(c)));
+  t('as outras contas não mudam: melhor volta e consistência continuam com todas as voltas',
+    b.melhorVolta && b.melhorVolta.n === 2 && b.voltas.length === 6 && b.consistencia && b.consistencia.nVoltas === 6, JSON.stringify(b.consistencia));
+  // gravação REAL de 21/06 (a mesma da TV, km/h ÷ 3,6): a 1ª volta (3:14,95) é a de aquecimento e o "perdeu
+  // CURVA 01 +1,38" que a TV mostrava vinha dela; com uma só volta que vale não há perda a mostrar
+  const j = JSON.parse(ler('web/command-box/fixtures/replay-hoje-2026-06-21.json'));
+  const r = criarCerebroGpsTv();
+  for (const p of j.amostras) if (p.tipo === 'gps') r.feedGps(typeof p.kmh === 'number' ? { ...p, kmh: p.kmh / 3.6 } : p);
+  const sr = r.snapshot();
+  t('21/06: volta 1 = aquecimento, volta 2 vale', JSON.stringify(motivos(sr)) === JSON.stringify(['aquecimento', null]), JSON.stringify(motivos(sr)));
+  t('21/06: "perdeu" sem a volta de aquecimento = nenhuma (antes: CURVA 01 +1,38)', sr.trechos.validas.perdasUltima.length === 0
+    && sr.trechos.perdasUltima.length > 0 && sr.trechos.perdasUltima[0].nome === 'CURVA 01', JSON.stringify(sr.trechos.perdasUltima));
+  t('21/06: melhor de cada trecho = o da volta 2', sr.trechos.validas.melhoresS.every((m, i) => m === sr.voltas[1].trechos[i].tempoS));
+  // "ideal pelos trechos" (rodapé do quadro de curvas) = soma dos melhores das voltas que valem
+  const somaV2 = Math.round(sr.voltas[1].trechos.reduce((x, m) => x + m.tempoS, 0) * 1000) / 1000;
+  t('21/06: ideal pelos trechos que valem = soma dos trechos da volta 2', sr.trechos.validas.voltaIdealS === somaV2,
+    sr.trechos.validas.voltaIdealS + ' x ' + somaV2);
+  t('controle: o ideal com todas as voltas (aquecimento junto) é outro número', sr.trechos.voltaIdealS != null
+    && sr.trechos.voltaIdealS < sr.trechos.validas.voltaIdealS, sr.trechos.voltaIdealS + ' x ' + sr.trechos.validas.voltaIdealS);
+  t('controle: sem trechos no circuito o ideal é nulo, nunca zero', a.trechos.lista.length === 0 && a.trechos.validas.voltaIdealS === null,
+    a.trechos.lista.length + ' trechos, ideal ' + a.trechos.validas.voltaIdealS);
+}
+t('TV: linha do trecho e "perdeu" leem só as voltas que valem (s.trechos.validas)',
+  /function linhasTrechos\(s\)[\s\S]*?var va = tr && tr\.validas;[\s\S]*?va\.ultimaTrechos[\s\S]*?va\.melhoresS[\s\S]*?va\.perdasUltima/.test(ler('_design-reference/mockup-command-box-vista-piloto.html')));
+
 // 4) Ligações na fonte (quem desligar reprova aqui)
 const live = ler('windows/cockpit/P1Fast.Cockpit.UI/MainWindow.Live.cs');
 const dic = (live.match(/_liveCloudGps\.Enqueue\(new Dictionary[\s\S]{0,1800}?\}\);/) || [''])[0];
@@ -377,7 +431,7 @@ t('TV (item 8): camada não procura troca (sem detector, BURACO ou QUEDA na tela
   !/criarDetectorTrocaMarcha|troca-marcha-g|BURACO_|QUEDA_FRAC/.test(camada));
 t('contrato (item 8): casa da troca de marcha registrada', /troca-marcha-g\.js/.test(contrato));
 t('TV (item 9): camada desenha a traseira do pacote, dentro do quadro, só com giro, marcada "provável · giro a conferir"',
-  /s\.traseira/.test(camada) && /if\(ts && ts\.temGiro\) l\.push\('traseira \(provável · giro a conferir\)/.test(camada)
+  /s\.traseira/.test(camada) && /if\(ts && ts\.temGiro\) c\.push\(par\('traseira prov\.'[^;]*giro a conferir/.test(camada)
   && /el\.innerHTML = !ts \|\| !ts\.temGiro \?/.test(camada)
   && /function quadro\(\)[\s\S]*?desenharTraseira\(ui\.traseira, s\.traseira\);[\s\S]*?\n  \}/.test(camada));
 t('TV (item 9): camada não julga giro (sem detector, EXCESSO_ ou giro esperado na tela)',

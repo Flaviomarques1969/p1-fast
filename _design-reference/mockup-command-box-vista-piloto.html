@@ -1502,7 +1502,7 @@ html,body{
 }
 /* CARRO — temperaturas e pressões (motor/câmbio/óleo). Centro-baixo. */
 .b-carro-fixed{
-  position:absolute;left:46%;top:55%;width:9%;height:30%;
+  position:absolute;left:56%;top:73%;width:8%;height:16%;   /* no vão embaixo da Vmin: abre espaço para a coluna de dados do mapa (28/10) */
   background:rgba(10,14,24,0.55);
   border:1px solid var(--hairline);
   padding:0;
@@ -1510,7 +1510,7 @@ html,body{
 }
 /* PASSAGEM (entrada/apice/saída) — esquerda do Carro */
 .b-passagem-fixed{
-  position:absolute;left:36%;top:55%;width:9%;height:17%;
+  position:absolute;left:46%;top:55%;width:9%;height:17%;
   background:rgba(10,14,24,0.55);
   border:1px solid var(--hairline);
   padding:0;
@@ -1518,7 +1518,7 @@ html,body{
 }
 /* FRENAGEM (gráfico) — abaixo da Passagem */
 .b-frenagem-fixed{
-  position:absolute;left:36%;top:73%;width:9%;height:16%;
+  position:absolute;left:46%;top:73%;width:9%;height:16%;
   background:rgba(10,14,24,0.55);
   border:1px solid var(--hairline);
   padding:0;
@@ -1556,7 +1556,7 @@ html,body{
 }
 /* CARRO — temperaturas e pressões (motor/câmbio/óleo). Centro-baixo. */
 .b-carro-fixed{
-  position:absolute;left:46%;top:55%;width:9%;height:30%;
+  position:absolute;left:56%;top:73%;width:8%;height:16%;   /* no vão embaixo da Vmin: abre espaço para a coluna de dados do mapa (28/10) */
   background:rgba(10,14,24,0.55);
   border:1px solid var(--hairline);
   padding:0;
@@ -1564,7 +1564,7 @@ html,body{
 }
 /* PASSAGEM (entrada/apice/saída) — esquerda do Carro */
 .b-passagem-fixed{
-  position:absolute;left:36%;top:55%;width:9%;height:17%;
+  position:absolute;left:46%;top:55%;width:9%;height:17%;
   background:rgba(10,14,24,0.55);
   border:1px solid var(--hairline);
   padding:0;
@@ -1572,7 +1572,7 @@ html,body{
 }
 /* FRENAGEM (gráfico) — abaixo da Passagem */
 .b-frenagem-fixed{
-  position:absolute;left:36%;top:73%;width:9%;height:16%;
+  position:absolute;left:46%;top:73%;width:9%;height:16%;
   background:rgba(10,14,24,0.55);
   border:1px solid var(--hairline);
   padding:0;
@@ -8351,6 +8351,56 @@ html,body{
     font-family:'JetBrains Mono','SF Mono',Menlo,monospace;font-size:7px;letter-spacing:.14em;
     text-transform:uppercase;color:rgba(255,255,255,0.55);}
   .tv-legenda i{display:inline-block;width:12px;height:2px;margin-right:4px;vertical-align:middle;}
+  /* COLUNA "DADOS DA VOLTA" à direita do mapa (Flávio, painel p1fast-mapa-tv-2045, 28/10/2026: "pega esses dados que
+     estão por trás da pista e coloca do lado direito do mapa"). O mapa fica só com a pista; tudo que era texto em cima
+     dela mora aqui, em pilha: tempo/delta · quadrado MELHOR VOLTA | ÚLTIMA VOLTA · setores · trecho · contagens · G · legenda. */
+  .b-mapa-dados{position:absolute;left:30.25%;top:54%;width:15.25%;height:35%;   /* o mapa limita a pista pela altura: alargá-lo não cresce a pista, então a largura vai para a coluna */box-sizing:border-box;padding:7px 0 4px 7px;
+    display:none;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto auto auto auto 1fr;align-content:start;
+    gap:4px 9px;overflow:hidden;pointer-events:none;
+    font-family:'JetBrains Mono','SF Mono',Menlo,monospace;font-variant-numeric:tabular-nums;}
+  .b-mapa-dados.tv-on{display:grid;}
+  /* em cima, de lado a lado: tempos, setores, trecho; embaixo, duas colunas: círculo G | contagens + legenda */
+  .b-mapa-dados .map-overlay,.b-mapa-dados .tv-setores,.b-mapa-dados .tv-trecho{grid-column:1 / -1;}
+  .b-mapa-dados .tv-g{grid-column:1;grid-row:4 / span 2;}
+  .b-mapa-dados .tv-cont{grid-column:2;grid-row:4;}
+  .b-mapa-dados .tv-legenda{grid-column:2;grid-row:5;align-self:end;}
+  .b-mapa-dados .map-overlay{position:static;padding:0;background:none;display:block;}
+  .b-mapa-dados .mo-laps{display:grid;grid-template-columns:1fr 1fr;gap:6px 5px;width:100%;}
+  .b-mapa-dados .mo-lap{border-left:0;padding:0;align-items:flex-start;gap:3px;min-width:0;}
+  .b-mapa-dados .mo-lap.ghost{display:none;}
+  .b-mapa-dados .mo-lap.live{order:1;} .b-mapa-dados .mo-lap.delta{order:2;}
+  .b-mapa-dados .mo-lap.best-stint{order:3;} .b-mapa-dados .mo-lap.last{order:4;}
+  .b-mapa-dados .mo-lap .lk{font-size:6.5px;letter-spacing:.2em;}
+  .b-mapa-dados .mo-lap .lv{font-size:12px;}
+  /* o quadrado premium: MELHOR VOLTA ao lado da ÚLTIMA VOLTA */
+  .b-mapa-dados .mo-lap.best-stint,.b-mapa-dados .mo-lap.last{padding:6px 4px 6px 6px;border-radius:6px;
+    border:0.5px solid rgba(212,175,55,0.30);background:linear-gradient(180deg,rgba(212,175,55,0.10),rgba(212,175,55,0.02));
+    box-shadow:inset 0 1px 0 rgba(255,255,255,0.04);}
+  .b-mapa-dados .mo-lap.best-stint{border-color:rgba(63,224,140,0.34);background:linear-gradient(180deg,rgba(63,224,140,0.10),rgba(63,224,140,0.02));}
+  .b-mapa-dados .mo-lap.best-stint .lv,.b-mapa-dados .mo-lap.last .lv{font-size:10px;letter-spacing:-.01em;}
+  .b-mapa-dados .tv-setores{position:static;display:grid;grid-template-columns:1fr 1fr;gap:5px 9px;padding-top:7px;
+    border-top:0.5px solid rgba(212,175,55,0.16);}
+  .b-mapa-dados .tv-setores .s{flex-direction:row;justify-content:space-between;align-items:baseline;border-left:0;padding-left:0;gap:4px;}
+  .b-mapa-dados .tv-setores .k{font-size:6.5px;letter-spacing:.2em;}
+  .b-mapa-dados .tv-trecho,.b-mapa-dados .tv-cont{font-size:6.5px;letter-spacing:.12em;line-height:1.45;text-transform:uppercase;
+    color:rgba(212,175,55,0.62);padding-top:6px;border-top:0.5px solid rgba(212,175,55,0.16);white-space:nowrap;overflow:hidden;}
+  .b-mapa-dados .tv-trecho b,.b-mapa-dados .tv-cont b{font-weight:400;color:var(--text-1);}
+  .b-mapa-dados .tv-trecho .perdeu{color:#FF5A4E;}
+  .b-mapa-dados .tv-cont{letter-spacing:.05em;}   /* meia coluna: "traseira prov. 2 / 1" cabe inteiro */
+  .b-mapa-dados .tv-cont .ln{display:flex;justify-content:space-between;gap:6px;}
+  .b-mapa-dados .tv-cont .ap{color:rgba(255,255,255,0.40);}
+  .b-mapa-dados .tv-g{position:static;width:auto;display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding-top:6px;border-top:0.5px solid rgba(212,175,55,0.16);}
+  .b-mapa-dados .tv-g svg{width:52px;height:52px;margin:0;flex:none;}
+  /* no círculo de 52 px o "ACEL"/"FREIO" do desenho sairia com 3,9 px na tela: na coluna eles saem do desenho e ficam ao lado, em cima e embaixo, no tamanho das outras letras */
+  .b-mapa-dados .tv-g{position:relative;right:auto;bottom:auto;}   /* relative sem anular o right/bottom de .tv-g empurrava o bloco 8 px para fora */
+  .b-mapa-dados .tv-g svg text{display:none;}
+  .b-mapa-dados .tv-g::before,.b-mapa-dados .tv-g::after{position:absolute;left:58px;font-size:6.5px;letter-spacing:.12em;line-height:1;}
+  .b-mapa-dados .tv-g::before{content:"ACEL";top:8px;color:rgba(63,224,140,.85);}
+  .b-mapa-dados .tv-g::after{content:"FREIO";top:49px;color:rgba(255,90,78,.85);}
+  .b-mapa-dados .tv-g .tv-g-txt{text-align:left;font-size:6.5px;line-height:1.45;letter-spacing:.02em;white-space:nowrap;}
+  .b-mapa-dados .tv-legenda{position:static;flex-wrap:wrap;gap:3px 8px;font-size:6.5px;letter-spacing:.12em;}
+  .b-mapa-dados .tv-legenda i{width:9px;}
+  .b-mapa-dados.tv-parado > *{opacity:.45;}
   /* com o cérebro da TV ligado, some o que é demonstração no mapa (deltas fictícios por trecho,
      linha branca fictícia e o "fantasma" de volta de referência que este cérebro não calcula) */
   .b-map.tv-on [data-trechos],.b-map.tv-on [data-traj-live],.b-map.tv-on [data-marker^="ghost"]{display:none;}
@@ -8402,8 +8452,20 @@ html,body{
     var circ = document.createElement('div'); circ.className = 'tv-g'; circ.setAttribute('data-tv-g', '');
     circ.innerHTML = '<svg viewBox="-60 -60 120 120"></svg><div class="tv-g-txt" data-tv-g-txt></div>';
     var leg = document.createElement('div'); leg.className = 'tv-legenda'; leg.setAttribute('data-tv-legenda', '');
-    [set, cons, circ, leg].forEach(function(el){ el.style.display = 'none'; mapa.appendChild(el); });
-    return { mapa: mapa, rastro: g, pancadas: gp, trocas: gt, traseira: gs, trechosMapa: gk, cons: cons, set: set, circ: circ, circSvg: circ.querySelector('svg'),
+    var cont = document.createElement('div'); cont.className = 'tv-cont'; cont.setAttribute('data-tv-cont', '');
+    // coluna à direita do mapa (painel p1fast-mapa-tv-2045): o mapa fica só com a pista
+    // sem data-block-id: o modo RaceBox cobre de "não vem do RaceBox" todo bloco que não conhece (a coluna é parte do mapa)
+    var col = document.createElement('div'); col.className = 'b-mapa-dados'; col.setAttribute('data-tv-mapa-dados', '');
+    mapa.parentNode.insertBefore(col, mapa.nextSibling);
+    var faixa = mapa.querySelector('.map-overlay');
+    if(faixa){
+      col.appendChild(faixa);
+      var rot = { 'best-stint': 'melhor volta', last: 'última volta' };
+      Object.keys(rot).forEach(function(k){ var e = faixa.querySelector('.mo-lap.' + k + ' .lk'); if(e) e.textContent = rot[k]; });
+    }
+    cons.className = 'tv-trecho';
+    [set, cons, cont, circ, leg].forEach(function(el){ el.style.display = 'none'; col.appendChild(el); });
+    return { mapa: mapa, col: col, rastro: g, pancadas: gp, trocas: gt, traseira: gs, trechosMapa: gk, cons: cons, cont: cont, set: set, circ: circ, circSvg: circ.querySelector('svg'),
       circTxt: circ.querySelector('[data-tv-g-txt]'), leg: leg };
   }
 
@@ -8508,45 +8570,42 @@ html,body{
     el.innerHTML = h;
   }
 
+  // linha do trecho e "a última perdeu", na coluna ao lado do mapa (curtas: a coluna é estreita).
+  // Só voltas que valem (o cérebro descarta aquecimento, resfriamento e a volta com parada: s.trechos.validas).
   function linhasTrechos(s){
-    var tr = s.trechos, at = s.voltaAtual, ult = s.ultimaVolta, l = [];
+    var tr = s.trechos, at = s.voltaAtual, l = [];
+    var va = tr && tr.validas;
     if(!tr) return l;
     if(tr.erro){ l.push('trechos — cadastro da pista com problema'); return l; }
     if(!tr.lista.length) return l;
     var i = at && at.trechoAtual ? at.trechoAtual - 1 : null;
     if(i != null && tr.lista[i]){
-      var m = ult && ult.trechos ? ult.trechos[i] : null;
-      l.push('trecho <b>' + esc(tr.lista[i].nome) + '</b> ' + (i + 1) + '/' + tr.lista.length
-        + ' · última <b>' + fmtS(m && m.tempoS) + '</b> · melhor <b>' + fmtS(tr.melhoresS[i]) + '</b>'
+      var m = va && va.ultimaTrechos ? va.ultimaTrechos[i] : null;
+      l.push('trecho <b>' + esc(tr.lista[i].nome) + '</b> ' + (i + 1) + '/' + tr.lista.length);
+      l.push('últ <b>' + fmtS(m && m.tempoS) + '</b> · mel <b>' + fmtS(va ? va.melhoresS[i] : null) + '</b>'
         + (m && m.kmhMin != null ? ' · mín <b>' + Math.round(m.kmhMin) + '</b>' : ''));
     }
-    if(tr.perdasUltima.length) l.push('a última perdeu: ' + tr.perdasUltima.map(function(p){
-      return '<b>' + esc(p.nome) + '</b> <span class="perdeu">+' + p.difS.toFixed(2).replace('.', ',') + '</span>'; }).join(' · '));
-    if(tr.voltaIdealS != null) l.push('ideal pelos trechos <b>' + fmt(tr.voltaIdealS) + '</b>');
+    if(va && va.perdasUltima.length){ var p = va.perdasUltima[0];
+      l.push('perdeu <b>' + esc(p.nome) + '</b> <span class="perdeu">+' + p.difS.toFixed(2).replace('.', ',') + '</span>'); }
     return l;
   }
 
+  // contagens da volta (nesta / última); a consistência do stint foi para o bloco do stint
   function desenharConsistencia(ui, s){
-    var k = s.consistencia, pc = s.pancadas, l = [];
-    if(k) l.push('consistência <b>±' + k.desvioS.toFixed(2).replace('.', ',') + ' s</b> · amplitude <b>'
-      + k.amplitudeS.toFixed(2).replace('.', ',') + ' s</b> · ' + k.nVoltas + ' voltas',
-      'mais longe da média: <b>V' + k.voltaMaisFora.n + ' ' + (k.voltaMaisFora.difS >= 0 ? '+' : '−')
-      + Math.abs(k.voltaMaisFora.difS).toFixed(2).replace('.', ',') + ' s</b>');
-    else l.push('consistência — (precisa de 2 voltas)');
-    var ult = s.ultimaVolta;
-    l.push('pancadas <b>' + (s.voltaAtual ? pc.volta.length : 0) + '</b> nesta volta'
-      + (ult && ult.pancadas != null ? ' · <b>' + ult.pancadas + '</b> na última' : '')
-      + (pc.lugaresRepetidos.length ? ' · <b>' + pc.lugaresRepetidos.length + '</b> lugar(es) repetido(s)' : ''));
+    var pc = s.pancadas, ult = s.ultimaVolta, at = s.voltaAtual, c = ['<div class="ln ap"><span></span><span>nesta / última</span></div>'];   // cabeçalho curto: cabe na meia coluna
+    function par(nome, agora, ultima){ return '<div class="ln"><span>' + nome + '</span><span><b>' + agora + '</b> <span class="ap">/</span> <b>'
+      + (ultima == null ? '—' : ultima) + '</b></span></div>'; }
+    c.push(par('pancadas', at ? pc.volta.length : 0, ult && ult.pancadas));
+    if(pc.lugaresRepetidos.length) c.push('<div class="ln"><span>repetidas</span><span><b>' + pc.lugaresRepetidos.length + '</b> lugar' + (pc.lugaresRepetidos.length > 1 ? 'es' : '') + '</span></div>');
     var tr = s.trocas;
-    if(tr && tr.total) l.push('trocas (provável) <b>' + (s.voltaAtual ? tr.volta.length : 0) + '</b> nesta volta'
-      + (ult && ult.trocas != null ? ' · <b>' + ult.trocas + '</b> na última' : '')
-      + (ult && ult.trocaBuracoMedioS != null ? ' · buraco <b>' + ult.trocaBuracoMedioS.toFixed(2).replace('.', ',') + ' s</b>' : ''));
+    if(tr && tr.total) c.push(par('trocas prov.', at ? tr.volta.length : 0, ult && ult.trocas));
     var ts = s.traseira;
-    if(ts && ts.temGiro) l.push('traseira (provável · giro a conferir) <b>' + (s.voltaAtual ? ts.volta.length : 0) + '</b> nesta volta'
-      + (ult && ult.traseira != null ? ' · <b>' + ult.traseira + '</b> na última' : '')
-      + (ts.sinalAprendido ? '' : ' · aprendendo o giro nas curvas'));
+    if(ts && ts.temGiro) c.push(par('traseira prov.', at ? ts.volta.length : 0, ult && ult.traseira),
+      '<div class="ln ap"><span>giro a conferir</span><span></span></div>');   // "provável · giro a conferir", curto para a meia coluna
+    ui.cont.innerHTML = c.join('');
     var lt = linhasTrechos(s);
-    ui.cons.innerHTML = l.join('<br>') + (lt.length ? '<br><span data-tv-trechos>' + lt.join('<br>') + '</span>' : '');
+    ui.cons.innerHTML = lt.map(function(x){ return '<div style="overflow:hidden;text-overflow:ellipsis">' + x + '</div>'; }).join('');
+    ui.cons.style.display = lt.length ? '' : 'none';
   }
 
   function desenharTempos(s){
@@ -8580,10 +8639,10 @@ html,body{
     if(!s.agora) return;                       // nada do carro ainda: a tela segue como estava
     if(!window.__tvGps.ativo){
       window.__tvGps.ativo = true;
-      ui.mapa.classList.add('tv-on');
-      [ui.set, ui.cons, ui.circ, ui.leg].forEach(function(el){ el.style.display = ''; });
+      ui.mapa.classList.add('tv-on'); ui.col.classList.add('tv-on');
+      [ui.set, ui.cons, ui.cont, ui.circ, ui.leg].forEach(function(el){ el.style.display = ''; });
     }
-    ui.mapa.classList.toggle('tv-parado', !s.fresco);
+    ui.mapa.classList.toggle('tv-parado', !s.fresco); ui.col.classList.toggle('tv-parado', !s.fresco);
     window.__tvGps.fresco = s.fresco; window.__tvGps.dev = !!rotuloDev;
     if(rotuloDev && !window.__modoTv){   // demonstração: o selo nunca pode dizer "ao vivo" com dado gravado na tela
       var selo = document.getElementById('cb-live-selo'), txt = selo && selo.querySelector('.cb-txt');
@@ -8811,6 +8870,10 @@ html,body{
         h += lin('última', volta(st.ultimaS));
         h += lin('melhor', st.melhor ? volta(st.melhor.tempoS) + ' · v' + st.melhor.n : '—', st.melhor ? 'ganhou' : '');
         h += lin('média', volta(st.mediaS));
+        // consistência do stint (saiu de cima da pista do mapa — painel p1fast-mapa-tv-2045, 28/10)
+        var k = st.consistencia;
+        h += lin('consistência', k ? '±' + k.desvioS.toFixed(2).replace('.', ',') + ' s' : '— (2 voltas)');
+        if(k) h += lin('mais longe', 'v' + k.voltaMaisFora.n + ' ' + (k.voltaMaisFora.difS >= 0 ? '+' : '−') + Math.abs(k.voltaMaisFora.difS).toFixed(2).replace('.', ',') + ' s');
         return h;
       },
       'stint-bar': function(p){

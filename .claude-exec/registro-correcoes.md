@@ -36,3 +36,8 @@ Sintoma: "câmera não entrou no TV box", Meeting is full + /api/room 429. Causa
 destrói a chamada velha; onVideoDown tratava como queda nova (laço), e 'error' + join rejeitado agendavam 2 religações. Correção c399a9fc3:
 geração por chamada + uma religação marcada. Prova: tests/node-smoke-religacao-video-notebook.mjs 8/8 (558→4 e 202→2 entradas; controle 1b9857db6
 reprova). Prova de campo no notebook: NÃO VERIFICADO. Lição: aviso de "saí da sala" de chamada que EU destruí nunca é queda.
+
+## 2026-10-28 · CÓDIGO · TV do box (_design-reference/mockup-command-box-vista-piloto.html, coluna do mapa) · "ACEL"/"FREIO" do círculo G com 3,9 px
+O que era: ao levar o círculo G para a coluna (52 px), os rótulos de dentro do desenho caíram de ~7,5 para 3,9 px na tela; a régua provar-coluna.mjs dava 9 px porque media letra de SVG pela escala da coluna, não do desenho (régua cega).
+Correção: na coluna os rótulos saem do desenho e ficam ao lado (::before/::after, 9,76 px); régua mede SVG pela escala real e mede os ::before/::after.
+Prova: provar-coluna.mjs fim e --pior: 0 letras < 9,7 px, 0 cobertos/cortes/fora; controle --controle-antigo acusa ACEL/FREIO 3,9 px.
