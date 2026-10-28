@@ -287,3 +287,14 @@ PONTO DE PARADA 1027-1903 (27/10 ~19h03): E5 pronta em DEV (1b9857db6), PACOTE e
 - RETOMADA 1027-1903 (27/10, depois do /clear): estado reconferido — HEAD = origin = 1b9857db6, PACOTE sem carimbo MIGRADO, servidor 5199 = 200, sem território desta janela. Nada publicado; aguardando a frase dele.
 - MIGRADO 27/10 19:07: produção p1box = dpl_F3jLYeJ2NmS9g7xQb3Y68mpp4we5; 82/82, escopo exato, ensaio no ar 17/0; mapa atualizado; pendente: favorito da Fire TV e relatório do gps.cmd (janela «P1FAST - GPS TV modo RaceBox}).
 - 19:4x painel p1fast-tv-mac-so-gps-1937: Flávio excluiu ("esquece. já estou vendo"). Notebook atualizado 19:32 (relatório recebidos/20261027-193235.txt, via janela GPS). Obra desta janela encerrada; território liberado.
+- 20:5x–21:0x SALA DE VÍDEO CHEIA (Flávio: "câmera não entrou no tv box"; "só 1 câmera, celular não estava em uso, notebook só transmite"):
+  medido 20:58 — espectador de 15 s na TV publicada recusado "Meeting is full" (max_participants 4, api/video/room.js:104) + /api/room 429.
+  Dados ao vivo OK: 20:55 cockpit-bubi-live 31 msgs/8 s (escutar-8s.mjs), TV publicada AO VIVO 14 sat 0 km/h. Canal de teste mudo.
+  Mac: robôs do quadro (imac-3b) e do GPS (imac-9c) fechados; Chrome sem janela órfão pid 33885 (porta 9447, sessão abdcf5f9, 15:08) NÃO
+  está na sala (CDAP: sem video/iframe/api/room) — mas sequestra o AppleScript "Google Chrome" (abas reais do Flávio invisíveis).
+  Presença real da sala: consulta Daily /presence exige DAILY_API_KEY — classificador BARROU (não contornar).
+  HIPÓTESE (não provada) — web/teste-aparelhos/index.html: 'left-meeting' E 'error' chamam onVideoDown → 2 startVideo agendados por queda;
+  cada um destrói a chamada anterior e entra de novo → ciclo de reentradas pode deixar participantes-fantasma ocupando vagas.
+  PRÓXIMO: provar a hipótese em DEV (página do notebook contra sala de ensaio com Daily falso/contador de joins), corrigir (1 religação por
+  queda, guarda de reentrada), e levar ao Flávio a decisão de subir o limite de vagas (fam-racing = produção, só com a frase).
+- PONTO DE PARADA 1027-2105: diagnóstico da sala cheia anotado acima; seguir do PRÓXIMO do passe 20261027-2105.
