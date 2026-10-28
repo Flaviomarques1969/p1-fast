@@ -110,3 +110,15 @@ dourado, cursor, faixa Δ embaixo, fonte escrita; (c) stint vira painel de volta
 lista com barra Δ, melhor verde, última dourada); loader do plano: import lerUltimoPlanoStint, carro Bubi
 641a81e7-3192-4e68-8183-b8401f105574 (?carro=), a cada 60 s, passa em blocos.pacote(s,{plano}); (d) CONTRATO_DADOS
 §2 citar faixa/plano/km; package.json smoke; reposicionar medir-b.mjs; rodar provas + ensaio; abrir a TV e perguntar.
+
+## RETOMADA 1028-1231 (28/10 tarde) — conversa nova
+Escopo: só a TV pintar o que o cérebro (ff797dfef) já calcula — mockup command-box vista piloto (modo TV), package.json
+(smoke), CONTRATO_DADOS §2, medir-b.mjs. Não mexe em cérebro nem iOS; migração SEGURADA (não oferecer frase).
+- 28/10 tarde — TV PINTA (mockup): velocímetro menor (top 8,5% h 24%) sem "aguardando sensor", km/h = cérebro
+  (`__tvGps.kmh`) e odômetro = `kmSessao` a 4 Hz (camada RaceBox não soma mais); faixa `[data-tv-faixa]` (left 35,5%
+  top 33% w 28% h 20,5%) com G atual azul/vermelho, melhor dourada, cursor, Δ ganha/perde, fonte escrita; stint =
+  painel de voltas (plano no topo, MELHOR/ÚLTIMA/MÉDIA/IDEAL, lista com barra Δ, aquecimento apagado); plano lido a
+  cada 60 s (`lerUltimoPlanoStint`, ?carro=, padrão Bubi). Prova de tela `blocos-b/medir-b.mjs` APROVADO; controle
+  (TV antiga do bak-tv-pinta) REPROVA 6 checagens. Provas: gps-tv 106, blocos 25, faixa 28, arquitetura 39, honesta 37,
+  pagina-volta 46, trechos 24, montar 17, treino-stint 59, fonte-unica 28, tv-video 46 — 0 falha. Backup: bak-tv-pinta/.
+  Migração SEGURADA (ordem dele). Falta: ele olhar a TV e dizer se o painel de voltas é o que lembrava.

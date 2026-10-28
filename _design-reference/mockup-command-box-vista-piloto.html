@@ -7836,6 +7836,13 @@ html,body{
     function atualizarBlocos(){
       Object.keys(SENSOR_DE).forEach(function(id){
         var el=document.querySelector('[data-block-id="'+id+'"]'); if(!el) return;
+        // TV (28/10, Flávio: velocímetro sem "aguardando sensor"): km/h e km vêm do GPS pelo cérebro da TV
+        // → sai do cinza como o mapa; "ao vivo" só com o carro mandando agora (volta gravada DEV nunca acende)
+        if(id==='hud' && window.__modoTv && window.__tvGps && window.__tvGps.ativo){
+          el.classList.remove('cb-sem-real','cb-aguardando');
+          el.classList.toggle('cb-vivo', !window.__tvGps.dev && !!window.__tvGps.fresco);
+          return;
+        }
         var vivo=SENSOR_DE[id].some(vistoFresco);
         el.classList.toggle('cb-vivo', vivo);
         el.classList.toggle('cb-aguardando', !vivo);
@@ -7887,7 +7894,9 @@ html,body{
     // direta de updateLiveHUD não pegava (27/10) — o HUD do escopo principal chama window.__hudReal.
     window.__hudReal = function(){
       function set(f,v){ var el=document.querySelector('[data-hud="'+f+'"]'); if(el) el.textContent=v; }
-      set('velocidade', (REAL.fresh && REAL.kmh!=null) ? Math.round(REAL.kmh) : '—');
+      var tg=window.__tvGps, kmh=(window.__modoTv && tg && tg.ativo) ? tg.kmh   // TV: km/h do cérebro (null = sem dado que vale)
+        : ((REAL.fresh && REAL.kmh!=null) ? REAL.kmh : null);
+      set('velocidade', kmh!=null ? Math.round(kmh) : '—');
       if(typeof window.__updateSpeedNeedle === 'function') window.__updateSpeedNeedle();
       set('rpm',       (REAL.fresh && REAL.rpm!=null) ? REAL.rpm : '—');
       set('lambda',    (REAL.fresh && REAL.lambda!=null) ? REAL.lambda.toFixed(2) : '—');
@@ -8404,6 +8413,31 @@ html,body{
   /* com o cérebro da TV ligado, some o que é demonstração no mapa (deltas fictícios por trecho,
      linha branca fictícia e o "fantasma" de volta de referência que este cérebro não calcula) */
   .b-map.tv-on [data-trechos],.b-map.tv-on [data-traj-live],.b-map.tv-on [data-marker^="ghost"]{display:none;}
+  /* FAIXA DA VOLTA INTEIRA (28/10) — só na TV: o velocímetro encolheu (top 8,5% altura 24%) e a faixa mora embaixo dele */
+  .tv-faixa{display:none;}
+  html.modo-tv .tv-faixa{display:flex;flex-direction:column;gap:3px;position:absolute;left:35.5%;top:33%;width:28%;height:20.5%;
+    box-sizing:border-box;padding:6px 8px 5px;z-index:4;pointer-events:none;overflow:hidden;
+    border:0.5px solid rgba(212,175,55,0.22);border-radius:6px;background:linear-gradient(180deg,rgba(212,175,55,0.05),rgba(212,175,55,0.01));
+    font-family:'JetBrains Mono','SF Mono',Menlo,monospace;font-variant-numeric:tabular-nums;color:var(--text-1,#F5F0E0);}
+  html.modo-tv body.tv-racebox [data-block-id="hud"]{top:8.5%!important;height:24%!important;}
+  .tv-faixa .fx-h{display:flex;align-items:baseline;gap:8px;white-space:nowrap;}
+  .tv-faixa .fx-t{font-size:7px;letter-spacing:.22em;text-transform:uppercase;color:rgba(212,175,55,0.78);}
+  .tv-faixa .fx-s{font-size:7.5px;letter-spacing:.04em;color:rgba(245,240,224,0.62);overflow:hidden;text-overflow:ellipsis;min-width:0;}
+  .tv-faixa .fx-d{margin-left:auto;font-size:11px;}
+  .tv-faixa .fx-d.ganha{color:#3FE08C;} .tv-faixa .fx-d.perde{color:#FFB347;}
+  .tv-faixa .fx-g{flex:1 1 auto;min-height:0;}
+  .tv-faixa svg{display:block;width:100%;height:100%;}
+  .tv-faixa .fx-curva{fill:rgba(212,175,55,0.07);}
+  .tv-faixa .fx-zero{stroke:rgba(245,240,224,0.22);stroke-width:0.6;stroke-dasharray:2 2;}
+  .tv-faixa .fx-melhor polyline{stroke-width:1.4;stroke-opacity:.75;}
+  .tv-faixa .fx-atual line{stroke-width:1.8;stroke-linecap:round;}
+  .tv-faixa .fx-ganha{fill:#3FE08C;fill-opacity:.8;} .tv-faixa .fx-perde{fill:#FFB347;fill-opacity:.8;}
+  .tv-faixa .fx-cursor{stroke:#FFFFFF;stroke-width:1;stroke-opacity:.85;}
+  .tv-faixa .fx-pe{display:flex;flex-wrap:nowrap;gap:8px;font-size:6px;letter-spacing:.12em;text-transform:uppercase;color:rgba(245,240,224,0.55);white-space:nowrap;}
+  .tv-faixa .fx-pe i{display:inline-block;width:9px;height:2px;margin-right:3px;vertical-align:middle;}
+  .tv-faixa .fx-fonte{margin-left:auto;color:rgba(212,175,55,0.70);}
+  .tv-faixa .fx-vazio{margin:auto;font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,240,224,0.40);}
+  .tv-faixa.tv-parado .fx-g,.tv-faixa.tv-parado .fx-h{opacity:.45;}
   .b-map.tv-parado .tv-setores,.b-map.tv-parado .tv-g,.b-map.tv-parado .tv-rastro,
   .b-map.tv-parado .tv-consist,.b-map.tv-parado .tv-pancadas,.b-map.tv-parado .tv-trechos-mapa,.b-map.tv-parado .tv-trocas,.b-map.tv-parado .tv-traseira{opacity:.45;}
 </style>
@@ -8658,9 +8692,89 @@ html,body{
     desenharConsistencia(ui, s);
     desenharTempos(s);
     desenharLegenda(ui, s);
-    window.__tvGps.blocos = blocos.pacote(s);
+    window.__tvGps.kmh = s.fresco && typeof s.agora.kmh === 'number' ? s.agora.kmh : null;   // velocímetro (camada do HUD)
+    window.__tvGps.kmSessao = s.kmSessao;                                                     // odômetro (camada RaceBox)
+    window.__tvGps.blocos = blocos.pacote(s, { plano: planoLido });
+    desenharFaixa(window.__tvGps.blocos.faixa);
   }
   setInterval(quadro, 250);
+
+  // PLANO DO STINT (Flávio 28/10: "plano do stint feito no celular aparecer na TV"): a porta única de leitura
+  // (web/cockpit/treino-stint.js, só leitura). undefined = ainda não leu; falha de rede guarda o último lido.
+  var planoLido;
+  var CARRO_ID = new URLSearchParams(location.search).get('carro') || '641a81e7-3192-4e68-8183-b8401f105574';   // Bubi
+  function lerPlano(){
+    import('/web/cockpit/treino-stint.js')
+      .then(function(m){ return m.lerUltimoPlanoStint({ carroId: CARRO_ID }); })
+      .then(function(r){ if(r) planoLido = r; })
+      .catch(function(e){ console.warn('[TV-GPS] plano do stint indisponível:', e); });
+  }
+  lerPlano(); setInterval(lerPlano, 60000);
+
+  // FAIXA DA VOLTA INTEIRA (Flávio 28/10: "gráfico em linha da volta inteira, acelera e freia, volta atual ×
+  // melhor volta, cursor andando no trecho"; AZUL acelera, VERMELHO freia). Pinta s.faixa do cérebro dos blocos.
+  var faixaEl = null, faixaHtml = '';
+  var FX = { W: 200, G0: 2, G1: 62, D0: 68, D1: 96, GMAX: 1.2 };
+  function fxY(g){ var c = Math.max(-FX.GMAX, Math.min(FX.GMAX, g)); return (FX.G0 + (FX.GMAX - c) / (2 * FX.GMAX) * (FX.G1 - FX.G0)).toFixed(1); }
+  function fxX(k, n){ return ((k + 0.5) / n * FX.W).toFixed(1); }
+  function fxLinha(g, n, ate, cor){   // trechos seguidos (sem buraco) → uma polyline por trecho
+    var out = '', pts = [];
+    function fecha(){ if(pts.length > 1) out += '<polyline points="' + pts.join(' ') + '" fill="none" stroke="' + cor + '" vector-effect="non-scaling-stroke"/>'; pts = []; }
+    for(var k = 0; k <= ate; k++){ if(g[k] == null){ fecha(); continue; } pts.push(fxX(k, n) + ',' + fxY(g[k])); }
+    fecha(); return out;
+  }
+  function fxAtual(g, n, ate){   // cada pedaço na cor do sinal do G: azul acelerando, vermelho freando
+    var out = '';
+    for(var k = 1; k <= ate; k++){
+      if(g[k] == null || g[k - 1] == null) continue;
+      var cor = (g[k] + g[k - 1]) / 2 < 0 ? '#FF5A4E' : '#38BCFF';
+      out += '<line x1="' + fxX(k - 1, n) + '" y1="' + fxY(g[k - 1]) + '" x2="' + fxX(k, n) + '" y2="' + fxY(g[k]) + '" stroke="' + cor + '" vector-effect="non-scaling-stroke"/>';
+    }
+    return out;
+  }
+  function fxS(x){ return (x > 0 ? '+' : x < 0 ? '−' : '') + Math.abs(x).toFixed(2).replace('.', ',') + ' s'; }
+  function desenharFaixa(f){
+    if(!window.__modoTv) return;
+    if(!faixaEl){
+      var hud = document.querySelector('[data-block-id="hud"]');
+      if(!hud || !hud.parentNode) return;
+      faixaEl = document.createElement('div'); faixaEl.className = 'tv-faixa'; faixaEl.setAttribute('data-tv-faixa', '');
+      hud.parentNode.appendChild(faixaEl);
+    }
+    var h;
+    if(!f) h = '<div class="fx-h"><span class="fx-t">volta inteira · acelera × freia</span></div><div class="fx-vazio">aguardando a 1ª volta</div>';
+    else {
+      var n = f.casas, svg = '<svg viewBox="0 0 ' + FX.W + ' 100" preserveAspectRatio="none">';
+      f.curvas.forEach(function(c){
+        var x0 = c.de * FX.W, x1 = (c.ate >= c.de ? c.ate : c.ate + 1) * FX.W;   // curva que cruza a chegada fica até a borda
+        svg += '<rect class="fx-curva" x="' + x0.toFixed(1) + '" y="' + FX.G0 + '" width="' + Math.max(0.5, Math.min(FX.W, x1) - x0).toFixed(1) + '" height="' + (FX.G1 - FX.G0) + '"/>';
+      });
+      svg += '<line class="fx-zero" x1="0" x2="' + FX.W + '" y1="' + fxY(0) + '" y2="' + fxY(0) + '" vector-effect="non-scaling-stroke"/>';
+      if(f.melhor) svg += '<g class="fx-melhor">' + fxLinha(f.melhor.g, n, n - 1, '#D4AF37') + '</g>';
+      if(f.atual) svg += '<g class="fx-atual">' + fxAtual(f.atual.g, n, f.atual.ate) + '</g>';
+      // Δ por posição: verde = ganhando da melhor (barra para cima), âmbar = perdendo (para baixo)
+      var dm = 0.3; (f.delta || []).forEach(function(d){ if(d != null) dm = Math.max(dm, Math.abs(d)); });
+      var meio = (FX.D0 + FX.D1) / 2, meia = (FX.D1 - FX.D0) / 2;
+      svg += '<line class="fx-zero" x1="0" x2="' + FX.W + '" y1="' + meio + '" y2="' + meio + '" vector-effect="non-scaling-stroke"/>';
+      (f.delta || []).forEach(function(d, k){
+        if(d == null || d === 0) return;
+        var alt = Math.abs(d) / dm * meia;
+        svg += '<rect class="' + (d < 0 ? 'fx-ganha' : 'fx-perde') + '" x="' + (k / n * FX.W).toFixed(1) + '" width="' + (FX.W / n).toFixed(2) + '" y="' + (d < 0 ? meio - alt : meio).toFixed(1) + '" height="' + alt.toFixed(1) + '"/>';
+      });
+      if(f.cursor != null) svg += '<line class="fx-cursor" x1="' + (f.cursor * FX.W).toFixed(1) + '" x2="' + (f.cursor * FX.W).toFixed(1) + '" y1="0" y2="100" vector-effect="non-scaling-stroke"/>';
+      svg += '</svg>';
+      var quem = (f.atual ? 'v' + f.atual.n : 'fora da volta') + (f.melhor ? ' × melhor v' + f.melhor.n + ' ' + fmt(f.melhor.tempoS) : ' · melhor: aguardando');
+      var dAg = f.deltaAgoraS;
+      h = '<div class="fx-h"><span class="fx-t">volta inteira</span><span class="fx-s">' + quem + '</span>'
+        + (dAg != null ? '<span class="fx-d ' + (dAg <= 0 ? 'ganha' : 'perde') + '">Δ ' + fxS(dAg) + '</span>' : '') + '</div>'
+        + '<div class="fx-g">' + svg + '</div>'
+        + '<div class="fx-pe"><span><i style="background:#38BCFF"></i>acelera</span><span><i style="background:#FF5A4E"></i>freia</span>'
+        + '<span><i style="background:#D4AF37"></i>melhor</span><span><i style="background:#3FE08C"></i>ganha</span><span><i style="background:#FFB347"></i>perde</span>'
+        + '<span class="fx-fonte">' + (f.fonte === 'medido' ? 'G medido · RaceBox' : 'G pela velocidade do GPS') + '</span></div>';
+    }
+    if(h !== faixaHtml){ faixaEl.innerHTML = h; faixaHtml = h; }
+    faixaEl.classList.toggle('tv-parado', !(window.__tvGps && window.__tvGps.fresco));
+  }
 
   var mRep = /(?:\?|&)replay-gps=([\w-]+)/.exec(location.search);
   if(mRep){
@@ -8751,22 +8865,30 @@ html,body{
   html.modo-tv body.tv-racebox [data-block-id="stint"] .tvb-big small{font-size:14px;}
   html.modo-tv body.tv-racebox [data-block-id="stint"] .tvb-l{font-size:15px;line-height:1.3;}
   html.modo-tv body.tv-racebox [data-block-id="stint"] .tvb-l .k{font-size:10px;}
+  html.modo-tv body.tv-racebox [data-block-id="stint"] .tvb-plano{font-size:12px;}
+  html.modo-tv body.tv-racebox [data-block-id="stint"] .tvb-plano .k{font-size:9px;}
+  html.modo-tv body.tv-racebox [data-block-id="stint"] .tvb-kpis{gap:7px;}
+  html.modo-tv body.tv-racebox [data-block-id="stint"] .tvb-kpis .kp{padding:7px 9px;gap:3px;}
+  html.modo-tv body.tv-racebox [data-block-id="stint"] .tvb-kpis .k,
+  html.modo-tv body.tv-racebox [data-block-id="stint"] .tvb-kpis .n{font-size:8.5px;}
+  html.modo-tv body.tv-racebox [data-block-id="stint"] .tvb-kpis .v{font-size:17px;}
+  html.modo-tv body.tv-racebox [data-block-id="stint"] .tvb-lista{gap:4px;}
+  html.modo-tv body.tv-racebox [data-block-id="stint"] .tvb-lista .r{font-size:13px;gap:10px;}
+  html.modo-tv body.tv-racebox [data-block-id="stint"] .tvb-lista .bar{height:6px;}
+  html.modo-tv body.tv-racebox [data-block-id="stint"] .tvb-lista .bar em{font-size:8.5px;}
 </style>
 <script type="module">
   (function(){
     // Blocos que mostram dado do RaceBox; o resto é coberto. Header: só GPS (satélites) e REC.
     // E2b: stint, Δ acumulado, passagem, frenagem, vmin e coach saem do GPS (camada BLOCOS DO GPS, abaixo)
     var DO_RACEBOX = { mapa:1, hud:1, header:1, stint:1, 'stint-bar':1, 'delta-acum':1, passagem:1, frenagem:1, vmin:1, coach:1 };
-    var est = { ativo:false, sats:null, km:0, ult:null };
+    var est = { ativo:false, sats:null };
     window.__tvRacebox = !!window.__modoTv;   // modo TV: só o real desde o 1º quadro
 
-    function raio(a,b){   // metros entre 2 pontos (haversine)
-      var R=6371000, r=Math.PI/180, dLa=(b.lat-a.lat)*r, dLo=(b.lng-a.lng)*r;
-      var h=Math.sin(dLa/2)*Math.sin(dLa/2)+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dLo/2)*Math.sin(dLo/2);
-      return 2*R*Math.asin(Math.min(1,Math.sqrt(h)));
-    }
+    // km da sessão = conta do cérebro da TV (cerebro-gps-tv.js, kmSessao) — esta camada só pinta (28/10)
+    function kmSessao(){ var k = window.__tvGps && window.__tvGps.kmSessao; return typeof k === 'number' ? k : 0; }
     function pintarOdometro(){
-      var t = est.km.toFixed(1); while(t.length < 5) t = '0' + t;   // 000.0 … 999.9 km
+      var t = kmSessao().toFixed(1); while(t.length < 5) t = '0' + t;   // 000.0 … 999.9 km
       var cel = document.querySelectorAll('[data-hud="odometro"] .sg-odo-cell text');
       for(var i=0;i<cel.length;i++) cel[i].textContent = t.charAt(t.length - cel.length + i) || '';
     }
@@ -8791,6 +8913,7 @@ html,body{
       document.body.classList.add('tv-racebox');
       cobrir(); pintarOdometro(); pintarCabecalho();
       setInterval(function(){ cobrir(); pintarCabecalho(); }, 1000);   // blocos novos do editor também
+      setInterval(pintarOdometro, 250);   // no compasso do cérebro da TV (4 Hz)
     }
     function feed(p){
       if(!p || p.source !== 'racebox') return;
@@ -8798,18 +8921,11 @@ html,body{
       if(!bom) return;
       if(typeof p.numSV === 'number') est.sats = p.numSV;
       if(!est.ativo){ if(window.__tvGps && window.__tvGps.dev) return; ligar(); }
-      var t = typeof p.tWall === 'number' ? p.tWall : Date.now();
-      var aqui = { lat:p.lat, lng:p.lng, t:t };
-      // km rodados: só com o carro andando, precisão boa e sem buraco grande entre pontos
-      if(est.ult && t > est.ult.t && t - est.ult.t < 2000 && (p.kmh||0) >= 3 && !(p.accM > 10)){
-        var d = raio(est.ult, aqui); if(d < 60) est.km += d / 1000;
-      }
-      est.ult = aqui;
       pintarOdometro();
     }
     window.__tvRaceboxFeed = feed;   // prova fora do ar entra pelo mesmo caminho
     if(window.__modoTv) ligar();     // TV: cobre o que não tem fonte já no 1º quadro
-    window.__tvRaceboxEstado = function(){ return { ativo:est.ativo, sats:est.sats, km:+est.km.toFixed(3) }; };
+    window.__tvRaceboxEstado = function(){ return { ativo:est.ativo, sats:est.sats, km:kmSessao() }; };
     import('/web/cockpit/cloud-bridge.js').then(function(cb){
       cb.onGpsPoint(feed);
       cb.startCloudBridge().catch(function(){});
@@ -8844,6 +8960,28 @@ html,body{
   .tvb-voltas{display:flex;flex-direction:column;gap:3px;align-items:center;}
   .tvb-voltas .v{display:flex;flex-direction:column;align-items:center;font-size:8px;line-height:1.05;}
   .tvb-voltas .v i{font-style:normal;font-size:6px;color:rgba(212,175,55,0.62);}
+  .tvb-plano{font-size:7.5px;letter-spacing:.04em;line-height:1.35;color:rgba(245,240,224,0.75);padding:3px 0 4px;
+    border-bottom:0.5px solid rgba(212,175,55,0.16);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .tvb-plano .k{font-size:6.5px;letter-spacing:.14em;text-transform:uppercase;color:rgba(212,175,55,0.70);margin-right:3px;}
+  .tvb-plano b{font-weight:400;color:#FFB347;} .tvb-plano .fora{color:rgba(245,240,224,0.40);}
+  .tvb-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;}
+  .tvb-kpis .kp{display:flex;flex-direction:column;gap:2px;padding:4px 5px;border-radius:5px;min-width:0;
+    border:0.5px solid rgba(212,175,55,0.22);background:linear-gradient(180deg,rgba(212,175,55,0.07),rgba(212,175,55,0.01));}
+  .tvb-kpis .kp.best{border-color:rgba(63,224,140,0.40);background:linear-gradient(180deg,rgba(63,224,140,0.12),rgba(63,224,140,0.02));}
+  .tvb-kpis .kp.last{border-color:rgba(212,175,55,0.50);}
+  .tvb-kpis .k{font-size:6px;letter-spacing:.2em;text-transform:uppercase;color:rgba(212,175,55,0.70);}
+  .tvb-kpis .kp.best .k,.tvb-kpis .kp.best .v{color:#3FE08C;}
+  .tvb-kpis .v{font-size:10px;white-space:nowrap;}
+  .tvb-kpis .n{font-size:6px;color:rgba(245,240,224,0.45);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .tvb-lista{display:flex;flex-direction:column;gap:2px;min-height:0;overflow:hidden;}
+  .tvb-lista .r{display:grid;grid-template-columns:2.6em 5.4em minmax(0,1fr) 4.4em;align-items:center;gap:6px;font-size:8.5px;line-height:1.3;}
+  .tvb-lista .n{color:rgba(212,175,55,0.70);} .tvb-lista .d{text-align:right;color:#FFB347;}
+  .tvb-lista .bar{height:4px;border-radius:2px;background:rgba(245,240,224,0.06);position:relative;display:flex;align-items:center;}
+  .tvb-lista .bar i{display:block;height:100%;border-radius:2px;background:#FFB347;opacity:.75;}
+  .tvb-lista .bar em{font-style:normal;font-size:6px;letter-spacing:.14em;text-transform:uppercase;background:none;color:rgba(245,240,224,0.45);}
+  .tvb-lista .r.best .t,.tvb-lista .r.best .bar em{color:#3FE08C;}
+  .tvb-lista .r.last .t{color:#D4AF37;}
+  .tvb-lista .r.desc{opacity:.5;}
   .tvb-frase{font-size:15px;line-height:1.25;color:var(--text-1,#F5F0E0);}
   .tvb-motivo{font-size:10px;line-height:1.35;color:#FFB347;}
 </style>
@@ -8884,17 +9022,39 @@ html,body{
     var PINTA = {
       stint: function(p){
         var st = p && p.stint;
-        if(!st) return vazio('stint · pelo GPS', 'aguardando<br>o carro');
-        var h = cab('stint · pelo GPS', st.voltaAtual ? 'volta ' + st.voltaAtual + ' em curso' : 'fora da volta');
-        h += '<div class="tvb-big">' + st.feitas + '<small>volta' + (st.feitas === 1 ? '' : 's') + ' completa' + (st.feitas === 1 ? '' : 's') + '</small></div>';
-        h += lin('na volta', st.decorridoVoltaS != null ? volta(st.decorridoVoltaS) : '—');
-        h += lin('última', volta(st.ultimaS));
-        h += lin('melhor', st.melhor ? volta(st.melhor.tempoS) + ' · v' + st.melhor.n : '—', st.melhor ? 'ganhou' : '');
-        h += lin('média', volta(st.mediaS));
-        // consistência do stint (saiu de cima da pista do mapa — painel p1fast-mapa-tv-2045, 28/10)
+        var T = 'voltas · pelo GPS';
+        if(!st) return vazio(T, 'aguardando<br>o carro');
+        var h = cab(T, st.voltaAtual ? 'volta ' + st.voltaAtual + ' em curso · ' + volta(st.decorridoVoltaS) : 'fora da volta');
+        // plano do stint (aprovado no celular) × o que o carro fez; plano de outro dia só como "último plano"
+        var pl = p.plano, ln;
+        if(pl === null || pl === undefined) ln = '<span class="k">plano</span> lendo…';
+        else if(!pl.tem) ln = '<span class="k">plano</span> nenhum plano do stint gravado';
+        else {
+          var box = pl.paradas.length ? 'box na ' + pl.paradas.map(function(x){ return x.volta; }).join(', ') : 'sem parada';
+          if(!pl.deHoje) ln = '<span class="k">último plano</span> ' + (pl.dia ? pl.dia.split('-').reverse().slice(0, 2).join('/') : '—')
+            + ' · ' + (pl.voltas != null ? pl.voltas + ' voltas' : '—') + ' · ' + box + ' <span class="fora">não é de hoje</span>';
+          else ln = '<span class="k">plano</span> ' + (pl.voltas != null ? pl.voltas + ' voltas · feitas ' + pl.feitas + ' · faltam ' + pl.faltam : 'feitas ' + pl.feitas)
+            + (pl.proximaParada ? ' · <b>box na volta ' + pl.proximaParada.volta + (pl.proximaParada.emVoltas === 1 ? ' (próxima)' : ' (em ' + pl.proximaParada.emVoltas + ')') + '</b>' : ' · ' + box);
+        }
+        h += '<div class="tvb-plano">' + ln + '</div>';
+        var ult = st.voltas.length ? st.voltas[st.voltas.length - 1] : null;
+        function kp(cls, k, v, n){ return '<div class="kp ' + cls + '"><span class="k">' + k + '</span><span class="v">' + v + '</span><span class="n">' + (n || '&nbsp;') + '</span></div>'; }
+        h += '<div class="tvb-kpis">' + kp('best', 'melhor', volta(st.melhor && st.melhor.tempoS), st.melhor ? 'volta ' + st.melhor.n : '')
+          + kp('last', 'última', volta(st.ultimaS), ult ? 'volta ' + ult.n + (ult.deltaS ? ' · ' + sinal(ult.deltaS, 2) : '') : '')
+          + kp('', 'média', volta(st.mediaS), st.feitas ? st.feitas + ' volta' + (st.feitas === 1 ? '' : 's') : '')
+          + kp('', 'ideal', volta(st.idealS), st.idealS != null ? 'pelos setores' : '') + '</div>';
+        if(!st.voltas.length) return h + '<div class="tvb-vazio">aguardando a 1ª volta completa</div>';
+        // lista: a mais nova em cima; barra = quanto a volta ficou atrás da melhor
+        var dMax = 0.5; st.voltas.forEach(function(v){ if(v.deltaS != null && !v.descarte) dMax = Math.max(dMax, v.deltaS); });
+        h += '<div class="tvb-lista">' + st.voltas.slice(-12).reverse().map(function(v){
+          var cls = v.melhor ? 'best' : v.ultima ? 'last' : v.descarte ? 'desc' : '';
+          var w = v.melhor || v.deltaS == null ? 0 : Math.min(100, Math.max(2, v.deltaS / dMax * 100));
+          return '<div class="r ' + cls + '"><span class="n">v' + v.n + '</span><span class="t">' + volta(v.tempoS) + '</span>'
+            + '<span class="bar">' + (v.descarte ? '<em>' + esc(v.descarte) + '</em>' : v.melhor ? '<em>melhor</em>' : '<i style="width:' + w.toFixed(0) + '%"></i>') + '</span>'
+            + '<span class="d">' + (v.melhor ? '' : sinal(v.deltaS, 2)) + '</span></div>';
+        }).join('') + '</div>';
         var k = st.consistencia;
-        h += lin('consistência', k ? '±' + k.desvioS.toFixed(2).replace('.', ',') + ' s' : '— (2 voltas)');
-        if(k) h += lin('mais longe', 'v' + k.voltaMaisFora.n + ' ' + (k.voltaMaisFora.difS >= 0 ? '+' : '−') + Math.abs(k.voltaMaisFora.difS).toFixed(2).replace('.', ',') + ' s');
+        h += '<div class="tvb-pe">consistência ' + (k ? '±' + k.desvioS.toFixed(2).replace('.', ',') + ' s · mais longe v' + k.voltaMaisFora.n + ' ' + sinal(k.voltaMaisFora.difS, 2) + ' s' : '— (2 voltas)') + '</div>';
         return h;
       },
       'stint-bar': function(p){
