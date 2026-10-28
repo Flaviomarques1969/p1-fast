@@ -1,6 +1,7 @@
 # MIGRAR PARA PRODUÇÃO: P1 Fast TV do box coluna à direita do mapa no p1box
 
-> Status: PRONTO em desenvolvimento, 28/10/2026. Não publicado.
+> Status: SEGURADO por ordem dele (28/10/2026 ~12h20: "esquece de migrar agora, nós estamos desenvolvendo a tela,
+> a tela ainda está bem fraca") — NÃO OFERECER a frase até ele pedir. Provado em desenvolvimento, não publicado.
 > Pedido do Flávio (painel p1fast-mapa-tv-2045, resposta em `~/Downloads/resposta-perguntar-p1fast-mapa-tv-2045.txt`):
 > nada escrito em cima da pista; dados numa coluna à direita do mapa; consistência no stint; trecho e "a última perdeu"
 > sem as voltas de aquecimento e resfriamento; quadrado premium MELHOR | ÚLTIMA.
