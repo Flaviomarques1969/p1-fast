@@ -130,3 +130,13 @@ comparativo-27-10/). Escopo: levar ESSE desenho para a TV real (mockup modo TV) 
 e a faixa da volta inteira na BASE. Cérebro: voltaAtual.trechos (curvas já fechadas da volta em curso, cópia iOS igual)
 + casa `quadro` no pacote. Velocímetro/coach/painel de voltas saem da TV (ficam no commit c54f8a585). Backup: bak-quadro/.
 Migração SEGURADA (ordem dele) — não oferecer a frase.
+- 28/10 ~14h (conversa 1028-1304): cérebro PRONTO E PROVADO — voltaAtual.trechos (cópia iOS igual, cmp) + pacote().quadro
+  (montarQuadro). Prova nova tests/node-smoke-tv-quadro-curvas.mjs 17/17 (ida e volta: passagem mostrada na volta = guardada
+  no fecho); mutações delta/tom/volta REPROVAM (1, 1, 3 falhas; QUADRO_BLOCOS=<cópia>). Triagem: 1 reprovação era régua (30 s
+  ainda na 1ª reta → 120 s). faixa 28, blocos 25, gps-tv 106 = 0 falha.
+  TELA ESCRITA, AINDA NÃO CONFERIDA: CSS esconde hud/coach/stint/delta-acum/passagem/frenagem/vmin/coluna do mapa no modo TV;
+  .tv-quadro [data-tv-quadro] left 35,6% top 8,5% w 63,9% h 64,8%; faixa na base (top 74,4% h 24,6%) com nomes das curvas;
+  desenharQuadro() na camada TV-GPS. Foto tirada: scratchpad f70fb499…/tv-quadro1.png (não vista).
+  FALTA: ver a foto e ajustar; estender medir-b.mjs (quadro visível com N curvas = cérebro, linha agora azul/vermelha, faixa na
+  base, nada sobreposto, texto sem corte; controle = TV do commit c54f8a585 REPROVA); package.json smoke; CONTRATO_DADOS §2
+  (quadro); provas antigas + montar/arquitetura; abrir no navegador dele e mostrar.

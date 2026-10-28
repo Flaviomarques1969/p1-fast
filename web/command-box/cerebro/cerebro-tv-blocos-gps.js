@@ -19,6 +19,10 @@
 //               volta inteira; Δ de tempo por posição (onde ganha ou perde para a melhor). G MEDIDO do RaceBox
 //               quando as duas voltas têm o zero do box; senão, o G das DUAS sai da variação da velocidade do
 //               GPS (fonte 'velocidade', dita na tela) — nunca uma de cada.
+//   quadro      quadro de curvas (Flávio 28/10, a tela «comparativo por trecho» de 27/10 levada à TV): por curva, na
+//               ordem da volta, MELHOR (passagem da melhor volta) × ÚLTIMA (a mais recente, já desta volta quando o
+//               carro saiu da curva) — entrada, freada (só com G medido), mínima, saída, tempo — e a diferença; na
+//               curva em curso, progresso e trilha acelera/freia (G da faixa); soma das diferenças e ideal pelos trechos
 //   plano       o plano do stint aprovado no celular (envelopes_seguranca_stint, lido pela porta de
 //               web/cockpit/treino-stint.js) × o que o carro fez: voltas planejadas, feitas, faltam, próxima
 //               parada. Plano de outro dia não vale para o stint de hoje: sai só como "último plano, de <dia>".
@@ -329,7 +333,72 @@ export function criarCerebroTvBlocosGps() {
       };
     }
 
-    return { stint, deltaAcum, curva, coach, faixa, plano: planoDoStint(opts.plano, stint) };
+    return { stint, deltaAcum, curva, coach, faixa, quadro: montarQuadro(s, lista, voltas, vMelhor, faixa, stint),
+      plano: planoDoStint(opts.plano, stint) };
+  }
+
+  // quadro: uma linha por CURVA, na ordem da volta — MELHOR (a passagem da melhor volta) × ÚLTIMA (a mais recente:
+  // desta volta se o carro já saiu da curva, senão da volta anterior) e a diferença; na curva em que o carro está,
+  // o progresso e a trilha (onde acelerou e onde freou, pelo G da faixa da volta em curso)
+  function montarQuadro(s, lista, voltas, vMelhor, faixa, stint) {
+    if (!lista.length) return null;
+    const at = s.voltaAtual, feitos = (at && at.trechos) || [];
+    const iAgora = at && at.trechoAtual ? at.trechoAtual - 1 : null;
+    const ultimaV = voltas.length ? voltas[voltas.length - 1] : null;
+    const ref = vMelhor && vMelhor.trechos ? vMelhor : null;
+    const passagem = (m, fr) => (m ? { entrada: m.kmhEntrada, freadaM: fr && fr.ok && fr.inicioFreadaM != null ? fr.inicioFreadaM : null,
+      vmin: m.kmhMin, saida: m.kmhSaida, tempoS: m.tempoS } : null);
+    let somaDeltaS = null;
+    const curvas = [];
+    lista.forEach((tr, i) => {
+      if (tr.tipo !== 'curva') return;
+      let u = null, uN = null, uFr = null;
+      if (feitos[i]) {
+        u = feitos[i]; uN = at.n;
+        const rc = s.perfilAtual ? recorte(s.perfilAtual, tr.de, tr.ate, ANTES_DA_ENTRADA_M) : null;
+        uFr = rc ? medirFrenagem(rc.pts, rc.dEnt) : null;
+      } else if (ultimaV && ultimaV.trechos) {
+        u = ultimaV.trechos[i]; uN = ultimaV.n;
+        const mu = medidas(ultimaV, lista)[i]; uFr = mu ? mu.frenagem : null;
+      }
+      const mr = ref ? medidas(ref, lista)[i] : null;
+      const pu = passagem(u, uFr), pm = passagem(ref ? ref.trechos[i] : null, mr ? mr.frenagem : null);
+      const ehRef = !!(pu && ref && uN === ref.n);
+      let delta = null;
+      if (pu && pm && !ehRef) {
+        delta = {};
+        for (const k of Object.keys(pu)) delta[k] = pu[k] != null && pm[k] != null ? (k === 'tempoS' ? r3 : r1)(pu[k] - pm[k]) : null;
+        if (delta.tempoS != null) somaDeltaS = r3((somaDeltaS || 0) + delta.tempoS);
+      }
+      const agora = !!at && iAgora === i;
+      let progresso = null, trilha = null;
+      if (agora && faixa && faixa.cursor != null) {
+        const vol = (a, b) => (b >= a ? b - a : b + 1 - a);   // curva que cruza a chegada
+        const vao = vol(tr.de, tr.ate) || 1;
+        progresso = Math.max(0, Math.min(1, vol(tr.de, faixa.cursor) / vao));
+        // trilha: casas da faixa da volta em curso entre a entrada e o carro, juntando as seguidas de mesmo tom
+        if (faixa.atual) {
+          const n = faixa.casas, g = faixa.atual.g;
+          trilha = [];
+          const k0 = Math.floor(tr.de * n), nk = Math.max(1, Math.round(progresso * vao * n));
+          for (let j = 0; j < nk; j++) {
+            const k = (k0 + j) % n;
+            if (k > faixa.atual.ate || g[k] == null) continue;
+            const t = g[k] < 0 ? 'freia' : 'acelera', de = r3(Math.min(1, j / (vao * n)));   // fração da curva
+            if (!trilha.length || trilha[trilha.length - 1].tom !== t) trilha.push({ de, tom: t });
+          }
+        }
+      }
+      curvas.push({ i: i + 1, nome: tr.nome, estado: agora ? 'agora' : u ? 'feita' : 'aguardando',
+        ultimaVolta: uN, ehRef, melhor: pm, ultima: pu, delta, progresso, trilha });
+    });
+    return {
+      volta: at ? { n: at.n, decorridoS: at.decorridoS, deltaAgoraS: faixa ? faixa.deltaAgoraS : null } : null,
+      kmh: s.fresco && s.agora && typeof s.agora.kmh === 'number' ? r1(s.agora.kmh) : null,
+      ultimaS: stint.ultimaS, melhor: stint.melhor, refVolta: ref ? ref.n : null,
+      idealTrechosS: s.trechos && s.trechos.validas ? s.trechos.validas.voltaIdealS : null,
+      somaDeltaS, fonteG: faixa ? faixa.fonte : null, curvas,
+    };
   }
 
   return { pacote };
