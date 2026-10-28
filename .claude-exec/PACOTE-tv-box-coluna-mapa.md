@@ -24,7 +24,7 @@ A TV do box (`https://p1box.vercel.app/tv/?tv=1`) troca o mapa com texto por cim
 - Menu, Vista Piloto e Frenagem & Aceleração (as 41 telas do ar) seguem byte a byte iguais.
 
 ## Origem em desenvolvimento
-- Worktree `~/Projetos/p1fast-worktrees/tv-box-aovivo`, branch `claude/tv-box-aovivo-e2-20261027`, commit `4b866482f` + opção B (commit da ficha "opção B").
+- Worktree `~/Projetos/p1fast-worktrees/tv-box-aovivo`, branch `claude/tv-box-aovivo-e2-20261027`, commits `4b866482f` + `c0d1d1801` (opção B).
 - Montador `tools/montar-p1box-tv.mjs` (o mesmo de 27/10) → `dist/p1box-tv` (82 arquivos), base
   `.claude-exec/p1box-ar-20261027/arquivos` (as 41 telas do ar, sem mudança).
 
@@ -64,8 +64,8 @@ Medido em 28/10 com `node tools/conferir-p1box-no-ar.mjs dpl_F3jLYeJ2NmS9g7xQb3Y
    (`npx vercel inspect p1box.vercel.app` dentro de `"/Users/imac/Projetos/P1 Fast/dist/p1box"`) e
    `node tools/conferir-p1box-no-ar.mjs dpl_F3jLYeJ2NmS9g7xQb3Y68mpp4we5 dist/p1box-tv` lista SÓ os 3 arquivos do ENTRA.
    Mudou → PARAR.
-1. `node tools/montar-p1box-tv.mjs && node tests/node-smoke-montar-p1box-tv.mjs` (com o commit `4b866482f` ou posterior
-   que só mexa fora dos 3 arquivos; conferir com `git diff 4b866482f -- _design-reference web/command-box`).
+1. `node tools/montar-p1box-tv.mjs && node tests/node-smoke-montar-p1box-tv.mjs` (com o commit `c0d1d1801` ou posterior
+   que só mexa fora dos 3 arquivos; conferir com `git diff c0d1d1801 -- _design-reference web/command-box`).
 2. Vincular: `mkdir dist/p1box-tv/.vercel && cp "/Users/imac/Projetos/P1 Fast/dist/p1box/.vercel/project.json" dist/p1box-tv/.vercel/`.
 3. `cd dist/p1box-tv && npx vercel deploy --prod --skip-domain --yes` → publicação nova sem o endereço oficial (dpl_NOVO).
 4. `node tools/conferir-p1box-no-ar.mjs <dpl_NOVO> dist/p1box-tv` = APROVADO (82/82; senão PARAR, não promover).
