@@ -102,8 +102,9 @@ t('volta 2: faixa sem volta de referência, curva da vez e coach sem referência
   meio2.p.faixa && meio2.p.faixa.melhor === null && (meio2.p.curva == null || meio2.p.curva.passagem === null) && meio2.p.coach === null,
   [meio2.p.faixa && meio2.p.faixa.melhor, meio2.p.curva && meio2.p.curva.passagem, meio2.p.coach]);
 
-// ── 4) linhazinha da curva em curso: progresso anda com o carro, trilha tem o tom do G da faixa ──
-let curvasComTrilha = 0, progOk = 0, tomOk = 0, tomTot = 0, bicolor = 0;
+// ── 4) linhazinha da curva em curso: progresso anda com o carro, trilha tem o tom das FREADAS da faixa (Flávio 28/10:
+// o G pela velocidade fazia "frenagem em V", "freando e acelerando ao mesmo tempo" — agora freia só dentro de uma freada) ──
+let curvasComTrilha = 0, progOk = 0, tomOk = 0, tomTot = 0, bicolor = 0, serrilhadas = 0;
 for (const [, fotos] of agoraPorCurva) {
   const pr = fotos.map(f => f.progresso).filter(x => x != null);
   if (pr.length > 3 && pr.every((x, k) => k === 0 || x >= pr[k - 1] - 1e-9) && pr[pr.length - 1] > 0.6) progOk++;
@@ -111,18 +112,21 @@ for (const [, fotos] of agoraPorCurva) {
   if (ult.trilha && ult.trilha.length) {
     curvasComTrilha++;
     if (new Set(ult.trilha.map(x => x.tom)).size === 2) bicolor++;
-    // cada pedaço da trilha: o tom é o sinal do G da faixa na casa onde ele começa
+    if (ult.trilha.length > 3) serrilhadas++;   // freia → acelera → freia → acelera numa curva só = o "V" de antes
+    // cada pedaço da trilha: 'freia' se a casa onde ele começa está dentro de uma freada da volta em curso
     const n = ult.faixa.casas, vao = ult.ate >= ult.de ? ult.ate - ult.de : ult.ate + 1 - ult.de;
+    const fr = (ult.faixa.atual && ult.faixa.atual.freadas) || [];
     for (const pd of ult.trilha) {
-      const k = (Math.floor(ult.de * n) + Math.round(pd.de * vao * n)) % n, g = ult.faixa.atual.g[k];
-      if (g == null) continue;
-      tomTot++; if ((g < 0 ? 'freia' : 'acelera') === pd.tom) tomOk++;
+      const k = (Math.floor(ult.de * n) + Math.round(pd.de * vao * n)) % n;
+      const dentro = fr.some(z => k >= Math.floor(z.de * n) && k <= Math.floor(z.ate * n));
+      tomTot++; if ((dentro ? 'freia' : 'acelera') === pd.tom) tomOk++;
     }
   }
 }
 t('progresso da curva em curso só cresce e passa de 60% antes de sair (≥ 80% das passagens)', progOk >= agoraPorCurva.size * 0.8, [progOk, agoraPorCurva.size]);
 t('trilha existe nas curvas em curso e tem os DOIS tons (freia e acelera) na maioria', curvasComTrilha >= agoraPorCurva.size * 0.8 && bicolor >= curvasComTrilha * 0.6, [curvasComTrilha, bicolor, agoraPorCurva.size]);
-t('tom de cada pedaço = sinal do G da faixa (G < 0 freia, senão acelera)', tomTot > 20 && tomOk >= tomTot * 0.95, [tomOk, tomTot]);
+t('tom de cada pedaço = dentro de uma freada da faixa (freia) ou fora (acelera)', tomTot > 10 && tomOk === tomTot, [tomOk, tomTot]);
+t('sem "V": nenhuma curva com a trilha trocando de tom mais de 2 vezes', curvasComTrilha > 0 && serrilhadas === 0, [serrilhadas, curvasComTrilha]);
 
 console.log(`\ntv-quadro-curvas: ${ok} ok / ${fail} fail`);
 process.exit(fail ? 1 : 0);

@@ -14,11 +14,11 @@
 //     vmin      km/h × distância até a saída (última × referência) e a mínima
 //   coach       onde a última volta mais perdeu e por quê (freada, mínima ou saída), só com o que foi medido
 //   faixa       a volta INTEIRA numa linha (pedido Flávio 28/10: "gráfico em linha da volta inteira, acelera e
-//               freia, volta atual × melhor volta, cursor andando no trecho"): G longitudinal por posição na
-//               volta (fração desde a chegada, FAIXA_BINS casas), da volta em curso até o carro e da melhor
-//               volta inteira; Δ de tempo por posição (onde ganha ou perde para a melhor). G MEDIDO do RaceBox
-//               quando as duas voltas têm o zero do box; senão, o G das DUAS sai da variação da velocidade do
-//               GPS (fonte 'velocidade', dita na tela) — nunca uma de cada.
+//               freia, volta atual × melhor volta, cursor andando no trecho"; refeita no mesmo dia — o G tirado da
+//               velocidade saía serrilhado, "freando e acelerando ao mesmo tempo"): VELOCIDADE do GPS do RaceBox
+//               por posição na volta (fração desde a chegada, FAIXA_BINS casas), da volta em curso até o carro e
+//               da melhor volta válida inteira, com as FREADAS de cada uma (zonasDeFreada: só onde a velocidade
+//               cai de verdade); Δ de tempo por posição (onde ganha ou perde para a melhor).
 //   quadro      quadro de curvas (Flávio 28/10, a tela «comparativo por trecho» de 27/10 levada à TV): por curva, na
 //               ordem da volta, MELHOR (passagem da melhor volta) × ÚLTIMA (a mais recente, já desta volta quando o
 //               carro saiu da curva) — entrada, freada (só com G medido), mínima, saída, tempo — e a diferença; na
@@ -46,6 +46,9 @@ export const SOLTOU_PROGRESSIVO_S = 0.4;   // do pico até soltar (> −0,1 G) e
 export const FAIXA_BINS = 200;             // casas da volta inteira na faixa
 export const G_VEL_JANELA_S = 0.4;         // G pela velocidade: diferença centrada em ±0,4 s (alisa o ruído do km/h)
 export const FAIXA_PONTA_M = 300;          // perto da chegada a fração "vira": ponto do outro lado da linha não conta
+export const FREADA_VOLTA_KMH = 2;         // a queda só acaba quando a velocidade volta a subir isso (ruído do GPS não corta)
+export const FREADA_QUEDA_KMH = 8;         // queda menor que isso é tirar o pé, não freada
+export const FREADA_BORDA_G = -0.12;       // a freada vai do 1º ao último ponto da queda desacelerando mais que isso
 const G0 = 9.80665;
 
 /** Pontos do perfil de uma volta entre duas frações (com folga em metros antes do início). */
@@ -136,16 +139,8 @@ function medirVolta(v, lista) {
   });
 }
 
-/** Volta com G medido de verdade: quase todo ponto com G e todos com o zero do box. */
-function temGMedido(perfil) {
-  if (!perfil || !perfil.length) return false;
-  const comG = perfil.filter(q => q.gl != null);
-  return comG.length >= perfil.length * 0.9 && comG.every(q => q.z === true);
-}
-
-/** G longitudinal de cada ponto: o medido (gl) ou o da variação da velocidade (diferença centrada). */
-function gDoPerfil(perfil, fonte) {
-  if (fonte === 'medido') return perfil.map(q => q.gl);
+/** G longitudinal de cada ponto pela variação da velocidade do GPS (diferença centrada). */
+function gPelaVelocidade(perfil) {
   const out = new Array(perfil.length).fill(null);
   let a = 0, b = 0;
   for (let i = 0; i < perfil.length; i++) {
@@ -160,23 +155,61 @@ function gDoPerfil(perfil, fonte) {
   return out;
 }
 
-/** Perfil da volta → casas por posição: G médio e o instante em que o carro chegou à casa. */
-function casasDaVolta(perfil, fonte, fechada) {
-  const g = gDoPerfil(perfil, fonte);
-  const soma = new Array(FAIXA_BINS).fill(0), n = new Array(FAIXA_BINS).fill(0), tChegou = new Array(FAIXA_BINS).fill(null);
+/** Pontos do perfil que valem na faixa: com posição e do lado certo da linha de chegada. */
+function naVolta(perfil, fechada) {
   const dFim = perfil.length ? perfil[perfil.length - 1].d : 0;
-  let ate = -1;
+  return (q) => q.p != null && !(q.d < FAIXA_PONTA_M && q.p > 0.5)        // ainda antes da linha
+    && !(fechada && q.d > dFim - FAIXA_PONTA_M && q.p < 0.5);             // já depois da linha
+}
+
+/** Freadas de uma volta, só pela velocidade do GPS: cada queda de pico a vale (a queda só acaba quando a velocidade
+ *  volta a subir FREADA_VOLTA_KMH — o ruído não abre um "V") que perdeu ≥ FREADA_QUEDA_KMH e chegou a desacelerar
+ *  mais que FREIO_G; a freada vai do 1º ao último ponto da queda abaixo de FREADA_BORDA_G (o tirar o pé antes fica de
+ *  fora). Na volta em curso, a queda ainda aberta no carro sai com aberta: true. */
+export function zonasDeFreada(perfil, fechada) {
+  if (!perfil || !perfil.length) return [];
+  const g = gPelaVelocidade(perfil), vale = naVolta(perfil, fechada), out = [];
+  const fechar = (iMx, iMn, aberta) => {
+    const queda = perfil[iMx].kmh - perfil[iMn].kmh;
+    if (queda < FREADA_QUEDA_KMH) return;
+    let a = -1, b = -1, pico = 0;
+    for (let i = iMx; i <= iMn; i++) {
+      if (g[i] == null || !vale(perfil[i]) || g[i] > FREADA_BORDA_G) continue;
+      if (a < 0) a = i;
+      b = i; pico = Math.min(pico, g[i]);
+    }
+    if (a < 0 || pico > FREIO_G) return;
+    out.push({ de: r3(perfil[a].p), ate: r3(perfil[b].p), kmhDe: r1(perfil[a].kmh), kmhAte: r1(perfil[b].kmh),
+      quedaKmh: r1(queda), aberta });
+  };
+  let iMx = -1, iMn = -1, caindo = false;
   for (let i = 0; i < perfil.length; i++) {
     const q = perfil[i];
-    if (q.p == null) continue;
-    if (q.d < FAIXA_PONTA_M && q.p > 0.5) continue;                     // ainda antes da linha
-    if (fechada && q.d > dFim - FAIXA_PONTA_M && q.p < 0.5) continue;    // já depois da linha
+    if (q.kmh == null || !vale(q)) continue;
+    if (iMx < 0) { iMx = i; continue; }
+    if (!caindo) {
+      if (q.kmh >= perfil[iMx].kmh) iMx = i;
+      else if (q.kmh < perfil[iMx].kmh - FREADA_VOLTA_KMH) { caindo = true; iMn = i; }
+    } else if (q.kmh < perfil[iMn].kmh) iMn = i;
+    else if (q.kmh > perfil[iMn].kmh + FREADA_VOLTA_KMH) { fechar(iMx, iMn, false); caindo = false; iMx = i; }
+  }
+  if (caindo) fechar(iMx, iMn, !fechada);
+  return out;
+}
+
+/** Perfil da volta → casas por posição: km/h médio, o instante em que o carro chegou à casa e as freadas. */
+function casasDaVolta(perfil, fechada) {
+  const soma = new Array(FAIXA_BINS).fill(0), n = new Array(FAIXA_BINS).fill(0), tChegou = new Array(FAIXA_BINS).fill(null);
+  const vale = naVolta(perfil, fechada);
+  let ate = -1;
+  for (const q of perfil) {
+    if (!vale(q)) continue;
     const k = Math.min(FAIXA_BINS - 1, Math.floor(q.p * FAIXA_BINS));
     if (tChegou[k] == null) tChegou[k] = q.t;
-    if (g[i] != null) { soma[k] += g[i]; n[k]++; }
+    if (q.kmh != null) { soma[k] += q.kmh; n[k]++; }
     if (k > ate) ate = k;
   }
-  return { g: soma.map((x, k) => (n[k] ? r3(x / n[k]) : null)), t: tChegou, ate };
+  return { kmh: soma.map((x, k) => (n[k] ? r1(x / n[k]) : null)), t: tChegou, ate, freadas: zonasDeFreada(perfil, fechada) };
 }
 
 function tom(difS) { return difS == null ? null : difS <= 0 ? 'ganhou' : difS < 0.1 ? 'perto' : 'perdeu'; }
@@ -204,7 +237,7 @@ export function planoDoStint(lido, stint) {
 /** Criar a casa (guarda o cache das voltas medidas). */
 export function criarCerebroTvBlocosGps() {
   const cache = new Map();   // n da volta → medidas por trecho
-  const casasMelhor = new Map();   // "n:fonte" → casas da faixa da melhor volta
+  const casasMelhor = new Map();   // n da volta → casas da faixa da melhor volta
 
   function medidas(v, lista) {
     if (!cache.has(v.n)) cache.set(v.n, medirVolta(v, lista));
@@ -314,15 +347,12 @@ export function criarCerebroTvBlocosGps() {
     const perfilAtual = s.perfilAtual && s.perfilAtual.length ? s.perfilAtual : null;
     let faixa = null;
     if (perfilAtual || (vMelhor && vMelhor.perfil)) {
-      const medido = (!vMelhor || temGMedido(vMelhor.perfil)) && (!perfilAtual || temGMedido(perfilAtual));
-      const fonte = medido ? 'medido' : 'velocidade';
       let cm = null;
       if (vMelhor && vMelhor.perfil) {
-        const chave = vMelhor.n + ':' + fonte;
-        if (!casasMelhor.has(chave)) casasMelhor.set(chave, casasDaVolta(vMelhor.perfil, fonte, true));
-        cm = casasMelhor.get(chave);
+        if (!casasMelhor.has(vMelhor.n)) casasMelhor.set(vMelhor.n, casasDaVolta(vMelhor.perfil, true));
+        cm = casasMelhor.get(vMelhor.n);
       }
-      const ca = perfilAtual && s.voltaAtual ? casasDaVolta(perfilAtual, fonte, false) : null;
+      const ca = perfilAtual && s.voltaAtual ? casasDaVolta(perfilAtual, false) : null;
       let delta = null, deltaAgoraS = null;
       if (ca && cm && ca.ate >= 0) {
         delta = new Array(FAIXA_BINS).fill(null);
@@ -331,9 +361,9 @@ export function criarCerebroTvBlocosGps() {
       const ultP = perfilAtual ? perfilAtual[perfilAtual.length - 1].p : null;
       faixa = {
         casas: FAIXA_BINS,
-        fonte,
-        melhor: cm ? { n: vMelhor.n, tempoS: vMelhor.tempoS, g: cm.g } : null,
-        atual: ca ? { n: s.voltaAtual.n, g: ca.g, ate: ca.ate } : null,
+        fonte: 'gps',   // velocidade do GPS do RaceBox (Flávio 28/10: "só vamos usar o GPS do RaceBox")
+        melhor: cm ? { n: vMelhor.n, tempoS: vMelhor.tempoS, kmh: cm.kmh, freadas: cm.freadas } : null,
+        atual: ca ? { n: s.voltaAtual.n, kmh: ca.kmh, ate: ca.ate, freadas: ca.freadas } : null,
         cursor: ca && ca.ate >= 0 && ultP != null ? ultP : null,
         delta, deltaAgoraS,
         curvas: lista.filter(tr => tr.tipo === 'curva').map(tr => ({ nome: tr.nome, de: tr.de, ate: tr.ate })),
@@ -346,7 +376,7 @@ export function criarCerebroTvBlocosGps() {
 
   // quadro: uma linha por CURVA, na ordem da volta — MELHOR (a passagem da melhor volta VÁLIDA) × ÚLTIMA (a mais
   // recente: desta volta se o carro já saiu da curva, senão da última volta válida) e a diferença; na curva em que o
-  // carro está, o progresso e a trilha (onde acelerou e onde freou, pelo G da faixa da volta em curso)
+  // carro está, o progresso e a trilha (onde freou e onde não, pelas freadas da faixa da volta em curso)
   function montarQuadro(s, lista, ultimaV, vMelhor, faixa, stint) {
     if (!lista.length) return null;
     const at = s.voltaAtual, feitos = (at && at.trechos) || [];
@@ -382,15 +412,17 @@ export function criarCerebroTvBlocosGps() {
         const vol = (a, b) => (b >= a ? b - a : b + 1 - a);   // curva que cruza a chegada
         const vao = vol(tr.de, tr.ate) || 1;
         progresso = Math.max(0, Math.min(1, vol(tr.de, faixa.cursor) / vao));
-        // trilha: casas da faixa da volta em curso entre a entrada e o carro, juntando as seguidas de mesmo tom
+        // trilha: casas da faixa da volta em curso entre a entrada e o carro, juntando as seguidas de mesmo tom;
+        // 'freia' = a casa está dentro de uma freada da volta em curso, senão 'acelera'
         if (faixa.atual) {
-          const n = faixa.casas, g = faixa.atual.g;
+          const n = faixa.casas, kmh = faixa.atual.kmh, fr = faixa.atual.freadas;
           trilha = [];
           const k0 = Math.floor(tr.de * n), nk = Math.max(1, Math.round(progresso * vao * n));
           for (let j = 0; j < nk; j++) {
             const k = (k0 + j) % n;
-            if (k > faixa.atual.ate || g[k] == null) continue;
-            const t = g[k] < 0 ? 'freia' : 'acelera', de = r3(Math.min(1, j / (vao * n)));   // fração da curva
+            if (k > faixa.atual.ate || kmh[k] == null) continue;
+            const freia = fr.some(z => k >= Math.floor(z.de * n) && k <= Math.floor(z.ate * n));
+            const t = freia ? 'freia' : 'acelera', de = r3(Math.min(1, j / (vao * n)));   // fração da curva
             if (!trilha.length || trilha[trilha.length - 1].tom !== t) trilha.push({ de, tom: t });
           }
         }
@@ -404,11 +436,11 @@ export function criarCerebroTvBlocosGps() {
       ultimaS: stint.ultimaS, melhor: vMelhor ? { n: vMelhor.n, tempoS: vMelhor.tempoS } : null, refVolta: ref ? ref.n : null,
       voltasFechadas: stint.feitas,   // > 0 sem referência = só voltas descartadas até agora (a tela diz "sem volta válida")
       idealTrechosS: s.trechos && s.trechos.validas ? s.trechos.validas.voltaIdealS : null,
-      somaDeltaS, fonteG: faixa ? faixa.fonte : null, curvas,
+      somaDeltaS, curvas,
     };
   }
 
   return { pacote };
 }
 
-export default { criarCerebroTvBlocosGps, medirFrenagem, serieDistancia, planoDoStint };
+export default { criarCerebroTvBlocosGps, medirFrenagem, serieDistancia, planoDoStint, zonasDeFreada };

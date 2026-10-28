@@ -3,7 +3,9 @@
 // cada número MELHOR/ÚLTIMA/diferença na tela = o valor do cérebro (ida e volta), a curva "agora" tem a linha
 // azul acelera / vermelha freia do tamanho do progresso, a faixa da volta inteira fica na BASE com o nome das curvas,
 // velocímetro/coach/painel de voltas/Δ acumulado/passagem/frenagem/vmin/coluna do mapa saem, nada se sobrepõe, nada
-// sai da tela, texto sem corte e letra ≥ 11 px na tela. Na volta 2 (a 1 é aquecimento) não há referência: "sem volta válida".
+// sai da tela, texto sem corte e letra ≥ 11 px na tela. A faixa (refeita 28/10: VELOCIDADE do GPS, não mais G) tem a linha
+// dourada da melhor válida e a azul da atual = os km/h do cérebro casa a casa, vermelho só dentro das freadas da atual e as
+// barrinhas de freada (melhor e atual) = as do cérebro; a faixa antiga (G, bak-faixa-vel/) tem de REPROVAR. Na volta 2 (a 1 é aquecimento) não há referência: "sem volta válida".
 // Substitui medir-b.mjs (que provava o desenho anterior, c54f8a585, e agora reprova de propósito: o hud saiu).
 // Controles: editor (?tv=0) sem quadro e com os 16 blocos; a TV de c54f8a585 (bak-quadro/, argv[2]) tem de REPROVAR.
 import { createRequire } from 'node:module';
@@ -50,7 +52,8 @@ if(!achou) erros.push('a curva "agora" com freada e aceleração não apareceu e
 // estar 250 ms à frente da tela. Um observador no quadro copia o cérebro no microinstante de cada redesenho (antes de
 // qualquer outro passo do replay): a tela lida depois é exatamente a que foi desenhada com essa cópia.
 await pg.evaluate(() => { const qEl = document.querySelector('[data-tv-quadro]'); if(!qEl) return;
-  new MutationObserver(() => { window.__reguaQuadro = JSON.parse(JSON.stringify(window.__tvGps.blocos.quadro)); })
+  new MutationObserver(() => { window.__reguaQuadro = JSON.parse(JSON.stringify(window.__tvGps.blocos.quadro));
+    window.__reguaFaixa = JSON.parse(JSON.stringify(window.__tvGps.blocos.faixa)); })
     .observe(qEl, { childList:true, subtree:true, attributes:true, characterData:true }); });
 let tv = null;
 for(let tent = 0; tent < 120 && !tv; tent++){
@@ -80,8 +83,14 @@ for(let tent = 0; tent < 120 && !tv; tent++){
     return { racebox: document.body.classList.contains('tv-racebox'), blocos, fator,
       quadro: vis(qEl) ? caixa(qEl, 'quadro') : null, faixa: vis(fEl) ? caixa(fEl, 'faixa') : null,
       faixaNomes: fEl ? [...fEl.querySelectorAll('.fx-nomes span')].map(s => s.textContent) : [],
-      faixaLinhas: fEl ? fEl.querySelectorAll('.fx-atual line').length + fEl.querySelectorAll('.fx-melhor polyline').length : 0,
-      linhas, cortes, miudas, q: window.__reguaQuadro || null };
+      faixaLinhas: fEl ? fEl.querySelectorAll('.fx-atual polyline').length + fEl.querySelectorAll('.fx-melhor polyline').length : 0,
+      faixaSvg: fEl ? {
+        melhor: [...fEl.querySelectorAll('.fx-melhor polyline')].map(p => ({ cor: p.getAttribute('stroke'), pts: p.getAttribute('points').trim().split(/\s+/).map(x => x.split(',').map(Number)) })),
+        atual: [...fEl.querySelectorAll('.fx-atual polyline')].map(p => ({ cor: p.getAttribute('stroke'), pts: p.getAttribute('points').trim().split(/\s+/).map(x => x.split(',').map(Number)) })),
+        frM: [...fEl.querySelectorAll('[data-fx-freadas="melhor"] rect')].map(r => +r.getAttribute('x')),
+        frA: [...fEl.querySelectorAll('[data-fx-freadas="atual"] rect')].map(r => +r.getAttribute('x')),
+        escala: (fEl.querySelector('[data-fx-escala]') || {}).textContent || '', texto: fEl.textContent } : null,
+      linhas, cortes, miudas, q: window.__reguaQuadro || null, f: window.__reguaFaixa || null };
   });
   const ag = r.q && r.q.curvas.find(c => c.estado === 'agora');
   // e pelo menos uma curva com ÚLTIMA ≠ MELHOR (senão trocar uma pela outra passaria sem ser visto)
@@ -155,6 +164,39 @@ else {
     // faixa na base com o nome de cada curva
     if(tv.faixa && tv.faixaNomes.length !== q.curvas.length) erros.push('faixa com ' + tv.faixaNomes.length + ' nomes de curva ≠ ' + q.curvas.length);
     if(tv.faixa && tv.faixaLinhas < 2) erros.push('faixa sem as linhas atual/melhor');
+  }
+  // faixa de VELOCIDADE: ida e volta casa a casa com o cérebro (mesma foto casada do quadro)
+  { const f = tv.f, sv = tv.faixaSvg;
+    if(!f || !sv) erros.push('faixa: sem cópia do cérebro ou sem desenho (régua cega)');
+    else if(!f.melhor || !f.atual || !f.melhor.kmh || !f.atual.kmh) erros.push('faixa: cérebro sem km/h da melhor e da atual (' + Object.keys(f.melhor || {}) + ')');
+    else {
+      if(/G pela velocidade|G medido/.test(sv.texto)) erros.push('faixa: a tela ainda fala de G (faixa antiga)');
+      if(q && f.melhor.n !== q.refVolta) erros.push('faixa: melhor v' + f.melhor.n + ' ≠ referência do quadro v' + q.refVolta);
+      const me = /(\d+)–(\d+) km\/h/.exec(sv.escala), todos = [...f.melhor.kmh, ...f.atual.kmh].filter(x => x != null);
+      const lo = me ? +me[1] : null, hi = me ? +me[2] : null, vmin = Math.min(...todos), vmax = Math.max(...todos);
+      if(!me) erros.push('faixa: sem a escala em km/h na tela («' + sv.escala + '»)');
+      else if(!(lo <= vmin && hi >= vmax && hi - lo <= vmax - vmin + 20)) erros.push('faixa: escala ' + lo + '–' + hi + ' não cobre ' + vmin + '–' + vmax);
+      const n = f.casas, V0 = 2, V1 = 54;
+      const conf = (linhas, kmh, nome, minimo = 30) => { let c = 0, ruins = [];
+        for(const l of linhas) for(const [x, y] of l.pts){ const k = Math.round(x / 200 * n - 0.5), v = lo + (V1 - y) / (V1 - V0) * (hi - lo);
+          c++; if(kmh[k] == null || Math.abs(v - kmh[k]) > 0.6) ruins.push(k + ':' + v.toFixed(1) + '≠' + kmh[k]); }
+        if(c < minimo) erros.push('faixa: linha ' + nome + ' com só ' + c + ' pontos (régua cega)');
+        if(ruins.length) erros.push('faixa: linha ' + nome + ' ≠ km/h do cérebro em ' + ruins.length + ' pontos: ' + ruins.slice(0, 4).join(' '));
+        return c; };
+      const azul = sv.atual.filter(l => /38bcff/i.test(l.cor)), verm = sv.atual.filter(l => /ff5a4e/i.test(l.cor));
+      const cM = me ? conf(sv.melhor, f.melhor.kmh, 'dourada (melhor)') : 0, cA = me ? conf(azul, f.atual.kmh, 'azul (atual)') : 0;
+      if(me && verm.length) conf(verm, f.atual.kmh, 'vermelha (freando)', 4);
+      const dentro = k => f.atual.freadas.some(z => k >= Math.floor(z.de * n) && k <= Math.floor(z.ate * n));
+      const foraDaFreada = verm.flatMap(l => l.pts).map(([x]) => Math.round(x / 200 * n - 0.5)).filter(k => !dentro(k));
+      if(foraDaFreada.length) erros.push('faixa: vermelho fora das freadas da atual nas casas ' + foraDaFreada.slice(0, 5).join(','));
+      if(f.atual.freadas.length && !verm.length) erros.push('faixa: a atual tem ' + f.atual.freadas.length + ' freadas e nenhum trecho vermelho');
+      const bate = (xs, fr, nome) => { if(xs.length !== fr.length || xs.some((x, i) => Math.abs(x - fr[i].de * 200) > 0.1))
+        erros.push('faixa: freadas da ' + nome + ' na tela ' + JSON.stringify(xs) + ' ≠ cérebro ' + JSON.stringify(fr.map(z => +(z.de * 200).toFixed(1)))); };
+      bate(sv.frM, f.melhor.freadas, 'melhor'); bate(sv.frA, f.atual.freadas, 'atual');
+      if(!f.melhor.freadas.length) erros.push('faixa: melhor sem nenhuma freada (régua cega)');
+      console.log('faixa: melhor v' + f.melhor.n + ' × atual v' + f.atual.n + ' · escala ' + sv.escala + ' · pontos conferidos ' + cM + ' dourados, ' + cA + ' azuis, '
+        + verm.length + ' trechos vermelhos · freadas melhor ' + sv.frM.length + ', atual ' + sv.frA.length);
+    }
   }
   if(tv.cortes.length) erros.push('texto cortado: ' + [...new Set(tv.cortes)].slice(0, 6).join(' | '));
   if(tv.miudas.length) erros.push('letra < 11 px na tela: ' + [...new Set(tv.miudas)].slice(0, 6).join(' | '));
