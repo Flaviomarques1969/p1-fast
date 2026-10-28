@@ -12,7 +12,7 @@ const { chromium } = require('playwright');
 const base = process.argv[2] || 'http://127.0.0.1:5201/_design-reference/mockup-command-box-vista-piloto.html';
 const erros = [], errosPg = [];
 const nav = await chromium.launch({ headless: true });
-const pg = await nav.newPage({ viewport: { width: 1920, height: 1080 } });
+const pg = await nav.newPage({ viewport: (([w, h]) => ({ width: +w, height: +h }))((process.env.VP || '1920x1080').split('x')) });
 await pg.route('**/api/room', r => r.abort());
 pg.on('pageerror', e => errosPg.push(e.message));
 await pg.goto(base + '?tv=1&replay-gps=21-06&speed=10&fim=parar');

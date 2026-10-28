@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Anexo auditoria TV</title>
+<style>:root{--bg:#07090d;--card:#11151d;--line:#1f2733;--txt:#e8edf5;--mut:#8b98ad}
+body{background:var(--bg);color:var(--txt);font-family:-apple-system,'Segoe UI',sans-serif;font-size:15px;line-height:1.6;margin:0}
+.w{max-width:1500px;margin:0 auto;padding:40px 44px}h1{font-size:26px}h2{font-size:15px;margin:28px 0 8px;color:#f5b544}
+pre{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;overflow-x:auto;font-size:12.5px;color:var(--mut);white-space:pre-wrap}
+p{color:var(--mut)}code{color:var(--txt)}</style></head><body><div class="w">
+<h1>Anexo — auditoria da TV do box «tela fixa» (28/10/2026)</h1>
+<p>Pasta das réguas: <code>/Users/imac/Projetos/p1fast-worktrees/tv-box-aovivo/.claude-exec/obra-mapa-coluna-20261028/faixa-fixa/</code>. Página auditada: <code>_design-reference/mockup-command-box-vista-piloto.html</code> no commit 72ca410cf (a cópia que vai para p1box.vercel.app/tv). Versão anterior usada como controle: <code>bak-faixa-fixa/mockup-command-box-vista-piloto.html</code> (= commit 76e666820).</p>
+
+<h2>1. «0 de 388 elementos andam» — medir-tela-funda.mjs</h2>
+<p>Todo elemento visível, qualquer profundidade (fora de SVG), foto a cada 200 ms, 1.100 fotos. «Anda» = as duas bordas laterais deslocam o mesmo tanto na mesma foto, ou o topo muda; lista os que fazem isso ≥ 5 vezes.</p>
+<pre>TV nova:     1100 fotos, 388 elementos vistos; ANDAM (≥5 deslocamentos laterais ou de altura): 0
+TV anterior: 1100 fotos, 388 elementos vistos; ANDAM (≥5 deslocamentos laterais ou de altura): 9
+  anda 38 · Última «2:39,6» (topo do quadro)   anda 23 · Referência   anda 15 · Melhor   (+ rótulos e valores dessas casas)</pre>
+
+<h2>2. «3 de 3 tamanhos de tela» — medir-faixa-fixa.mjs, medir-topo-fixo.mjs, medir-pior-caso.mjs (VP=1920x1080 / 1280x720 / 960x540)</h2>
+<pre>faixa 1920: 283 fotos · caixa, gráfico, escala «60–180 km/h · GPS RaceBox» e grade fixas · comparações melhor 52 · atual 276 · APROVADO (rodada depois do topo fixo: melhor 52 · atual 275 · APROVADO)
+faixa 1280: 282 fotos · idem · melhor 52 · atual 276 · APROVADO
+faixa  960: 282 fotos · idem · melhor 52 · atual 276 · APROVADO
+topo  1920: 685 fotos, 173 textos distintos · APROVADO — 7 casas fixas, nenhum corte
+topo  1280: 709 fotos, 174 textos distintos · APROVADO
+topo   960: 709 fotos, 174 textos distintos · APROVADO
+pior caso (12 · 10:08,6 · +10,25 · 199 km/h · 10:15,0 · referência mais longa; Δ +10,25 s na faixa): APROVADO nos 3 tamanhos;
+  controle (30 caracteres no tempo) acusou corte e deslocamento nos 3.
+CONTROLE versão anterior (1920):
+  faixa: graf mudou 2 vezes · escala mudou 17 vezes (0–200, 10–20, 10–30 … ) · grade 12 · pontos já desenhados mudando · REPROVADO
+  topo: casas 2 a 7 mudaram (até 13 vezes) · referência fora do quadro · REPROVADO</pre>
+
+<h2>3. «88 de 89 provas» — os 89 passos do <code>npm run smoke</code>, um por um</h2>
+<p><code>npm run smoke</code> para na primeira falha (saiu com código 1 em <code>node-smoke-schema-parity.mjs</code>, «11 ok / 4 fail»: contagem de tabelas do banco × app iPhone). Rodando os 89 passos um por um: 88 passam, falha só <code>node-smoke-schema-parity.mjs</code>. Entre 76e666820 e 72ca410cf o único arquivo do sistema que mudou é a página da TV (<code>git diff --stat</code>: 1 arquivo, 30+/41−), e essa prova não cita o mockup (grep = 0).</p>
+
+<h2>4. Ápice e réguas antigas</h2>
+<pre>medir-apice.mjs: 7 cruzes · textos [] · APROVADO;  controle 76e666820: «4,2 m do ápice» «8,9 m do ápice» · REPROVADO
+medir-perda-vivo.mjs: APROVADO (ápice no mapa [])
+medir-quadro.mjs: APROVADO depois de trocar a regra «escala justa na volta» (que era o defeito) por «escala = 60–180»;
+  antes da troca reprovava com «faixa: escala 60–180 não cobre 87–159.5» — régua errada, não a tela.
+provas da TV em tests/: tv-apice 16/0 · tv-blocos-gps 26/0 · tv-envio-lote 18/0 · tv-faixa-volta 37/0 · tv-honesta 37/0 ·
+  tv-quadro-curvas 35/0 · tv-video 46/0 · gps-tv 106/0 · pagina-volta 46/0 · trechos-volta 24/0 · arquitetura-dado 39/0</pre>
+
+<h2>5. Riscos e limites declarados</h2>
+<p>Escala fixa 60–180 km/h escolhida pela gravação de Brasília (faixa da 21/06 entre 87 e 159,5 km/h, medida por medir-quadro); abaixo de 60 a linha encosta na borda. Só existe a gravação 21/06 com volta válida (v2); a troca de melhor volta não foi exercitada na tela. A varredura do item 1 não olha dentro de SVG (os pontos das linhas são cobertos pelo item 2). A casa de largura fixa ainda cresce se um valor passar do pior caso (o controle do item 2 mostra isso). A cópia de controle <code>tv-76e666820.html</code> (9.451 linhas) entrou no commit da obra.</p>
+</div></body></html>

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Auditoria TV fixa</title>
+<style>
+  :root{--bg:#07090d;--card:#11151d;--line:#1f2733;--line2:#2a3442;
+        --txt:#e8edf5;--mut:#8b98ad;--mut2:#5f6c80;--ok:#3ddc97;--bad:#ff5c5c;--warn:#f5b544}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--txt);font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:16px;line-height:1.6}
+  .wrap{width:100%;max-width:1500px;margin:0 auto;padding:52px 44px 80px}
+  .kicker{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--mut2);font-weight:700}
+  h1{font-size:38px;font-weight:750;letter-spacing:-.025em;margin:12px 0 26px}
+  .frase{font-size:22px;line-height:1.5;letter-spacing:-.012em;border-left:4px solid var(--warn);padding:6px 0 6px 24px;margin-bottom:44px;max-width:1150px}
+  .frase b{font-weight:700}
+  h2{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--mut2);font-weight:800;margin:0 0 18px;display:flex;align-items:center;gap:12px}
+  h2::after{content:"";flex:1;height:1px;background:var(--line)}
+  section{margin-bottom:48px}
+  .nums{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  @media(max-width:900px){.nums{grid-template-columns:1fr}.wrap{padding:32px 20px 60px}h1{font-size:28px}.frase{font-size:19px}}
+  .n{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:26px 28px}
+  .n .v{font-size:46px;font-weight:760;letter-spacing:-.035em;line-height:1;font-variant-numeric:tabular-nums;color:var(--bad)}
+  .n .v small{font-size:22px;color:var(--mut2);font-weight:600}
+  .n .d{font-size:14.5px;color:var(--mut);margin-top:12px}
+  ul{list-style:none}
+  li{padding:15px 0;border-bottom:1px solid var(--line);display:grid;grid-template-columns:230px 1fr;gap:24px;align-items:baseline}
+  @media(max-width:900px){li{grid-template-columns:1fr;gap:4px}}
+  li:last-child{border-bottom:0}
+  li .k{font-weight:650;font-size:15px}
+  li .t{color:var(--mut);font-size:15px}
+  li .k.ok{color:var(--ok)}
+  .passos{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:26px 30px}
+  .passos p{color:var(--mut);font-size:15.5px}
+  .passos p + p{margin-top:12px}
+  .passos b{color:var(--txt)}
+  .pe{margin-top:44px;padding-top:20px;border-top:1px solid var(--line);color:var(--mut2);font-size:13px;line-height:1.7}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="kicker">P1 Fast · auditoria da TV do box «tela fixa» · 28 de outubro de 2026</div>
+  <h1>O essencial, em uma página</h1>
+
+  <p class="frase">A TV do box <b>não se mexe mais durante a volta</b> — faixa de velocidade, cabeçalho do quadro e mapa conferidos na gravação real e em três tamanhos de tela; ficam de fora uma pergunta sua (o «calendário na direita»), o risco da escala fixa em outra pista e a publicação, que segue segurada.</p>
+
+  <section>
+    <h2>Os três números que importam</h2>
+    <div class="nums">
+      <div class="n"><div class="v" style="color:var(--ok)">0 <small>de 388</small></div><div class="d">elementos da TV que andam durante a gravação de 21/06 inteira; na versão anterior eram 9, um deles 38 vezes</div></div>
+      <div class="n"><div class="v" style="color:var(--ok)">3 <small>de 3</small></div><div class="d">tamanhos de tela aprovados (1920, 1280 e 960 de largura — o navegador do Fire TV pode usar qualquer um)</div></div>
+      <div class="n"><div class="v" style="color:var(--warn)">88 <small>de 89</small></div><div class="d">provas do projeto aprovadas; a que falha confere as tabelas do banco com as do app iPhone e não lê a TV</div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>O que está feito e o que falta</h2>
+    <ul>
+      <li><span class="k ok">Faixa de velocidade</span><span class="t">Escala única de 60 a 180 km/h a sessão inteira: nenhum ponto já desenhado muda de lugar; a versão anterior trocava a escala 17 vezes e reprova.</span></li>
+      <li><span class="k ok">Cabeçalho do quadro</span><span class="t">As 7 casas ficam paradas e até o pior caso (10:08,6 · +10,25 · 199 km/h) cabe sem corte nos três tamanhos de tela.</span></li>
+      <li><span class="k ok">Mapa</span><span class="t">O texto «m do ápice» saiu; as 7 cruzes ficam e o número continua calculado no sistema.</span></li>
+      <li><span class="k">Risco da escala fixa</span><span class="t">Foi pensada para Brasília com a Bubi (na 21/06 a faixa ficou entre 87 e 160 km/h): numa pista com curva abaixo de 60 km/h, o fundo da curva encosta na borda e fica achatado.</span></li>
+      <li><span class="k">Limite da prova</span><span class="t">Existe uma só gravação (21/06) com uma volta válida; a troca de melhor volta não foi vista na tela, embora a escala não dependa dela.</span></li>
+      <li><span class="k">Em aberto</span><span class="t">O «calendário na direita» não existe na TV e espera sua resposta; publicação segurada; uma cópia de controle de 9.451 linhas entrou no registro da obra, sem efeito na TV.</span></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>O caminho</h2>
+    <div class="passos">
+      <p><b>Você me diz o que é o «calendário na direita».</b> Se for o quadro de curvas, eu melhoro dentro do padrão atual.</p>
+      <p><b>Com gravação de outra pista, rodo as mesmas réguas.</b> A faixa de 60–180 km/h se reavalia pelos números da pista, não de memória.</p>
+      <p><b>A publicação na TV do box continua segurada.</b> Só sobe quando você pedir.</p>
+    </div>
+  </section>
+
+  <div class="pe">
+    Medido em 28/10/2026 no Mac, na cópia de desenvolvimento (commit 72ca410cf, gravação real de 21/06 tocada a 10×, foto da tela a cada 150–200 ms). O detalhamento, com o comando e a saída de cada número, continua em <b>ANEXO-auditoria-tela-fixa-20261028.html</b> — esta página é o resumo dele.
+  </div>
+
+</div>
+</body>
+</html>
