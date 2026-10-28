@@ -16,7 +16,12 @@ const nav = await chromium.launch({ headless:true }); const erros = [];
 const SAEM = ['hud','coach','stint','delta-acum','passagem','frenagem','vmin','carro','pneus','fuel-gauge','checklist','shift-light'];
 const FICAM = ['header','video','mapa','stint-bar'];
 
+// plano do stint: a leitura do ar é trocada por um plano de HOJE conhecido (10 voltas, box na 4) — a prova não depende
+// do que estiver gravado no ar; o controle de "outro dia" roda numa página à parte no fim
+const planoFalso = (iso) => (r => r.fulfill({ status: 200, contentType: 'application/json',
+  body: JSON.stringify([{ created_at: iso, plano_stint: { proposito: 'livre', voltas: 10, paradas: [{ volta: 4, motivo: 'box' }] } }]) }));
 const pg = await nav.newPage({ viewport:{ width:1920, height:1080 } }); await pg.route('**/api/room', r => r.abort());
+await pg.route('**/rest/v1/envelopes_seguranca_stint*', planoFalso(new Date().toISOString()));
 const errosPg = []; pg.on('pageerror', e => errosPg.push(e.message));
 await pg.goto(base + '?tv=1&replay-gps=21-06&speed=20&fim=parar');
 // volta 2 de 21/06: a volta 1 é aquecimento e NÃO é referência (Flávio 28/10, item 6 de p1fast-mapa-tv-2045) → a tela diz
@@ -156,8 +161,28 @@ else {
   console.log('TV: quadro ' + JSON.stringify(tv.quadro && [tv.quadro.l, tv.quadro.t, tv.quadro.r, tv.quadro.b].map(Math.round))
     + ' · faixa ' + JSON.stringify(tv.faixa && [tv.faixa.l, tv.faixa.t, tv.faixa.r, tv.faixa.b].map(Math.round)) + ' · nomes ' + tv.faixaNomes.join('/') + ' · blocos ' + ids.join(','));
 }
+// plano do stint na linha do quadro: plano de hoje → voltas, box, "volta N de 10", faltam, próximo box
+{ const r3 = await pg.evaluate(() => { const e = document.querySelector('[data-qc-plano]'), q = window.__reguaQuadro || window.__tvGps.blocos.quadro,
+    pl = window.__tvGps.blocos.plano; return { txt: e ? e.textContent : null, n: q && q.volta && q.volta.n, pl }; });
+  console.log('plano na tela: «' + r3.txt + '»');
+  const esperado = r3.pl && r3.pl.tem && r3.pl.deHoje ? ['10 voltas', 'box na 4', 'volta ' + r3.n + ' de 10', 'faltam ' + r3.pl.faltam,
+    r3.pl.proximaParada ? 'box na volta 4' : 'sem parada pela frente'] : null;
+  if(!esperado) erros.push('plano de hoje não chegou ao cérebro: ' + JSON.stringify(r3.pl));
+  else for(const x of esperado) if(!r3.txt || !r3.txt.includes(x)) erros.push('linha do plano sem «' + x + '»: «' + r3.txt + '»');
+}
 if(errosPg.length) erros.push('erro de página: ' + errosPg.slice(0, 2).join(' | '));
 await pg.close();
+if(!ehControle){   // controle do plano: plano de 10/07 → "Último plano 10/07 · ... não é de hoje", sem "volta N de"
+  const pv = await nav.newPage({ viewport:{ width:1920, height:1080 } }); await pv.route('**/api/room', r => r.abort());
+  await pv.route('**/rest/v1/envelopes_seguranca_stint*', planoFalso('2026-07-10T23:37:36Z'));
+  await pv.goto(base + '?tv=1&replay-gps=21-06&speed=20&fim=parar');
+  const ok = await pv.waitForFunction(() => { const e = document.querySelector('[data-qc-plano]'); return e && !/lendo/.test(e.textContent); }, null, { timeout: 60000, polling: 200 }).then(() => true, () => false);
+  const txt = ok ? await pv.evaluate(() => document.querySelector('[data-qc-plano]').textContent) : null;
+  console.log('plano de outro dia (controle): «' + txt + '»');
+  if(!txt || !/Último plano/.test(txt) || !txt.includes('10/07') || !txt.includes('não é de hoje') || / de 10/.test(txt))
+    erros.push('controle: plano de 10/07 não saiu como "último plano · não é de hoje": «' + txt + '»');
+  await pv.close();
+}
 if(!ehControle){   // controle do editor: o quadro é só da TV
   const ed = await nav.newPage({ viewport:{ width:1920, height:1080 } }); await ed.route('**/api/room', r => r.abort());
   await ed.goto(base + '?tv=0'); await ed.waitForTimeout(4000);

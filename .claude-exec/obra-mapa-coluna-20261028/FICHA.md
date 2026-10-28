@@ -193,3 +193,4 @@ todas as voltas, já marca o descarte; fica como está.
   mesma gravação sem descarte). medir-quadro.mjs APROVADO (volta 2 na tela sem MELHOR/diferença + volta 3 70 números);
   controle tela antiga REPROVA (1: texto). gps-tv 106, honesta 37, tv-video 46. Smoke 87/88 (schema-parity 11/4 = já existia).
   Próximo: refazer o painel p1fast-tv-quadro-melhorias-1425 (B, C, D, E).
+- 28/10 ~15h30: ITEM 1 do painel p1fast-tv-quadro-melhorias-1425 (ordem dele: 1 plano, 2 onde mais perdeu, 3 curva ao vivo; freada estimada FORA — ele: «só vamos usar o GPS do Racebox»). Plano do stint numa linha .qc-plano abaixo do topo do quadro (pacote().plano). medir-quadro APROVADO com plano falso de hoje + controle 10/07; tela sem a linha REPROVA. Backup bak-plano/. Pedido NOVO dele no meio: distância do carro ao ÁPICE no mapa da TV.

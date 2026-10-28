@@ -8464,6 +8464,12 @@ html,body{
   .tv-quadro .qc-g{font-size:30px;font-weight:300;line-height:.9;white-space:nowrap;}
   .tv-quadro .qc-ref{margin-left:auto;text-align:right;align-items:flex-end;}
   .tv-quadro .qc-ref .qc-v{font-size:11.5px;font-weight:600;color:#7d8491;line-height:1.2;}
+  /* plano do stint (Flávio 28/10, painel p1fast-tv-quadro-melhorias-1425 item 1): uma linha logo abaixo do topo */
+  .tv-quadro .qc-plano{flex:0 0 24px;display:flex;align-items:center;gap:14px;padding:0 17px;border-bottom:1px solid rgba(255,255,255,.11);
+    font-size:8.5px;color:#a7adb8;letter-spacing:.03em;white-space:nowrap;}
+  .tv-quadro .qc-plano > span{flex:0 0 auto;}
+  .tv-quadro .qc-plano b{font-weight:700;color:#eef1f5;}
+  .tv-quadro .qc-plano .qc-box{color:#f2b33d;} .tv-quadro .qc-plano .qc-fora{color:#7d8491;font-style:italic;}
   .tv-quadro .qc-grade{display:grid;grid-template-columns:150px 46px repeat(5,minmax(0,1fr));align-items:center;}
   .tv-quadro .qc-cab{flex:0 0 32px;padding:0 12px;border-bottom:1px solid rgba(255,255,255,.11);}
   .tv-quadro .qc-cab > div{text-align:right;padding-right:42px;line-height:1.25;white-space:nowrap;}
@@ -8758,7 +8764,7 @@ html,body{
     window.__tvGps.kmSessao = s.kmSessao;                                                     // odômetro (camada RaceBox)
     window.__tvGps.blocos = blocos.pacote(s, { plano: planoLido });
     desenharFaixa(window.__tvGps.blocos.faixa);
-    desenharQuadro(window.__tvGps.blocos.quadro);
+    desenharQuadro(window.__tvGps.blocos.quadro, window.__tvGps.blocos.plano);
   }
 
   // QUADRO DE CURVAS (Flávio 28/10: a tela «comparativo por trecho» de 27/10 — "melhor volta, volta atual, delta, em
@@ -8784,7 +8790,23 @@ html,body{
     });
     return 'linear-gradient(90deg,' + partes.join(',') + ')';
   }
-  function desenharQuadro(q){
+  // plano do stint (pacote().plano do cérebro: o plano aprovado no celular × o que o carro fez; de outro dia não se compara)
+  function qcPlano(pl, q){
+    if(pl == null) return '<span class="qc-rot">Plano do stint</span><span>lendo…</span>';
+    if(!pl.tem) return '<span class="qc-rot">Plano do stint</span><span>nenhum plano gravado para este carro</span>';
+    var box = pl.paradas.length ? 'box na ' + pl.paradas.map(function(x){ return x.volta; }).join(', ') : 'sem parada';
+    var voltas = pl.voltas != null ? pl.voltas + ' voltas' : 'voltas —';
+    if(!pl.deHoje) return '<span class="qc-rot">Último plano</span><span data-qc="plano">' + (pl.dia ? pl.dia.split('-').reverse().slice(0, 2).join('/') : '—')
+      + ' · ' + voltas + ' · ' + box + '</span><span class="qc-fora">não é de hoje</span>';
+    var n = q && q.volta && q.volta.n != null ? q.volta.n : null;
+    var onde = n != null ? 'volta ' + n + (pl.voltas != null ? ' de ' + pl.voltas : '') : 'feitas ' + pl.feitas + (pl.voltas != null ? ' de ' + pl.voltas : '');
+    var pp = pl.proximaParada;
+    return '<span class="qc-rot">Plano</span><span data-qc="plano"><b>' + voltas + '</b> · ' + box + '</span><span>' + onde
+      + (pl.faltam != null ? ' · faltam ' + pl.faltam : '') + '</span>'
+      + (pp ? '<span class="' + (pp.emVoltas === 1 ? 'qc-box' : '') + '"><b class="qc-box">box na volta ' + pp.volta + '</b>' + (pp.emVoltas === 1 ? ' (próxima)' : ' (em ' + pp.emVoltas + ')') + '</span>'
+        : pl.paradas.length ? '<span>sem parada pela frente</span>' : '');
+  }
+  function desenharQuadro(q, plano){
     if(!window.__modoTv) return;
     if(!quadroEl){
       var hud = document.querySelector('[data-block-id="hud"]');
@@ -8805,6 +8827,7 @@ html,body{
         + '<div><span class="qc-rot">Melhor</span><span class="qc-v qc-ganhou">' + qcRelogio(q.melhor && q.melhor.tempoS) + '</span></div>'
         + '<div class="qc-ref"><span class="qc-rot">Referência</span><span class="qc-v">' + (q.refVolta ? 'melhor volta válida · nº ' + q.refVolta : q.voltasFechadas ? 'sem volta válida ainda (aquecimento não conta)' : 'depois da 1ª volta completa') + '</span></div>'
         + '</div>';
+      h += '<div class="qc-plano" data-qc-plano>' + qcPlano(plano, q) + '</div>';
       h += '<div class="qc-grade qc-cab"><div class="qc-rot">Curva</div><div></div>'
         + QC.map(function(col){ return '<div class="qc-rot">' + col.rot + '<span class="qc-un">' + col.un + '</span></div>'; }).join('') + '</div>';
       h += '<div class="qc-corpo">' + q.curvas.map(function(c){
