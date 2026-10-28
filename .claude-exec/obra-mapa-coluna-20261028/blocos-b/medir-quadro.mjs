@@ -1,0 +1,156 @@
+// prova de tela do QUADRO DE CURVAS (28/10 tarde, desenho da página «comparativo por trecho» de 27/10 levado à TV real):
+// na TV em modo RaceBox o quadro aparece na metade direita com UMA linha por curva do cérebro (pacote().quadro),
+// cada número MELHOR/ÚLTIMA/diferença na tela = o valor do cérebro (ida e volta), a curva "agora" tem a linha
+// azul acelera / vermelha freia do tamanho do progresso, a faixa da volta inteira fica na BASE com o nome das curvas,
+// velocímetro/coach/painel de voltas/Δ acumulado/passagem/frenagem/vmin/coluna do mapa saem, nada se sobrepõe, nada
+// sai da tela, texto sem corte e letra ≥ 11 px na tela.
+// Substitui medir-b.mjs (que provava o desenho anterior, c54f8a585, e agora reprova de propósito: o hud saiu).
+// Controles: editor (?tv=0) sem quadro e com os 16 blocos; a TV de c54f8a585 (bak-quadro/, argv[2]) tem de REPROVAR.
+import { createRequire } from 'node:module';
+const require = createRequire('/Users/imac/Documents/Sistemas/cdai/frontend/package.json');
+const { chromium } = require('playwright');
+const RAIZ = 'http://127.0.0.1:5201';
+const base = process.argv[2] || RAIZ + '/_design-reference/mockup-command-box-vista-piloto.html';
+const ehControle = !!process.argv[2];
+const nav = await chromium.launch({ headless:true }); const erros = [];
+const SAEM = ['hud','coach','stint','delta-acum','passagem','frenagem','vmin','carro','pneus','fuel-gauge','checklist','shift-light'];
+const FICAM = ['header','video','mapa','stint-bar'];
+
+const pg = await nav.newPage({ viewport:{ width:1920, height:1080 } }); await pg.route('**/api/room', r => r.abort());
+const errosPg = []; pg.on('pageerror', e => errosPg.push(e.message));
+await pg.goto(base + '?tv=1&replay-gps=21-06&speed=20&fim=parar');
+// momento certo: volta ≥ 2, uma curva "agora" passada da metade e com freada E aceleração na trilha
+const achou = await pg.waitForFunction(() => { const q = window.__tvGps && window.__tvGps.blocos && window.__tvGps.blocos.quadro;
+  return !!q && q.volta && q.volta.n >= 2 && q.curvas.some(c => c.estado === 'agora' && c.progresso > 0.5 && c.trilha
+    && c.trilha.some(t => t.tom === 'freia') && c.trilha.some(t => t.tom === 'acelera')); }, null, { timeout: 150000, polling: 100 }).then(() => true, () => false);
+if(!achou) erros.push('a curva "agora" com freada e aceleração não apareceu em 150 s (cérebro sem quadro ou replay parado)');
+
+// foto casada: o desenho roda a cada 250 ms e o replay anda a cada quadro de animação, então "ler o cérebro agora" pode
+// estar 250 ms à frente da tela. Um observador no quadro copia o cérebro no microinstante de cada redesenho (antes de
+// qualquer outro passo do replay): a tela lida depois é exatamente a que foi desenhada com essa cópia.
+await pg.evaluate(() => { const qEl = document.querySelector('[data-tv-quadro]'); if(!qEl) return;
+  new MutationObserver(() => { window.__reguaQuadro = JSON.parse(JSON.stringify(window.__tvGps.blocos.quadro)); })
+    .observe(qEl, { childList:true, subtree:true, attributes:true, characterData:true }); });
+let tv = null;
+for(let tent = 0; tent < 120 && !tv; tent++){
+  await pg.waitForTimeout(150);
+  const r = await pg.evaluate(() => {
+    const vis = e => { if(!e) return false; const cs = getComputedStyle(e), R = e.getBoundingClientRect(); return cs.display !== 'none' && cs.visibility !== 'hidden' && R.width > 2 && R.height > 2; };
+    const caixa = (e, id) => { const R = e.getBoundingClientRect(); return { id, l:R.left, t:R.top, r:R.right, b:R.bottom }; };
+    const blocos = [...document.querySelectorAll('[data-block-id]')].filter(vis).map(b => caixa(b, b.dataset.blockId));
+    const qEl = document.querySelector('[data-tv-quadro]'), fEl = document.querySelector('[data-tv-faixa]');
+    const hud = document.querySelector('[data-block-id="hud"]'), palco = hud && hud.parentNode.getBoundingClientRect(), fator = palco ? palco.width / 1280 : 1;
+    const linhas = qEl ? [...qEl.querySelectorAll('[data-qc-curva]')].map(l => {
+      const cel = [...l.children].filter(c => !c.classList.contains('qc-nome') && !c.classList.contains('qc-tag') && !c.classList.contains('qc-trilho') && !c.classList.contains('qc-prog'));
+      const prog = l.querySelector('[data-qc-prog]');
+      return { i: +l.dataset.qcCurva, agora: l.classList.contains('qc-agora'), nome: l.querySelector('.qc-nome b').textContent,
+        cols: cel.map(c => { const [m, u] = c.querySelectorAll('.qc-l'); return { m: m.querySelector('.qc-n').textContent, u: u.querySelector('.qc-n').textContent,
+          d: u.querySelector('.qc-d').textContent, cls: u.querySelector('.qc-d').className }; }),
+        prog: prog ? { w: prog.getBoundingClientRect().width, total: l.getBoundingClientRect().width, bg: prog.style.background } : null };
+    }) : [];
+    const cortes = [], miudas = [];
+    for(const raizEl of [qEl, fEl]) if(raizEl) raizEl.querySelectorAll('*').forEach(el => {
+      const cs = getComputedStyle(el); if(cs.display === 'none' || el.closest('svg')) return;
+      const temTexto = [...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim());
+      if(temTexto && parseFloat(cs.fontSize) * fator < 11) miudas.push(el.className + ' «' + el.textContent.trim().slice(0, 18) + '» ' + (parseFloat(cs.fontSize) * fator).toFixed(1) + ' px');
+      if(cs.display !== 'inline' && el.clientWidth > 0 && el.scrollWidth > el.clientWidth + 1) cortes.push(el.className + ' «' + el.textContent.trim().slice(0, 30) + '»');
+      if(cs.display !== 'inline' && el !== raizEl && el.getBoundingClientRect().bottom > raizEl.getBoundingClientRect().bottom + 1) cortes.push('passa da borda de baixo: ' + el.className);
+    });
+    return { racebox: document.body.classList.contains('tv-racebox'), blocos, fator,
+      quadro: vis(qEl) ? caixa(qEl, 'quadro') : null, faixa: vis(fEl) ? caixa(fEl, 'faixa') : null,
+      faixaNomes: fEl ? [...fEl.querySelectorAll('.fx-nomes span')].map(s => s.textContent) : [],
+      faixaLinhas: fEl ? fEl.querySelectorAll('.fx-atual line').length + fEl.querySelectorAll('.fx-melhor polyline').length : 0,
+      linhas, cortes, miudas, q: window.__reguaQuadro || null };
+  });
+  const ag = r.q && r.q.curvas.find(c => c.estado === 'agora');
+  // e pelo menos uma curva com ÚLTIMA ≠ MELHOR (senão trocar uma pela outra passaria sem ser visto)
+  const outra = r.q && r.q.curvas.some(c => !c.ehRef && c.ultima && c.melhor && c.delta);
+  if(outra && ag && ag.progresso > 0.15 && ag.trilha && ag.trilha.some(t => t.tom === 'freia') && ag.trilha.some(t => t.tom === 'acelera')) tv = r;
+  else if(!r.q && tent === 119) tv = r;   // sem quadro (controle): segue para reprovar pelo que falta
+}
+if(!tv) erros.push('nenhum redesenho do quadro com a curva "agora" freando e acelerando e uma curva com última ≠ melhor em 18 s (régua sem foto)');
+else {
+  const ids = tv.blocos.map(b => b.id), q = tv.q;
+  if(!tv.racebox) erros.push('TV não entrou no modo RaceBox');
+  for(const id of SAEM) if(ids.includes(id)) erros.push('ainda visível na TV: ' + id);
+  for(const id of FICAM) if(!ids.includes(id)) erros.push('sumiu bloco que fica: ' + id);
+  if(!tv.quadro) erros.push('quadro de curvas não apareceu na TV');
+  if(!tv.faixa) erros.push('faixa da volta inteira não apareceu na TV');
+  const todos = [...tv.blocos, tv.quadro, tv.faixa].filter(Boolean);
+  for(const v of todos) if(v.l < -1 || v.t < -1 || v.r > 1921 || v.b > 1081) erros.push('fora da tela: ' + v.id);
+  const sobrepoe = (a, b) => Math.min(a.r, b.r) - Math.max(a.l, b.l) > 3 && Math.min(a.b, b.b) - Math.max(a.t, b.t) > 3;
+  for(let a = 0; a < todos.length; a++) for(let b = a + 1; b < todos.length; b++)
+    if(todos[a].id !== 'header' && todos[b].id !== 'header' && sobrepoe(todos[a], todos[b])) erros.push('sobreposição: ' + todos[a].id + ' × ' + todos[b].id);
+  if(tv.quadro && tv.faixa && !(tv.faixa.t >= tv.quadro.b - 1)) erros.push('faixa não está na BASE (embaixo do quadro)');
+  if(tv.quadro && tv.quadro.l < 1920 * 0.3) erros.push('quadro não está na metade direita: começa em ' + Math.round(tv.quadro.l) + ' px');
+  // ida e volta: uma linha por curva do cérebro, cada número da tela = valor do cérebro
+  const fmt = (v, c) => v == null ? '—' : v.toFixed(c).replace('.', ',').replace('-', '−');
+  const sinal = (v, c) => { const a = Math.abs(v).toFixed(c).replace('.', ','); return (/^[0,]+$/.test(a) ? '±' : v > 0 ? '+' : '−') + a; };
+  if(!q || !q.curvas.length) erros.push('cérebro sem curvas no quadro (régua cega)');
+  else {
+    if(tv.linhas.length !== q.curvas.length) erros.push('linhas na tela ' + tv.linhas.length + ' ≠ curvas do cérebro ' + q.curvas.length);
+    // colunas nascem do cérebro (campos da passagem, na ordem dele); casas: tempo com 2, o resto inteiro
+    const amostra = q.curvas.map(c => c.melhor || c.ultima).find(Boolean);
+    const COLS = amostra ? Object.keys(amostra).map(k => [k, k === 'tempoS' ? 2 : 0]) : [];
+    const nCols = tv.linhas.length ? tv.linhas[0].cols.length : 0;
+    if(!COLS.length) erros.push('cérebro sem passagem em nenhuma curva (régua cega)');
+    if(COLS.length !== nCols) erros.push('colunas do cérebro ' + COLS.length + ' (' + COLS.map(x => x[0]) + ') ≠ colunas na tela ' + nCols);
+    let conferidos = 0, deltas = 0, cheios = new Set();
+    for(const c of q.curvas){
+      const l = tv.linhas.find(x => x.i === c.i);
+      if(!l){ erros.push('curva sem linha na tela: ' + c.nome); continue; }
+      if(l.nome !== c.nome) erros.push('nome ' + l.nome + ' ≠ ' + c.nome);
+      if(l.agora !== (c.estado === 'agora')) erros.push('marca "agora" errada em ' + c.nome);
+      COLS.forEach(([k, cs], j) => {
+        const m = fmt(c.melhor ? c.melhor[k] : null, cs), u = fmt(c.ultima ? c.ultima[k] : null, cs);
+        if(l.cols[j].m !== m) erros.push(c.nome + ' ' + k + ' melhor: tela ' + l.cols[j].m + ' ≠ cérebro ' + m);
+        if(l.cols[j].u !== u) erros.push(c.nome + ' ' + k + ' última: tela ' + l.cols[j].u + ' ≠ cérebro ' + u);
+        conferidos += 2; if(m !== '—' || u !== '—') cheios.add(k);
+        const dl = c.delta ? c.delta[k] : null;
+        if(!c.ehRef && dl != null){ deltas++;
+          if(l.cols[j].d !== sinal(dl, cs)) erros.push(c.nome + ' ' + k + ' diferença: tela ' + l.cols[j].d + ' ≠ cérebro ' + sinal(dl, cs)); }
+      });
+    }
+    if(conferidos < 20) erros.push('poucos números conferidos (' + conferidos + ') — régua cega');
+    if(deltas < 1) erros.push('nenhuma diferença última − melhor conferida — régua cega para troca entre as duas');
+    console.log('ida e volta: ' + conferidos + ' números e ' + deltas + ' diferenças conferidos em ' + q.curvas.length + ' curvas · colunas ' + COLS.map(x => x[0]).join('/') + ' · com valor: ' + [...cheios].join('/'));
+    // linha da curva "agora": tamanho = progresso, vermelho onde freou, azul onde acelerou
+    const ag = q.curvas.find(c => c.estado === 'agora'), la = ag && tv.linhas.find(x => x.i === ag.i);
+    if(!ag) erros.push('nenhuma curva "agora" no cérebro na hora da foto');
+    else if(!la || !la.prog) erros.push('curva "agora" (' + ag.nome + ') sem a linha de progresso');
+    else {
+      const frac = la.prog.w / la.prog.total;
+      if(Math.abs(frac - ag.progresso) > 0.02) erros.push('linha da curva ' + (frac * 100).toFixed(1) + '% ≠ progresso do cérebro ' + (ag.progresso * 100).toFixed(1) + '%');
+      const bg = la.prog.bg.toLowerCase();
+      const temV = /255, 90, 78|#ff5a4e/.test(bg), temA = /56, 188, 255|#38bcff/.test(bg);
+      if(!temV || !temA) erros.push('linha da curva sem as duas cores (vermelho ' + temV + ', azul ' + temA + '): ' + bg.slice(0, 80));
+      // cada pedaço na cor do que o carro fez ali: a sequência de cores da linha = a sequência de tons da trilha
+      const cores = (bg.match(/rgb\([^)]*\)|#[0-9a-f]{6}/g) || []).filter((x, k) => k % 2 === 0)
+        .map(x => /255, 90, 78|#ff5a4e/.test(x) ? 'freia' : /56, 188, 255|#38bcff/.test(x) ? 'acelera' : '?');
+      const tons = ag.trilha.map(t => t.tom);
+      if(cores.join() !== tons.join()) erros.push('cores da linha ' + cores.join('/') + ' ≠ trilha do cérebro ' + tons.join('/'));
+      console.log('curva agora: ' + ag.nome + ' · linha ' + (frac * 100).toFixed(1) + '% × progresso ' + (ag.progresso * 100).toFixed(1) + '% · trilha ' + ag.trilha.map(t => t.tom + '@' + t.de).join(' '));
+    }
+    // faixa na base com o nome de cada curva
+    if(tv.faixa && tv.faixaNomes.length !== q.curvas.length) erros.push('faixa com ' + tv.faixaNomes.length + ' nomes de curva ≠ ' + q.curvas.length);
+    if(tv.faixa && tv.faixaLinhas < 2) erros.push('faixa sem as linhas atual/melhor');
+  }
+  if(tv.cortes.length) erros.push('texto cortado: ' + [...new Set(tv.cortes)].slice(0, 6).join(' | '));
+  if(tv.miudas.length) erros.push('letra < 11 px na tela: ' + [...new Set(tv.miudas)].slice(0, 6).join(' | '));
+  console.log('TV: quadro ' + JSON.stringify(tv.quadro && [tv.quadro.l, tv.quadro.t, tv.quadro.r, tv.quadro.b].map(Math.round))
+    + ' · faixa ' + JSON.stringify(tv.faixa && [tv.faixa.l, tv.faixa.t, tv.faixa.r, tv.faixa.b].map(Math.round)) + ' · nomes ' + tv.faixaNomes.join('/') + ' · blocos ' + ids.join(','));
+}
+if(errosPg.length) erros.push('erro de página: ' + errosPg.slice(0, 2).join(' | '));
+await pg.close();
+if(!ehControle){   // controle do editor: o quadro é só da TV
+  const ed = await nav.newPage({ viewport:{ width:1920, height:1080 } }); await ed.route('**/api/room', r => r.abort());
+  await ed.goto(base + '?tv=0'); await ed.waitForTimeout(4000);
+  const e = await ed.evaluate(() => ({ n: [...document.querySelectorAll('[data-block-id]')].filter(b => getComputedStyle(b).display !== 'none' && b.getBoundingClientRect().width > 2).length,
+    quadro: [...document.querySelectorAll('[data-tv-quadro]')].some(x => getComputedStyle(x).display !== 'none') }));
+  console.log('editor (controle): ' + e.n + ' blocos visíveis · quadro ' + e.quadro);
+  if(e.n < 16) erros.push('editor perdeu blocos: ' + e.n);
+  if(e.quadro) erros.push('controle: quadro apareceu no editor');
+}
+await nav.close();
+console.log(erros.length ? 'REPROVADO (' + erros.length + '):\n - ' + erros.join('\n - ') : 'RESULTADO: APROVADO');
+process.exit(erros.length ? 1 : 0);

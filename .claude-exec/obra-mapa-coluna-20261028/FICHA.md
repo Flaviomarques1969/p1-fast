@@ -140,3 +140,22 @@ Migração SEGURADA (ordem dele) — não oferecer a frase.
   FALTA: ver a foto e ajustar; estender medir-b.mjs (quadro visível com N curvas = cérebro, linha agora azul/vermelha, faixa na
   base, nada sobreposto, texto sem corte; controle = TV do commit c54f8a585 REPROVA); package.json smoke; CONTRATO_DADOS §2
   (quadro); provas antigas + montar/arquitetura; abrir no navegador dele e mostrar.
+
+## RETOMADA 1028-1318 (28/10 tarde) — conversa nova
+Escopo igual ao da 1028-1304: conferir a tela do quadro por curva (foto), ajustar, estender medir-b.mjs, package.json
+smoke, CONTRATO_DADOS §2 (quadro), provas antigas, abrir a TV no navegador dele. Migração SEGURADA — não oferecer a frase.
+- 28/10 tarde (conversa 1028-1318): TELA CONFERIDA pela foto. Ajustes: rodapé do quadro cortava o fim («G pela velocidade
+  do» — a fonte do G já está escrita na faixa logo abaixo, saiu do quadro; separador " · " solto corrigido; pedaços do
+  rodapé sem encolher); unidade e «REF» de 7 → 7,5 px (10,5 → 11,25 px na tela). Backup: bak-quadro/mockup-antes-ajuste-foto.html.
+  PROVA DE TELA NOVA blocos-b/medir-quadro.mjs (substitui medir-b, que provava o desenho c54f8a585): APROVADO — 70 números
+  + 4 diferenças da tela = cérebro (colunas tiradas do cérebro), linha da curva agora = progresso (75,9 × 75,9%) com as cores
+  na ordem da trilha, faixa na base com os 7 nomes, blocos que saem escondidos, sem sobreposição/corte/letra < 11 px.
+  Régua casada: observador copia o cérebro no instante do redesenho (ler o cérebro "agora" ficava 250 ms à frente).
+  Controles REPROVAM: TV c54f8a585 (bak-quadro/), sabotagem "última = melhor" (8 números), sabotagem cores trocadas.
+  Triagem de 3 reprovações, todas régua: estabilidade impossível durante a curva; todas as curvas eram REF (troca invisível
+  → exige curva com última ≠ melhor); coluna 'freio' ≠ 'freadaM' (traço × traço cego → colunas nascem do cérebro).
+  Freada "—" na 21/06 é honesto (gravação só GPS: 26.815 gps, 0 G do RaceBox; prova tv-quadro-curvas exige o "—").
+  package.json: node-smoke-tv-quadro-curvas no smoke + smoke:tv-quadro-curvas; CONTRATO_DADOS §2 cita a casa `quadro`.
+  Smoke 88 provas uma a uma: 87 passam; schema-parity 11 ok/4 fail IGUAL no commit limpo (git archive HEAD) — já existia,
+  fora desta obra. TV: quadro 17, faixa 28, blocos 25, gps-tv 106, montar 17, arquitetura 39, honesta 37, tv-video 46 — 0 falha.
+  Migração SEGURADA (ordem dele). Falta: ele olhar a TV.

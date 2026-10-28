@@ -310,3 +310,4 @@ PONTO DE PARADA 1027-1903 (27/10 ~19h03): E5 pronta em DEV (1b9857db6), PACOTE e
   npm run smoke + smoke:religacao-video-notebook; um a um 85/86 (só schema-parity, antiga); arquitetura 39/0. Commit c399a9fc3 + push.
 - Entrega no notebook: gps.cmd (BR = esta branch) puxa no próximo clique — avisado à janela GPS (imac-9c). Vercel/produção NÃO tocadas; sem PACOTE
   (não passa pela Vercel). max_participants fica 4: com as abas fechadas e o laço consertado, TV + notebook = 2 vagas; sem decisão a pedir.
+- 28/10 13h18: ponto de parada RETOMAR 1028-1318 — quadro de curvas provado no cérebro (d4efae0b2); tela escrita, conferência pendente (ver FICHA da obra-mapa-coluna-20261028).
