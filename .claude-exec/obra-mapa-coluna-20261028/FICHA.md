@@ -122,3 +122,11 @@ Escopo: só a TV pintar o que o cérebro (ff797dfef) já calcula — mockup comm
   (TV antiga do bak-tv-pinta) REPROVA 6 checagens. Provas: gps-tv 106, blocos 25, faixa 28, arquitetura 39, honesta 37,
   pagina-volta 46, trechos 24, montar 17, treino-stint 59, fonte-unica 28, tv-video 46 — 0 falha. Backup: bak-tv-pinta/.
   Migração SEGURADA (ordem dele). Falta: ele olhar a TV e dizer se o painel de voltas é o que lembrava.
+
+## RETOMADA 1028-1304 (28/10 tarde) — conversa nova
+Ele disse que a TV de hoje NÃO era o que lembrava: era a página «comparativo por trecho» de 27/10 (cópia em
+comparativo-27-10/). Escopo: levar ESSE desenho para a TV real (mockup modo TV) com dado do cérebro — quadro por curva
+(MELHOR × ÚLTIMA × Δ, uma linha por curva, linhazinha azul acelera / vermelha freia andando com o carro) na metade direita
+e a faixa da volta inteira na BASE. Cérebro: voltaAtual.trechos (curvas já fechadas da volta em curso, cópia iOS igual)
++ casa `quadro` no pacote. Velocímetro/coach/painel de voltas saem da TV (ficam no commit c54f8a585). Backup: bak-quadro/.
+Migração SEGURADA (ordem dele) — não oferecer a frase.

@@ -451,8 +451,18 @@ export function criarCerebroGpsTv(opts = {}) {
       const parciais = [];
       let antes = inicioVoltaT;
       for (const c of cruzSetorT) { parciais.push(r3((c - antes) / 1000)); antes = c; }
+      // trechos que a volta em curso JÁ fechou (mesmo formato de volta.trechos): o quadro de curvas da TV mostra a
+      // passagem desta volta assim que o carro sai da curva, sem esperar a chegada
+      let ini = inicioVoltaT;
+      const trechosFeitos = trechos.length ? cruzTrechoT.map((c, i) => {
+        const m = trechoMedidas[i] || {}, d = (c - ini) / 1000;
+        ini = c;
+        return { tempoS: r3(d), kmhEntrada: m.kmhEntrada != null ? r1(m.kmhEntrada) : null,
+          kmhMin: m.kmhMin != null ? r1(m.kmhMin) : null, minX: m.minX, minY: m.minY,
+          kmhSaida: m.kmhSaida != null ? r1(m.kmhSaida) : null };
+      }) : null;
       atual = { n: voltaN, decorridoS: r3((agora.t - inicioVoltaT) / 1000), setoresS: parciais,
-        setorAtual: parciais.length + 1, trechoAtual: trechos.length ? cruzTrechoT.length + 1 : null };
+        setorAtual: parciais.length + 1, trechoAtual: trechos.length ? cruzTrechoT.length + 1 : null, trechos: trechosFeitos };
     }
     const melhoresTrechos = trechos.map((_, i) => melhor(voltas, v => (v.trechos ? v.trechos[i].tempoS : null)));
     const idealTrechos = trechos.length && melhoresTrechos.every(s => s != null)

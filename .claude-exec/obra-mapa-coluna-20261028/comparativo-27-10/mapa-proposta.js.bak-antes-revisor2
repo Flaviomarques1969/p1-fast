@@ -1,0 +1,75 @@
+// Estudo do mapa da TV — protótipo das arrumações, aplicado POR FORA na TV (iframe), sem mexer no arquivo dela.
+// A TV desenha num quadro de 1280×720 ampliado 1,5× na tela: aqui tudo está em unidades do quadro (tela ÷ 1,5).
+//   hoje     = como está
+//   faixas   = A: tempos + setores em cima, contadores e força G numa faixa embaixo; nada escrito em cima do traçado
+//   grande   = C: só uma faixa em cima (tempos + setores); a pista cresce e o resto sai do mapa
+// O bloco ocupa a coluna livre abaixo do vídeo: 576×464 na tela (384×309,3 no quadro), mesma largura do vídeo.
+
+const CSS_COMUM = `
+.b-map.est{width:384px!important;height:309.33px!important;background:#07080b;border:1px solid rgba(255,255,255,.07)!important;border-radius:10px;box-sizing:border-box}
+.b-map.est .tv-consist,.b-map.est .tv-legenda,.b-map.est .mo-lap.ghost{display:none!important}
+.b-map.est .map-overlay{height:32px;padding:0 10px;background:#0b0d11;border-bottom:1px solid rgba(255,255,255,.08);box-sizing:border-box}
+.b-map.est .mo-laps{width:100%;justify-content:space-between;gap:0}
+.b-map.est .mo-lap{padding-left:8px}
+.b-map.est .mo-lap .lk{font-size:7px;letter-spacing:.2em}
+.b-map.est .mo-lap .lv{font-size:12px}
+.b-map.est.cb-vivo::after{top:62px!important;right:auto!important;bottom:auto!important;left:8px!important}
+.b-map.est .tv-setores .k{font-size:7px;letter-spacing:.2em}
+.b-map.est .tv-setores .v{font-size:10px}
+.est-pe{position:absolute;left:0;right:0;bottom:0;height:46px;padding:3px 10px 0;box-sizing:border-box;border-top:1px solid rgba(255,255,255,.08);
+  background:#0b0d11;z-index:6;font:500 8.4px/13px 'JetBrains Mono','SF Mono',Menlo,monospace;letter-spacing:.06em;color:rgba(212,175,55,.75);
+  text-transform:uppercase;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;pointer-events:none}
+.est-pe b{font-weight:600;color:#F5F0E0}
+.est-pe .ap{color:rgba(255,255,255,.42)}
+.est-pe .lin{display:flex;justify-content:space-between;gap:10px}
+.est-pe i{display:inline-block;width:10px;height:2px;margin:0 4px 0 10px;vertical-align:middle}
+`;
+const CSS_MODO = {
+  faixas: `
+.b-map.est .tv-setores{top:32px!important;left:0;right:0!important;height:22px;padding:0 10px;justify-content:space-between;align-items:center;
+  border-bottom:1px solid rgba(255,255,255,.05);box-sizing:border-box;background:#090b0e}
+.b-map.est .tv-setores .s{flex-direction:row;align-items:baseline;gap:6px;border-left:0;padding-left:0}
+.b-map.est > svg{position:absolute;left:0;top:26px;width:100%;height:246px}
+.b-map.est .tv-g{top:58px;bottom:auto!important;right:6px!important;width:62px}
+.b-map.est .tv-g svg{width:62px;height:62px}
+.b-map.est .tv-g-txt{display:none!important}`,
+  grande: `
+.b-map.est.cb-vivo::after{top:40px!important}
+.b-map.est .tv-setores{top:40px!important;right:8px!important;flex-direction:column;gap:7px;align-items:flex-end}
+.b-map.est .tv-setores .s{border-left:0;padding-left:0}
+.b-map.est .tv-setores .v{font-size:10px}
+.b-map.est > svg{position:absolute;left:0;top:-3.3px;width:100%;height:322px}
+.b-map.est .tv-g{display:none!important}
+.est-pe{display:none}`,
+};
+
+const fmtG = v => v == null ? '—' : (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(2).replace('.', ',');
+
+export function ligarProposta(w) {
+  const doc = w.document, mapa = doc.querySelector('[data-block-id="mapa"]');
+  const st = doc.createElement('style'); doc.head.appendChild(st);
+  const pe = doc.createElement('div'); pe.className = 'est-pe'; mapa.appendChild(pe);
+  let modo = 'hoje';
+  function aplicar(m) {
+    modo = m; mapa.classList.toggle('est', m !== 'hoje');
+    st.textContent = m === 'hoje' ? '' : CSS_COMUM + CSS_MODO[m];
+    pe.style.display = m === 'faixas' ? '' : 'none';
+  }
+  function faixaDeBaixo() {
+    if (modo !== 'faixas' || !w.__tvGps || !w.__tvGps.ativo) return;
+    const s = w.__tvGps.snapshot(), at = s.voltaAtual, ult = s.ultimaVolta;
+    const par = (nome, agora, ultima, extra) => `${nome} <b>${agora}</b><span class="ap">/</span><b>${ultima == null ? '—' : ultima}</b>${extra || ''}`;
+    const l1 = [par('pancadas', at ? s.pancadas.volta.length : 0, ult && ult.pancadas)];
+    if (s.trocas && s.trocas.total) l1.push(par('trocas', at ? s.trocas.volta.length : 0, ult && ult.trocas,
+      ult && ult.trocaBuracoMedioS != null ? ` · buraco <b>${ult.trocaBuracoMedioS.toFixed(2).replace('.', ',')} s</b>` : ''));
+    if (s.traseira && s.traseira.temGiro) l1.push(par('traseira', at ? s.traseira.volta.length : 0, ult && ult.traseira));
+    const cg = s.circuloG, pk = cg && (cg.picosVolta || cg.picosUltima);
+    const g = !cg || !cg.vivo ? 'força G <span class="ap">sem G nesta fonte</span>' : !cg.vivo.zeroOk ? 'força G <span class="ap">sem zero do box</span>'
+      : pk ? `freio <b>${fmtG(pk.freioMax)}</b> · acel <b>${fmtG(pk.acelMax)}</b> · lat <b>${fmtG(pk.latMax)}</b> · comb <b>${fmtG(pk.combinadoMax)}</b>` : 'força G —';
+    const comG = s.agora && s.agora.zeroOk;
+    const leg = comG ? '<span><i style="background:#FF5A4E;margin-left:0"></i>freio<i style="background:#3FE08C"></i>acel<i style="background:#D4AF37"></i>embalo</span>' : '';
+    pe.innerHTML = `<div class="lin"><span>${l1.join(' &nbsp;&nbsp; ')}</span></div><div class="lin"><span>${g}</span></div><div class="lin">${leg || '<span></span>'}<span class="ap">contagens: nesta volta / última</span></div>`;
+  }
+  setInterval(faixaDeBaixo, 250);
+  return { aplicar, modo: () => modo };
+}

@@ -1,0 +1,4 @@
+80–100 km/h: 59 amostras, barrinha anda 554 px/s
+100–120 km/h: 45 amostras, barrinha anda 563 px/s
+120–999 km/h: 3 amostras, barrinha anda 613 px/s
+amostras 107 correlação velocidade × ritmo da barrinha 0.12

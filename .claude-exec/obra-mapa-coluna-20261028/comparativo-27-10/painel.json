@@ -1,0 +1,320 @@
+{
+ "titulo": "Mapa da TV do box: como arrumar o espaço",
+ "subtitulo": "Estudo medido na gravação de 21/06 — protótipos HOJE / A / C rodando na página de comparação (porta 5201)",
+ "origem": "p1fast-mapa-tv-2045",
+ "tempoEstimado": "3 min",
+ "contexto": "Você pediu um estudo para usar melhor o espaço do mapa: a pista, a bolinha e as marcas dentro da pista estão boas, o fundo está uma confusão. Medi a tela de hoje: o mapa tem 46 peças de texto e desenho, 26 textos em letra de 9 px ou menos na tela, e quase 7 de cada 10 pontos da pista ficam embaixo de algum texto ou desenho. Montei duas arrumações que você pode ver andando na página (botões HOJE / A / C embaixo, ao lado de 1×, 4× e 10×). Nas duas, nada fica escrito em cima da pista, o mapa ocupa a coluna livre abaixo do vídeo (576×464 px na tela, hoje 480×389) e saem do mapa a consistência, “mais longe da média”, a linha do trecho, “a última perdeu”, “ideal pelos trechos” e o “melhor” (que sempre mostra —). A = tempos e setores em cima, contagens e picos de força G numa faixa embaixo, círculo G pequeno no canto de cima; a pista fica 10% menor que hoje. C = só os tempos em cima e os setores no canto vazio da direita; contagens, força G e legenda também saem; a pista cresce 54% em área. Nada disso mexe na TV publicada: é tudo protótipo no Mac.",
+ "perguntas": [
+  {
+   "id": 1,
+   "titulo": "Qual arrumação vira a do mapa?",
+   "urgencia": "trava",
+   "irreversivel": false,
+   "avisoIrreversivel": "",
+   "historico": "",
+   "dependeDe": null,
+   "evidencia": "Medido nos 3 modos (régua provar-mapa.mjs): HOJE pista 396×331 px, 413 de 600 pontos da pista embaixo de texto; A pista 376×314, 0 pontos cobertos; C pista 492×411, 0 pontos cobertos, 16 peças no bloco (hoje 46).",
+   "contexto": "É a escolha principal: as perguntas seguintes dizem para onde vai o que sai do mapa.",
+   "alternativas": [
+    {
+     "rotulo": "C",
+     "texto": "C — pista grande: só tempos em cima e setores no canto vazio da direita",
+     "consequencia": "A pista fica bem maior e limpa; consistência, linhas do trecho, contagens, círculo de força G e legenda das cores saem do mapa (destino nas perguntas abaixo).",
+     "recomendada": true,
+     "porque": "É o que você descreveu: a pista e o que está dentro dela são o que funciona; o resto é fundo. Ganha 54% de área de pista e zera o texto em cima do traçado.",
+     "custo": "R$ 0",
+     "prazo": "1 rodada",
+     "risco": "baixo",
+     "reversivel": true
+    },
+    {
+     "rotulo": "A",
+     "texto": "A — faixas: tempos e setores em cima, contagens e picos de G embaixo, círculo G pequeno no canto",
+     "consequencia": "Contagens e força G continuam no mapa, mas o círculo G fica pequeno (ACEL/FREIO com 4,65 px, menores que hoje) e a pista fica 10% menor em área do que hoje; consistência e linhas do trecho saem do mapa do mesmo jeito, e os avisos “provável” de trocas e traseira não cabem na faixa.",
+     "custo": "R$ 0",
+     "prazo": "1 rodada",
+     "risco": "baixo",
+     "reversivel": true
+    },
+    {
+     "rotulo": "H",
+     "texto": "Deixar como está hoje",
+     "consequencia": "Continua a confusão medida: 69% da pista embaixo de texto ou desenho, 26 textos em letra de 9 px ou menos.",
+     "custo": "R$ 0",
+     "prazo": "—",
+     "risco": "médio",
+     "reversivel": true
+    }
+   ]
+  },
+  {
+   "id": 2,
+   "titulo": "Consistência e “mais longe da média” — para onde vão?",
+   "urgencia": "espera",
+   "irreversivel": false,
+   "avisoIrreversivel": "",
+   "historico": "",
+   "dependeDe": null,
+   "evidencia": "",
+   "contexto": "Saem do mapa nas duas arrumações (A e C). É análise do stint (como as voltas variam entre si), não do que está acontecendo agora na pista.",
+   "alternativas": [
+    {
+     "rotulo": "A",
+     "texto": "Levar para o bloco do stint na TV",
+     "consequencia": "Fica junto das outras informações do stint; some do mapa.",
+     "recomendada": true,
+     "porque": "É informação do stint, não de posição na pista.",
+     "risco": "baixo",
+     "reversivel": true
+    },
+    {
+     "rotulo": "B",
+     "texto": "Levar para o rodapé do quadro de curvas",
+     "consequencia": "Fica ao lado da soma dos trechos; o rodapé ganha mais uma informação.",
+     "risco": "baixo",
+     "reversivel": true
+    },
+    {
+     "rotulo": "C",
+     "texto": "Tirar da TV",
+     "consequencia": "A informação deixa de aparecer no box.",
+     "risco": "baixo",
+     "reversivel": true
+    }
+   ]
+  },
+  {
+   "id": 3,
+   "titulo": "Contadores de pancadas, trocas e traseira — para onde vão?",
+   "urgencia": "espera",
+   "irreversivel": false,
+   "avisoIrreversivel": "",
+   "historico": "",
+   "dependeDe": {
+    "de": 1,
+    "mostrarQuando": "alt:C"
+   },
+   "evidencia": "Medido na página (medir-achados.mjs), simulando a linha ao encolher o desenho da pista para o espaço dela: C pura, pista 492×411 px; C com a linha, 466×389 px; hoje 396×331.",
+   "contexto": "As MARCAS dessas coisas dentro da pista continuam no mapa em qualquer opção; aqui é só o texto com as contagens (nesta volta / na última).",
+   "alternativas": [
+    {
+     "rotulo": "A",
+     "texto": "Uma linha curta embaixo do mapa, só com as contagens",
+     "consequencia": "A pista perde 5% de altura (10% de área) em relação à C pura e ainda fica 38% maior que hoje.",
+     "recomendada": true,
+     "porque": "São leituras do carro na volta atual; ficam perto da pista sem cobri-la.",
+     "risco": "baixo",
+     "reversivel": true
+    },
+    {
+     "rotulo": "B",
+     "texto": "Levar para o bloco do stint",
+     "consequencia": "O mapa fica 100% pista; as contagens ficam longe das marcas.",
+     "risco": "baixo",
+     "reversivel": true
+    },
+    {
+     "rotulo": "C",
+     "texto": "Só as marcas na pista, sem contagem",
+     "consequencia": "Quem quiser o número conta as marcas.",
+     "risco": "baixo",
+     "reversivel": true
+    }
+   ]
+  },
+  {
+   "id": 4,
+   "titulo": "Círculo de força G — para onde vai?",
+   "urgencia": "espera",
+   "irreversivel": false,
+   "avisoIrreversivel": "",
+   "historico": "",
+   "dependeDe": {
+    "de": 1,
+    "mostrarQuando": "alt:C"
+   },
+   "evidencia": "Hoje ele fica em cima da pista, no canto de baixo à direita: cerca de 120 dos 600 pontos da pista embaixo dele e do texto dos picos (medir-achados.mjs).",
+   "contexto": "Na C ele não cabe nos cantos vazios sem ficar minúsculo.",
+   "alternativas": [
+    {
+     "rotulo": "A",
+     "texto": "Levar para o bloco de frenagem da TV",
+     "consequencia": "Fica junto da informação de freada, maior e legível.",
+     "recomendada": true,
+     "porque": "Força G é leitura de freada e curva; combina com o bloco de frenagem.",
+     "risco": "baixo",
+     "reversivel": true
+    },
+    {
+     "rotulo": "B",
+     "texto": "Manter pequeno no canto de cima à direita do mapa",
+     "consequencia": "Fica com cerca de 90 px, como no protótipo A, e as letras ACEL/FREIO caem para 4,65 px (ilegíveis na TV); os setores precisam de outro lugar.",
+     "risco": "baixo",
+     "reversivel": true
+    },
+    {
+     "rotulo": "C",
+     "texto": "Tirar da TV",
+     "consequencia": "A força G deixa de aparecer no box.",
+     "risco": "baixo",
+     "reversivel": true
+    }
+   ]
+  },
+  {
+   "id": 5,
+   "titulo": "Legenda das cores da pista — para onde vai?",
+   "urgencia": "espera",
+   "irreversivel": false,
+   "avisoIrreversivel": "",
+   "historico": "",
+   "dependeDe": {
+    "de": 1,
+    "mostrarQuando": "alt:C"
+   },
+   "evidencia": "Código da TV (desenharLegenda): com força G, freio / acel / embalo; sem ela, < 60 · 60–100 · 100–130 · > 130 km/h.",
+   "contexto": "Na C a legenda sai do mapa. Ela explica o que as cores do traço da pista querem dizer, e a explicação muda conforme a fonte tem força G ou não.",
+   "alternativas": [
+    {
+     "rotulo": "A",
+     "texto": "Numa linha embaixo do mapa (a mesma das contagens, se ela ficar)",
+     "consequencia": "Se a linha das contagens já existir, não custa espaço; se não, a pista perde os mesmos 5% de altura.",
+     "recomendada": true,
+     "porque": "Quem é novo no box precisa saber o que cada cor quer dizer, e a cor muda de sentido sem força G.",
+     "risco": "baixo",
+     "reversivel": true
+    },
+    {
+     "rotulo": "B",
+     "texto": "Tirar — a equipe aprende as cores",
+     "consequencia": "O mapa fica só pista; quem não conhece não sabe se a cor é do pé ou da velocidade.",
+     "risco": "baixo",
+     "reversivel": true
+    }
+   ]
+  },
+  {
+   "id": 6,
+   "titulo": "Linha do trecho e “a última perdeu” — saem do mapa?",
+   "urgencia": "espera",
+   "irreversivel": false,
+   "avisoIrreversivel": "",
+   "historico": "",
+   "dependeDe": null,
+   "evidencia": "",
+   "contexto": "Saem nas duas arrumações. Na página de comparação, o quadro de curvas ao lado já mostra a curva em andamento e a última × a melhor em cada curva com freada (as retas não entram nele).",
+   "alternativas": [
+    {
+     "rotulo": "A",
+     "texto": "Sair do mapa — o quadro de curvas já mostra",
+     "consequencia": "Some a repetição; na TV oficial (que ainda não tem o quadro de curvas) a informação só volta quando o quadro entrar nela.",
+     "recomendada": true,
+     "porque": "A mesma informação em dois lugares só polui; o quadro de curvas mostra melhor.",
+     "risco": "baixo",
+     "reversivel": true
+    },
+    {
+     "rotulo": "B",
+     "texto": "Manter no mapa, numa linha da faixa",
+     "consequencia": "Ocupa espaço da pista para repetir o quadro de curvas.",
+     "risco": "baixo",
+     "reversivel": true
+    }
+   ]
+  },
+  {
+   "id": 7,
+   "titulo": "“Ideal pelos trechos” — para onde vai?",
+   "urgencia": "espera",
+   "irreversivel": false,
+   "avisoIrreversivel": "",
+   "historico": "",
+   "dependeDe": null,
+   "evidencia": "Quadro de curvas: o rodapé mostra “soma dos trechos · última − melhor”, não a volta ideal. Faixa de setores: tem o IDEAL dos setores S1/S2/S3, que é outra conta.",
+   "contexto": "É a volta que sairia juntando o melhor de cada trecho. Sai do mapa nas duas arrumações e não existe no quadro de curvas.",
+   "alternativas": [
+    {
+     "rotulo": "A",
+     "texto": "Levar para o rodapé do quadro de curvas, ao lado da soma",
+     "consequencia": "Fica junto da outra conta feita pelos trechos; o rodapé ganha mais um número.",
+     "recomendada": true,
+     "porque": "Nasce dos mesmos trechos que o quadro já usa, e não se perde.",
+     "risco": "baixo",
+     "reversivel": true
+    },
+    {
+     "rotulo": "B",
+     "texto": "Tirar da TV — fica só o IDEAL dos setores",
+     "consequencia": "Um número a menos na tela; a volta ideal por trechos deixa de aparecer no box.",
+     "risco": "baixo",
+     "reversivel": true
+    },
+    {
+     "rotulo": "C",
+     "texto": "Manter no mapa, numa linha da faixa",
+     "consequencia": "Ocupa espaço da pista.",
+     "risco": "baixo",
+     "reversivel": true
+    }
+   ]
+  },
+  {
+   "id": 8,
+   "titulo": "Tempo “melhor” (recorde histórico) que sempre mostra “—”",
+   "urgencia": "refino",
+   "irreversivel": false,
+   "avisoIrreversivel": "",
+   "historico": "",
+   "dependeDe": null,
+   "evidencia": "Código da TV: por('[data-overlay-best-ever]', '—');   // recorde histórico não vem deste cérebro: não inventa",
+   "contexto": "A casa existe, mas a TV de GPS não recebe esse número; ela fica sempre vazia. Os protótipos A e C já escondem a casa.",
+   "alternativas": [
+    {
+     "rotulo": "A",
+     "texto": "Esconder até existir a fonte do recorde",
+     "consequencia": "Ganha espaço na faixa de tempos; volta quando o recorde vier de algum lugar.",
+     "recomendada": true,
+     "porque": "Casa sempre vazia ocupa espaço sem informar nada.",
+     "risco": "baixo",
+     "reversivel": true
+    },
+    {
+     "rotulo": "B",
+     "texto": "Manter a casa vazia",
+     "consequencia": "Fica como hoje.",
+     "risco": "baixo",
+     "reversivel": true
+    }
+   ]
+  },
+  {
+   "id": 9,
+   "titulo": "Depois de escolher, onde aplicar?",
+   "urgencia": "espera",
+   "irreversivel": false,
+   "avisoIrreversivel": "",
+   "historico": "",
+   "dependeDe": null,
+   "evidencia": "O mapa da página de comparação é o mesmo bloco da TV publicada em p1box.vercel.app/tv/?tv=1 (mesmo arquivo, mesmas medidas 480×389).",
+   "contexto": "O protótipo hoje é só uma camada por fora, na página de comparação do Mac. A TV publicada é da janela «P1FAST - tela no Box ao vivo».",
+   "alternativas": [
+    {
+     "rotulo": "A",
+     "texto": "Levar para a TV de verdade (desenvolvimento), pronta para publicar",
+     "consequencia": "Eu combino com a janela da TV, aplico no arquivo dela em desenvolvimento, provo e monto o pacote; publicar continua dependendo da sua frase.",
+     "recomendada": true,
+     "porque": "O ganho é na TV do box, que é onde a equipe olha.",
+     "risco": "baixo",
+     "reversivel": true
+    },
+    {
+     "rotulo": "B",
+     "texto": "Só na página de comparação, por enquanto",
+     "consequencia": "Você avalia mais um tempo antes de mexer na TV.",
+     "risco": "baixo",
+     "reversivel": true
+    }
+   ]
+  }
+ ]
+}
