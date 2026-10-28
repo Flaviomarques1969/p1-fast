@@ -41,6 +41,7 @@
 
 <div class="board">
   <span id="bVideo" class="pill idle">VÍDEO · parado</span>
+  <span id="bGrav" class="pill idle">GRAVAÇÃO · parada</span>
   <span id="bGps" class="pill idle">GPS · desligado</span>
   <span id="bCarro" class="pill idle">CARRO · sem dados</span>
   <span id="bNuvem" class="pill idle">NUVEM · desligada</span>
@@ -52,6 +53,7 @@
     <video id="local" autoplay muted playsinline></video>
     <select id="cams" style="display:none"></select>
     <div class="row"><span class="lbl">Transmissão</span><span id="vStatus" class="pill idle">parada</span></div>
+    <div class="row"><span class="lbl">Gravação no notebook</span><span id="gStatus" class="pill idle">parada</span></div>
     <button id="btnStart" class="primary" style="margin-top:10px">▶ Iniciar transmissão</button>
   </div>
 
@@ -735,10 +737,58 @@ function assumirLider(motivo){
   if (bcAbas) bcAbas.postMessage({ t:'lider-no-ar', desde: liderDesde, id: abaId });
   log('Esta aba assume a transmissão ('+motivo+').');
   startVideo();
+  ligarGravacao();
 }
+
+// ════════ GRAVAÇÃO DO VÍDEO TRANSMITIDO (28/10/2026) — detalhe em gravador-video.js ════════
+// Só a aba LÍDER grava (a mesma que transmite). Só liga com o servidor local do notebook
+// (GET /api/gravar responde) — a página aberta na nuvem não grava. O gravador é carregado SÓ
+// depois disso e pelo caminho a partir da raiz do servidor local: import fixo no topo derrubava a
+// página INTEIRA (transmissão junto) quando ela abre por http://localhost:8765/ (o "./" virava
+// /gravador-video.js, 404 — achado na prova de 28/10) ou num site sem o arquivo.
+function mostrarGravacao(e){
+  if (e.gravando) {
+    const min = Math.floor((Date.now() - e.inicio) / 60000);
+    const txt = (e.fonte === 'transmissao' ? 'gravando' : 'gravando a câmera') + ' · ' + (e.bytes / 1048576).toFixed(0) + ' MB · arquivo ' + e.arquivos + ' (' + min + ' min)';
+    const cls = e.erro ? 'warn' : 'ok';
+    pill($('gStatus'), txt + (e.erro ? ' · ' + e.erro : ''), cls); boardPill($('bGrav'), 'GRAVAÇÃO · ' + txt, cls);
+  } else {
+    pill($('gStatus'), e.erro || 'parada', e.erro ? 'bad' : 'idle'); boardPill($('bGrav'), 'GRAVAÇÃO · ' + (e.erro ? 'falha' : 'parada'), e.erro ? 'bad' : 'idle');
+  }
+}
+let gravador = null;
+function criarOGravador(criarGravador){ return criarGravador({
+  obterTrilhaTransmitida: () => {
+    if (!call) return null;
+    try { const p = call.participants().local; return (p && p.tracks && p.tracks.video && p.tracks.video.persistentTrack) || null; } catch(e){ return null; }
+  },
+  escolherCamera: async () => {
+    const devs = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput');
+    const d = escolherOsmo(devs); return d ? d.deviceId : null;
+  },
+  enviarPedaco: (nome, blob) => fetch('/api/gravar/' + encodeURIComponent(nome), { method:'POST', body: blob }).then(r => ({ ok: r.ok, status: r.status })),
+  log, aoMudar: mostrarGravacao,
+}); }
+setInterval(() => { if (gravador) mostrarGravacao(gravador.estado()); }, 15000);
+async function ligarGravacao(){
+  try {
+    const r = await fetch('/api/gravar');
+    if (!r.ok) throw new Error('status ' + r.status);
+    const j = await r.json();
+    if (!gravador) { const mod = await import('/web/teste-aparelhos/gravador-video.js'); gravador = criarOGravador(mod.criarGravador); }
+    if (!souLider) return;   // virou reserva enquanto carregava
+    log('Gravação do vídeo ligada — pasta ' + j.pasta + ' (' + (j.livreBytes / 1073741824).toFixed(1) + ' GB livres).');
+    gravador.ligar();
+  } catch(e){
+    pill($('gStatus'), 'sem servidor local — não grava', 'warn'); boardPill($('bGrav'), 'GRAVAÇÃO · sem servidor local', 'warn');
+    log('Gravação NÃO ligada: o servidor local do notebook não respondeu (' + e.message + ').');
+  }
+}
+window.addEventListener('beforeunload', () => { if (gravador) gravador.desligar('página fechada'); });
 
 function abdicar(){
   if (!souLider) return;
+  if (gravador) gravador.desligar('outra aba assumiu');
   souLider = false; videoQuero = false; videoNaSala = false;
   videoGeracao++; clearTimeout(videoReligarT); videoReligarT = null;
   if (call) { try { call.destroy(); } catch(e){} call = null; }

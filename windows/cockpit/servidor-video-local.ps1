@@ -14,7 +14,15 @@ $EVENT_ID = 'p1-teste-aparelhos'
 # NOVO acha a porta ocupada por um VELHO (sem /api/vivo ou ver menor), ele encerra o velho
 # e assume — senao um servidor de dias atras seguraria a porta com codigo antigo pra sempre
 # (aconteceu de verdade: servidor de 07/07 vivo na auditoria de 11/07).
-$VERSAO = 3
+$VERSAO = 4
+
+# Gravacao do video transmitido (28/10/2026, pedido do Flavio): a pagina manda pedacos .webm em
+# POST /api/gravar/<arquivo> e este servidor ACRESCENTA no fim do arquivo, em ordem, aqui:
+$PASTA_VIDEO = Join-Path $env:USERPROFILE 'p1fast-sessoes\video'
+# Abaixo disto de espaco livre o servidor recusa (507) e a pagina para de gravar — o notebook
+# nunca enche o disco por causa do video (a transmissao continua).
+$LIVRE_MINIMO = 2GB
+try { [void](New-Item -ItemType Directory -Force -Path $PASTA_VIDEO) } catch { }
 
 # Notebook acordado (E3 da TV do box ao vivo, 27/10/2026): enquanto este servidor roda, o Windows
 # NAO dorme nem apaga a tela (ES_CONTINUOUS | ES_SYSTEM_REQUIRED | ES_DISPLAY_REQUIRED). Vale so
@@ -85,6 +93,42 @@ while ($listener.IsListening) {
       if ($null -ne $vivoTs) { $age = [int64](([DateTime]::UtcNow - $vivoTs).TotalMilliseconds) }
       $bytes = [System.Text.Encoding]::UTF8.GetBytes('{"ageMs":' + $age + ',"ver":' + $VERSAO + '}')
       $res.ContentType = 'application/json; charset=utf-8'
+      $res.ContentLength64 = $bytes.Length
+      $res.OutputStream.Write($bytes, 0, $bytes.Length)
+      $res.Close()
+      continue
+    }
+
+    if ($path -eq '/api/gravar' -or $path.StartsWith('/api/gravar/')) {
+      # GET /api/gravar = lista dos arquivos gravados + espaco livre (conferencia).
+      # POST /api/gravar/<arquivo> = acrescenta o pedaco no fim do arquivo. Nome so com
+      # letras/numeros/._- e terminando em .webm (nada de sair da pasta).
+      $code = 200
+      $text = ''
+      try {
+        $livre = (New-Object System.IO.DriveInfo ([System.IO.Path]::GetPathRoot($PASTA_VIDEO))).AvailableFreeSpace
+        if ($req.HttpMethod -eq 'POST') {
+          $nome = $path.Substring('/api/gravar/'.Length)
+          if ($nome -notmatch '^[A-Za-z0-9_.-]{1,120}\.webm$') {
+            $code = 400; $text = '{"error":"nome de arquivo invalido"}'
+          } elseif ($livre -lt $LIVRE_MINIMO) {
+            $code = 507; $text = '{"error":"disco quase cheio","livreBytes":' + $livre + '}'
+          } else {
+            $fs = [System.IO.File]::Open((Join-Path $PASTA_VIDEO $nome), [System.IO.FileMode]::Append, [System.IO.FileAccess]::Write, [System.IO.FileShare]::Read)
+            try { $req.InputStream.CopyTo($fs) } finally { $fs.Close() }
+            $tam = (Get-Item (Join-Path $PASTA_VIDEO $nome)).Length
+            $text = '{"ok":true,"bytes":' + $tam + '}'
+          }
+        } else {
+          $lista = @(Get-ChildItem -Path $PASTA_VIDEO -Filter '*.webm' | Sort-Object Name | ForEach-Object { @{ nome = $_.Name; bytes = $_.Length } })
+          $text = (@{ pasta = $PASTA_VIDEO; livreBytes = $livre; arquivos = $lista } | ConvertTo-Json -Compress -Depth 4)
+        }
+      } catch {
+        $code = 500; $text = '{"error":"falha ao gravar no disco"}'
+      }
+      $res.StatusCode = $code
+      $res.ContentType = 'application/json; charset=utf-8'
+      $bytes = [System.Text.Encoding]::UTF8.GetBytes($text)
       $res.ContentLength64 = $bytes.Length
       $res.OutputStream.Write($bytes, 0, $bytes.Length)
       $res.Close()

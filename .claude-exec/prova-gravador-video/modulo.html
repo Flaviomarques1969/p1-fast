@@ -1,0 +1,17 @@
+<!doctype html><meta charset="utf-8"><title>prova gravador</title>
+<script type="module">
+// PECA-DE-PROVA: chamado por provar-gravador-video.mjs — caminho da CÓPIA da trilha transmitida, com arquivo novo a cada 12 s.
+import { criarGravador } from '/web/teste-aparelhos/gravador-video.js';
+const R = window.__res = { log: [], fim: false };
+const s = await navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720, frameRate: 24 } });
+let transmitida = s.getVideoTracks()[0];
+R.taxaCamera = transmitida.getSettings().frameRate;
+const g = criarGravador({ rotacaoMs: 12000, vigiaMs: 1000,
+  obterTrilhaTransmitida: () => transmitida, escolherCamera: async () => null,
+  enviarPedaco: (n, b) => fetch('/api/gravar/' + n, { method: 'POST', body: b }).then(r => ({ ok: r.ok, status: r.status })),
+  log: m => R.log.push(m) });
+await g.ligar();
+R.fonte = g.estado().fonte;
+setTimeout(() => { transmitida.stop(); R.originalParouEm = Date.now(); R.estadoAposParar = g.estado(); }, 5000);  // a página derruba a chamada
+setTimeout(async () => { await g.desligar('fim da prova'); setTimeout(() => { R.estadoFinal = g.estado(); R.fim = true; }, 1500); }, 27000);
+</script>
