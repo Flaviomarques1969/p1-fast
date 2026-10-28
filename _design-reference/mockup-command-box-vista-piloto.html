@@ -8425,7 +8425,9 @@ html,body{
     border:0.5px solid rgba(212,175,55,0.22);border-radius:6px;background:linear-gradient(180deg,rgba(212,175,55,0.05),rgba(212,175,55,0.01));
     font-family:'JetBrains Mono','SF Mono',Menlo,monospace;font-variant-numeric:tabular-nums;color:var(--text-1,#F5F0E0);}
   html.modo-tv body.tv-racebox [data-block-id="hud"]{top:8.5%!important;height:24%!important;}
-  .tv-faixa .fx-h{display:flex;align-items:baseline;gap:8px;white-space:nowrap;}
+  .tv-faixa .fx-h{display:flex;align-items:baseline;gap:8px;white-space:nowrap;flex:0 0 auto;}
+  /* altura FIXA do cabeçalho (28/10): o «Δ» de 15 px entrava junto com a melhor volta e empurrava o gráfico 9 px para baixo */
+  html.modo-tv .tv-faixa .fx-h{height:20px;align-items:center;overflow:hidden;}
   .tv-faixa .fx-t{font-size:7px;letter-spacing:.22em;text-transform:uppercase;color:rgba(212,175,55,0.78);}
   .tv-faixa .fx-s{font-size:7.5px;letter-spacing:.04em;color:rgba(245,240,224,0.62);overflow:hidden;text-overflow:ellipsis;min-width:0;}
   .tv-faixa .fx-d{margin-left:auto;font-size:11px;}
@@ -8466,6 +8468,15 @@ html,body{
   .tv-quadro .qc-g{font-size:30px;font-weight:300;line-height:.9;white-space:nowrap;}
   .tv-quadro .qc-ref{margin-left:auto;text-align:right;align-items:flex-end;}
   .tv-quadro .qc-ref .qc-v{font-size:11.5px;font-weight:600;color:#7d8491;line-height:1.2;}
+  /* casas de LARGURA FIXA no topo (Flávio 28/10: "a tela não pode mover. tem de ser fixa"): sem elas cada número que
+     mudava de largura (tempo correndo, Δ, velocidade) empurrava os vizinhos — 60+ mudanças de posição em 3 min da 21/06.
+     Larguras para o pior caso (10:08,6 · +10,25 · 199 km/h); a referência fica com o resto e quebra em 2 linhas, sem corte. */
+  .tv-quadro .qc-topo.qc-fixo{gap:18px;}
+  .tv-quadro .qc-topo .qc-c-volta{flex:0 0 40px;} .tv-quadro .qc-topo .qc-c-tempo{flex:0 0 108px;}
+  .tv-quadro .qc-topo .qc-c-delta{flex:0 0 112px;} .tv-quadro .qc-topo .qc-c-kmh{flex:0 0 86px;}
+  .tv-quadro .qc-topo .qc-c-ult,.tv-quadro .qc-topo .qc-c-mel{flex:0 0 72px;}
+  .tv-quadro .qc-topo .qc-ref{flex:1 1 0;min-width:0;}
+  .tv-quadro .qc-topo .qc-ref .qc-v{white-space:normal;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;height:2.4em;}
   /* plano do stint (Flávio 28/10, painel p1fast-tv-quadro-melhorias-1425 item 1): uma linha logo abaixo do topo */
   .tv-quadro .qc-plano{flex:0 0 24px;display:flex;align-items:center;gap:14px;padding:0 17px;border-bottom:1px solid rgba(255,255,255,.11);
     font-size:8.5px;color:#a7adb8;letter-spacing:.03em;white-space:nowrap;}
@@ -8671,19 +8682,11 @@ html,body{
   }
 
   // trechos da metodologia: entrada (anel) e saída (ponto) de cada curva de freada; a do trecho em curso acesa.
-  // Ápice (Flávio 28/10): cruz branca no ápice cadastrado; «N,N m do ápice» = menor distância do GPS ao ápice
-  // (conta do cérebro: apiceAgoraM na curva em curso, trechos[j].apiceM na última curva feita desta volta)
+  // Ápice (Flávio 28/10): cruz branca no ápice cadastrado. O texto «N,N m do ápice» saiu do mapa no mesmo dia ("não
+  // precisa colocar essa informação também lá na pista"); o número continua no cérebro (apiceAgoraM / trechos[j].apiceM).
   function desenharTrechosMapa(el, s){
-    var tr = s.trechos, at = s.voltaAtual, h = '', rot = {};
+    var tr = s.trechos, at = s.voltaAtual, h = '';
     if(!tr || !tr.lista.length){ el.innerHTML = ''; return; }
-    var ctm = el.getCTM && el.getCTM(), giro = ctm ? Math.atan2(ctm.b, ctm.a) * 180 / Math.PI : 0;   // giro da pista na tela
-    if(at){
-      var cur = at.trechoAtual ? tr.lista[at.trechoAtual - 1] : null;
-      if(cur && cur.tipo === 'curva' && at.apiceAgoraM != null) rot[cur.i] = { m: at.apiceAgoraM, agora: true };
-      for(var j = (at.trechos || []).length - 1; j >= 0; j--){
-        if(tr.lista[j].tipo === 'curva' && at.trechos[j] && at.trechos[j].apiceM != null){ rot[tr.lista[j].i] = { m: at.trechos[j].apiceM, agora: false }; break; }
-      }
-    }
     tr.lista.forEach(function(t){
       if(t.tipo !== 'curva') return;
       var aceso = at && at.trechoAtual === t.i, op = aceso ? 1 : .55;
@@ -8693,23 +8696,9 @@ html,body{
         var a = t.apice, r = aceso ? 5 : 4;
         h += '<path data-tv-apice="' + t.i + '" d="M' + (a.x - r) + ' ' + a.y + 'H' + (a.x + r) + 'M' + a.x + ' ' + (a.y - r) + 'V' + (a.y + r)
           + '" stroke="#FFFFFF" stroke-opacity="' + (aceso ? .95 : .6) + '" stroke-width="1.8" stroke-linecap="round"/>';
-        var q = rot[t.i];
-        // a pista é desenhada girada (.track-transformed): o texto desfaz o giro em volta do ápice e fica deitado na tela;
-        // 18 unidades × escala do mapa na TV 1920 ≈ 12 px (medir-apice.mjs exige ≥ 11 px)
-        if(q) h += '<text data-tv-apice-m="' + t.i + '" x="' + (a.x + 9) + '" y="' + (a.y + 6) + '" transform="rotate(' + (-giro).toFixed(1) + ' ' + a.x + ' ' + a.y + ')"'
-          + ' fill="' + (q.agora ? '#FFFFFF' : '#F5F0E0') + '" fill-opacity="' + (q.agora ? 1 : .8) + '" font-size="18" font-family="JetBrains Mono,Menlo,monospace" stroke="#05060C" stroke-width="4.5"'
-          + ' paint-order="stroke" stroke-linejoin="round">' + q.m.toFixed(1).replace('.', ',') + ' m do ápice</text>';
       }
     });
     el.innerHTML = h;
-    // ápice perto da borda direita do mapa: o texto passa para o lado esquerdo da cruz (28/10: «15,1 m do ápice» saía
-    // cortado na borda — o giro da pista põe curvas encostadas na beira)
-    var caixa = el.closest && el.closest('.b-map'), C = caixa && caixa.getBoundingClientRect();
-    if(C) [].forEach.call(el.querySelectorAll('[data-tv-apice-m]'), function(tx){
-      if(tx.getBoundingClientRect().right <= C.right - 2) return;
-      var ax = +tx.getAttribute('x') - 9;
-      tx.setAttribute('x', ax - 9); tx.setAttribute('text-anchor', 'end');
-    });
   }
 
   // linha do trecho e "a última perdeu", na coluna ao lado do mapa (curtas: a coluna é estreita).
@@ -8858,13 +8847,13 @@ html,body{
     if(!q) h = '<div class="qc-topo"><div><span class="qc-rot">Quadro de curvas</span><span class="qc-v">aguardando o traçado da pista</span></div></div>';
     else {
       var v = q.volta || {}, d = v.deltaAgoraS;
-      h += '<div class="qc-topo">'
-        + '<div><span class="qc-rot">Volta</span><span class="qc-v" data-qc="volta">' + (v.n == null ? '—' : v.n) + '</span></div>'
-        + '<div><span class="qc-rot">Tempo</span><span class="qc-g">' + qcRelogio(v.decorridoS) + '</span></div>'
-        + '<div><span class="qc-rot">Δ vs melhor (aqui)</span><span class="qc-g ' + (d == null ? 'qc-neutro' : d <= 0 ? 'qc-ganhou' : 'qc-perdeu') + '" data-qc="delta">' + (d == null ? '—' : qcSinal(d, 2)) + '</span></div>'
-        + '<div><span class="qc-rot">Velocidade</span><span class="qc-v" data-qc="kmh">' + (q.kmh == null ? '—' : Math.round(q.kmh) + ' km/h') + '</span></div>'
-        + '<div><span class="qc-rot">Última</span><span class="qc-v">' + qcRelogio(q.ultimaS) + '</span></div>'
-        + '<div><span class="qc-rot">Melhor</span><span class="qc-v qc-ganhou">' + qcRelogio(q.melhor && q.melhor.tempoS) + '</span></div>'
+      h += '<div class="qc-topo qc-fixo">'
+        + '<div class="qc-c-volta"><span class="qc-rot">Volta</span><span class="qc-v" data-qc="volta">' + (v.n == null ? '—' : v.n) + '</span></div>'
+        + '<div class="qc-c-tempo"><span class="qc-rot">Tempo</span><span class="qc-g">' + qcRelogio(v.decorridoS) + '</span></div>'
+        + '<div class="qc-c-delta"><span class="qc-rot">Δ vs melhor (aqui)</span><span class="qc-g ' + (d == null ? 'qc-neutro' : d <= 0 ? 'qc-ganhou' : 'qc-perdeu') + '" data-qc="delta">' + (d == null ? '—' : qcSinal(d, 2)) + '</span></div>'
+        + '<div class="qc-c-kmh"><span class="qc-rot">Velocidade</span><span class="qc-v" data-qc="kmh">' + (q.kmh == null ? '—' : Math.round(q.kmh) + ' km/h') + '</span></div>'
+        + '<div class="qc-c-ult"><span class="qc-rot">Última</span><span class="qc-v">' + qcRelogio(q.ultimaS) + '</span></div>'
+        + '<div class="qc-c-mel"><span class="qc-rot">Melhor</span><span class="qc-v qc-ganhou">' + qcRelogio(q.melhor && q.melhor.tempoS) + '</span></div>'
         + '<div class="qc-ref"><span class="qc-rot">Referência</span><span class="qc-v">' + (q.refVolta ? 'melhor volta válida · nº ' + q.refVolta : q.voltasFechadas ? 'sem volta válida ainda (aquecimento não conta)' : 'depois da 1ª volta completa') + '</span></div>'
         + '</div>';
       h += '<div class="qc-plano" data-qc-plano>' + qcPlano(plano, q) + '</div>';
@@ -8921,13 +8910,13 @@ html,body{
   var faixaEl = null, faixaHtml = '';
   var FX = { W: 200, V0: 2, V1: 54, FM0: 57.5, FM1: 61, FA0: 62.5, FA1: 66, D0: 70, D1: 96 };
   function fxX(k, n){ return ((k + 0.5) / n * FX.W).toFixed(1); }
-  function fxEscala(f){   // a mesma escala para as duas voltas, em dezenas de km/h
-    var lo = Infinity, hi = -Infinity;
-    [f.melhor, f.atual].forEach(function(v){ if(v) v.kmh.forEach(function(x){ if(x != null){ lo = Math.min(lo, x); hi = Math.max(hi, x); } }); });
-    if(!(hi > lo)) return { lo: 0, hi: 200 };
-    return { lo: Math.max(0, Math.floor(lo / 10) * 10), hi: Math.ceil(hi / 10) * 10 };
-  }
-  function fxY(v, e){ return (FX.V1 - (v - e.lo) / (e.hi - e.lo) * (FX.V1 - FX.V0)).toFixed(1); }
+  // ESCALA FIXA (Flávio 28/10: "às vezes muda a posição quando está em operação; tem que ficar absolutamente fixo —
+  // marcou, fica naquele lugar"): era recalculada a cada quadro pela volta em curso e trocou 17 vezes em 200 s da 21/06
+  // (10–30 … 80–160 km/h), fazendo a linha já desenhada pular. Agora é uma só a sessão inteira: as voltas válidas da 21/06
+  // ficam em 80–160 km/h; 60–180 dá folga; abaixo ou acima encosta na borda (saída do box, parada).
+  var FX_ESCALA = { lo: 60, hi: 180 };
+  function fxEscala(){ return FX_ESCALA; }
+  function fxY(v, e){ var c = Math.max(e.lo, Math.min(e.hi, v)); return (FX.V1 - (c - e.lo) / (e.hi - e.lo) * (FX.V1 - FX.V0)).toFixed(1); }
   function fxLinha(kmh, n, de, ate, e, cor){   // trechos seguidos (sem buraco) → uma polyline por trecho
     var out = '', pts = [];
     function fecha(){ if(pts.length > 1) out += '<polyline points="' + pts.join(' ') + '" fill="none" stroke="' + cor + '" vector-effect="non-scaling-stroke"/>'; pts = []; }
@@ -8952,7 +8941,7 @@ html,body{
     var h;
     if(!f) h = '<div class="fx-h"><span class="fx-t">volta inteira · velocidade</span></div><div class="fx-vazio">aguardando a 1ª volta</div>';
     else {
-      var n = f.casas, e = fxEscala(f), svg = '<svg viewBox="0 0 ' + FX.W + ' 100" preserveAspectRatio="none">';
+      var n = f.casas, e = fxEscala(), svg = '<svg viewBox="0 0 ' + FX.W + ' 100" preserveAspectRatio="none">';
       f.curvas.forEach(function(c){
         var x0 = c.de * FX.W, x1 = (c.ate >= c.de ? c.ate : c.ate + 1) * FX.W;   // curva que cruza a chegada fica até a borda
         svg += '<rect class="fx-curva" x="' + x0.toFixed(1) + '" y="' + FX.V0 + '" width="' + Math.max(0.5, Math.min(FX.W, x1) - x0).toFixed(1) + '" height="' + (FX.FA1 - FX.V0) + '"/>';

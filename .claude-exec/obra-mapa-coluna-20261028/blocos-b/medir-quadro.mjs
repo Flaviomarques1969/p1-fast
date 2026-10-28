@@ -175,11 +175,13 @@ else {
       const me = /(\d+)–(\d+) km\/h/.exec(sv.escala), todos = [...f.melhor.kmh, ...f.atual.kmh].filter(x => x != null);
       const lo = me ? +me[1] : null, hi = me ? +me[2] : null, vmin = Math.min(...todos), vmax = Math.max(...todos);
       if(!me) erros.push('faixa: sem a escala em km/h na tela («' + sv.escala + '»)');
-      else if(!(lo <= vmin && hi >= vmax && hi - lo <= vmax - vmin + 20)) erros.push('faixa: escala ' + lo + '–' + hi + ' não cobre ' + vmin + '–' + vmax);
+      // 28/10 ('tem que ficar absolutamente fixo'): a escala é ÚNICA, 60–180 km/h, na sessão inteira — a régua antiga
+      // exigia escala justa na volta, que era justamente a escala recalculada que fazia a linha pular
+      else if(lo !== 60 || hi !== 180) erros.push('faixa: escala ' + lo + '–' + hi + ' ≠ a fixa 60–180 km/h');
       const n = f.casas, V0 = 2, V1 = 54;
       const conf = (linhas, kmh, nome, minimo = 30) => { let c = 0, ruins = [];
         for(const l of linhas) for(const [x, y] of l.pts){ const k = Math.round(x / 200 * n - 0.5), v = lo + (V1 - y) / (V1 - V0) * (hi - lo);
-          c++; if(kmh[k] == null || Math.abs(v - kmh[k]) > 0.6) ruins.push(k + ':' + v.toFixed(1) + '≠' + kmh[k]); }
+          c++; if(kmh[k] == null || Math.abs(v - Math.max(lo, Math.min(hi, kmh[k]))) > 0.6) ruins.push(k + ':' + v.toFixed(1) + '≠' + kmh[k]); }
         if(c < minimo) erros.push('faixa: linha ' + nome + ' com só ' + c + ' pontos (régua cega)');
         if(ruins.length) erros.push('faixa: linha ' + nome + ' ≠ km/h do cérebro em ' + ruins.length + ' pontos: ' + ruins.slice(0, 4).join(' '));
         return c; };

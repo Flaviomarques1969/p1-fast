@@ -1,9 +1,9 @@
-// prova de tela do ÁPICE NO MAPA DA TV (Flávio 28/10: "distância do carro ao ápice no mapa"): gravação 21/06 até o fim
-// (fim=parar segura a última tela: volta 3 dentro da CURVA DA JUNÇÃO, CURVA 2 já feita). Confere: uma cruz por curva
-// da TV no ápice do cérebro, visível no modo TV; «N,N m do ápice» só na curva em curso (= apiceAgoraM) e na última
-// curva feita desta volta (= trechos[j].apiceM) — ida e volta com o pacote do cérebro; letra ≥ 11 px NA TELA (escala
-// real do desenho, lição de 28/10: régua de SVG pela escala da caixa ficou cega); texto dentro do mapa; foto.
-// Controle: argv[2] = outra página (a TV antes do ápice) tem de REPROVAR.
+// prova de tela do ÁPICE NO MAPA DA TV (Flávio 28/10: "distância do carro ao ápice no mapa"; no mesmo dia: "não precisa
+// colocar essa informação também lá na pista" → o texto «N,N m do ápice» SAIU do mapa, a cruz fica): gravação 21/06
+// até o fim (fim=parar segura a última tela: volta 3 dentro da CURVA DA JUNÇÃO, CURVA 2 já feita). Confere: uma cruz por
+// curva da TV no ápice do cérebro, visível no modo TV; NENHUM texto de ápice no mapa; o cérebro continua com o número
+// (apiceAgoraM na curva em curso e trechos[j].apiceM na última feita — régua não fica cega se o estado não for o esperado).
+// Controle: argv[2] = outra página (a TV de 76e666820, com o texto) tem de REPROVAR.
 import { createRequire } from 'node:module';
 const require = createRequire('/Users/imac/Documents/Sistemas/cdai/frontend/package.json');
 const { chromium } = require('playwright');
@@ -39,13 +39,9 @@ else {
   for (const c of r.curvas) { const z = r.cruzes.find(k => k.i === c.i);
     if (!z) erros.push('curva i=' + c.i + ' sem cruz do ápice'); else { if (!z.vis) erros.push('cruz do ápice i=' + c.i + ' invisível na TV'); if (Math.abs(z.cx - c.x) > 0.05 || Math.abs(z.cy - c.y) > 0.05) erros.push('cruz i=' + c.i + ' fora do ápice do cérebro'); } }
   if (r.at.apiceAgoraM == null || !r.ultimaFeita) erros.push('estado do fim sem curva em curso com ápice ou sem curva feita (régua cega)');
-  else {
-    const esperado = [{ i: r.at.trechoAtual, txt: fmt(r.at.apiceAgoraM) }, { i: r.ultimaFeita.i, txt: fmt(r.ultimaFeita.m) }];
-    if (r.textos.length !== 2) erros.push(r.textos.length + ' textos de ápice na tela ≠ 2 (curva em curso + última feita)');
-    for (const e of esperado) { const t = r.textos.find(x => x.i === e.i);
-      if (!t) erros.push('sem «' + e.txt + '» na curva i=' + e.i); else if (t.txt !== e.txt) erros.push('curva i=' + e.i + ': tela «' + t.txt + '» ≠ cérebro «' + e.txt + '»'); }
-    for (const t of r.textos) { if (t.px < 11) erros.push('«' + t.txt + '» com ' + t.px + ' px na tela (< 11)'); if (!t.dentro) erros.push('«' + t.txt + '» sai do mapa'); }
-  }
+  if (r.textos.length) erros.push(r.textos.length + ' texto(s) de ápice no mapa (deviam ser 0): ' + r.textos.map(t => '«' + t.txt + '»').join(' '));
+  const soltos = await pg.evaluate(() => [...document.querySelectorAll('.b-map text')].map(e => e.textContent).filter(t => /ápice/.test(t)));
+  if (soltos.length) erros.push('texto com «ápice» no mapa: ' + soltos.join(' / '));
   if (foto) await pg.screenshot({ path: foto, clip: { x: 80, y: 570, width: 520, height: 420 } });
 }
 if (errosPg.length) erros.push('erro na página: ' + errosPg.slice(0, 2).join(' | '));

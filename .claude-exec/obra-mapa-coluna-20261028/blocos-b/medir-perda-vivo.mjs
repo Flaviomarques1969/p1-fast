@@ -7,7 +7,7 @@
 //     window.__tvGps.feed — só nesta régua, nunca na tela de verdade: a frase do rodapé = pacote().quadro.perda.frase,
 //     só a linha da curva atrasada marcada, subtítulo «mais perdeu na volta 3», texto inteiro (sem corte), letra ≥ 11 px na
 //     tela; foto.
-//  C) todo «N,N m do ápice» do mapa inteiro dentro do mapa (28/10: perto da borda direita saía cortado).
+//  C) mapa sem «N,N m do ápice» (28/10: saiu do mapa a pedido dele) e com as cruzes do ápice.
 // Controle: argv[2] = outra página (a TV antes dos itens 2 e 3) tem de REPROVAR.
 import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
@@ -94,6 +94,7 @@ const b = await pb.evaluate(() => {
     apice: (() => { const M = document.querySelector('.b-map').getBoundingClientRect();
       return [...document.querySelectorAll('[data-tv-apice-m]')].map(e => { const R = e.getBoundingClientRect();
         return { txt: e.textContent, dentro: R.left >= M.left && R.right <= M.right && R.top >= M.top && R.bottom <= M.bottom }; }); })(),
+    cruzes: document.querySelectorAll('[data-tv-apice]').length,
     dentro: pe ? (() => { const R = pe.getBoundingClientRect(), Q = document.querySelector('[data-tv-quadro]').getBoundingClientRect();
       return R.left >= Q.left - 1 && R.right <= Q.right + 1 && R.bottom <= Q.bottom + 1; })() : false };
 });
@@ -108,8 +109,8 @@ else {
   if(!/— mínima [\d,]+ km\/h abaixo da sua melhor/.test(b.frase || '')) erros.push('B: a frase não traz o motivo medido');
 }
 console.log('B: ápice no mapa ' + JSON.stringify(b.apice));
-if(!b.apice.length) erros.push('B: nenhum «m do ápice» no mapa (a régua do corte ficou cega)');
-b.apice.filter(a => !a.dentro).forEach(a => erros.push('B: «' + a.txt + '» sai do mapa'));
+if(b.apice.length) erros.push('C: ' + b.apice.length + ' «m do ápice» no mapa (deviam ser 0)');
+if(b.cruzes < 7) erros.push('C: só ' + b.cruzes + ' cruzes de ápice no mapa (esperadas 7)');
 if(b.corte) erros.push('B: a linha «onde mais perdeu» corta o texto');
 if(b.menorPx < 11) erros.push('B: letra de ' + b.menorPx.toFixed(1) + ' px na tela (mínimo 11)');
 if(!b.dentro) erros.push('B: a linha «onde mais perdeu» sai do quadro');

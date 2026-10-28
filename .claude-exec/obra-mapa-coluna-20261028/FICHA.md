@@ -248,3 +248,13 @@ mapa + commit; (3) itens 2 e 3 do painel p1fast-tv-quadro-melhorias-1425. Migra�
   app iPhone e o roteiro de sincronizar, sincronizar, rodar de novo, commit).
 - 28/10 RETOMADA 1028-1603: cópias do app iPhone sincronizadas (cerebro-gps-tv.js, trechos-volta.js, web/cockpit/trecho-detector.js novo — pasta Resources/Cockpit é referência de pasta, entra no build sozinha); pagina-volta 46/0; tv 106/23/37/26/16, trechos-volta 24, arquitetura 39; medir-apice e medir-quadro APROVADO. Commit na branch, sem push. Migração SEGURADA.
 - 28/10 ~17h: ITENS 2 e 3 do painel p1fast-tv-quadro-melhorias-1425 PRONTOS EM DEV. Cérebro do GPS: voltaAtual.trechoAgora (entrada e mínima até agora). Blocos: motivosDaPerda (casa única do motivo, coach usa), quadro.perda (curva em que a última válida mais perdeu para a MELHOR do quadro + frase «<curva>: perdeu X s — mínima N km/h abaixo da sua melhor») e curvas[].aoVivo/maisPerdeu. TV: etiqueta «Ao vivo», barra vermelha + «mais perdeu na volta N», linha «Onde mais perdeu» acima do rodapé (slot fixo). Provas: tv-quadro-curvas 35/0 (+12; sessão SINTÉTICA = volta 2 real repetida com 1 curva +0,6 s/−3 km/h, só na prova), blocos antigos REPROVAM 8; medir-perda-vivo APROVADO (A 52/52 fotos tela = cérebro; B frase e linha; C ápice dentro do mapa), TV antiga REPROVA; medir-apice e medir-quadro APROVADO; smoke 88/89 (schema-parity antiga). Ápice cortado na borda corrigido (registro-correcoes). 21/06 real só fecha 1 volta válida → a linha «onde mais perdeu» lá diz «nenhuma curva perdeu…».
+
+## RETOMADA 1028-1652 (28/10 fim de tarde) — conversa nova
+Escopo: (b) tirar o texto «N,N m do ápice» do mapa (cruz fica); (a) faixa de velocidade absolutamente FIXA (medir o que
+se move antes de mexer). Vídeo: só respondido (não é gravado). Migração SEGURADA.
+- 28/10 ~18h (1028-1652): (b) texto «m do ápice» FORA do mapa (cruz fica; número segue no cérebro). (a) faixa FIXA:
+  escala única 60–180 km/h + cabeçalho 20 px; e (pedido novo "a tela não pode mover") topo do quadro com casas de
+  largura fixa + referência em 2 linhas. Réguas novas faixa-fixa/medir-faixa-fixa.mjs e medir-topo-fixo.mjs APROVADO
+  (TV anterior REPROVA); medir-apice (agora exige 0 texto; 76e666820 REPROVA), medir-perda-vivo, medir-quadro (escala
+  justa → fixa) APROVADO; provas node tv/gps-tv/pagina-volta/trechos/arquitetura todas 0 falha. "Calendário na direita":
+  não existe na TV — perguntado a ele. Migração SEGURADA.

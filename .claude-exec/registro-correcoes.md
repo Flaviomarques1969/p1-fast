@@ -45,3 +45,7 @@ Prova: provar-coluna.mjs fim e --pior: 0 letras < 9,7 px, 0 cobertos/cortes/fora
 ## 2026-10-28 · CÓDIGO · TV do box (mockup, desenharTrechosMapa) · «N,N m do ápice» cortado na borda direita do mapa
 O que era: texto sempre à direita da cruz; curva encostada na beira direita (giro da pista) saía cortada. medir-apice.mjs só olhava UM instante (fim do 21/06), onde não acontecia — régua cega.
 Correção: texto que passa da borda da .b-map vai para a esquerda da cruz (text-anchor end). Prova: medir-perda-vivo.mjs seção C (cena sintética da volta 4 reproduz o corte) APROVADO; TV anterior REPROVA («15,1 m do ápice» sai do mapa). CORRIGIDO.
+
+## 2026-10-28 · CÓDIGO · TV do box (mockup, faixa da volta inteira + topo do quadro) · tela "mudava de posição em operação"
+O que era: fxEscala recalculava a escala de km/h a cada quadro pela volta em curso (17 trocas em 200 s da 21/06 → linha já desenhada pulava); o «Δ» de 15 px empurrava o gráfico 9 px; no topo do quadro cada número que mudava de largura empurrava os vizinhos (60+ mudanças) e a referência saía do quadro.
+Correção: escala FIXA 60–180 km/h (fora encosta na borda), cabeçalho da faixa com 20 px fixos, casas do topo com largura fixa e referência em 2 linhas de altura fixa. Prova: faixa-fixa/medir-faixa-fixa.mjs e medir-topo-fixo.mjs APROVADO, TV anterior REPROVA nas duas. CORRIGIDO.
