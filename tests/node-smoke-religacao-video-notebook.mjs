@@ -102,7 +102,7 @@ function montar(html, cenario) {
   };
   vm.createContext(ctx);
   vm.runInContext(trechoVideo(html) + '\n' + trechoAbdicar(html) +
-    '\nvar souLider = true, videoQuero = videoQuero, vigiarReserva = function(){};' +
+    '\nvar souLider = true, vigiarReserva = function(){};' +
     '\nthis.__startVideo = startVideo; this.__abdicar = abdicar;', ctx);
   async function correrAte(ms) {
     for (;;) {
@@ -128,7 +128,8 @@ async function rodarCenarios(html, rotulo) {
     p.ctx.__startVideo(); await p.correrAte(10 * MIN);
     r.parado = { entradas: p.sim.entradas, vivas: p.viva().length };
   }
-  // 2. Uma queda de rede: religa UMA vez e assenta (antes: entra/sai sem fim).
+  // 2. Uma queda de rede: religa UMA vez e assenta. (A versão antiga também passa aqui: a chamada que
+  //    caiu já está fora da sala e o destroy não avisa — o laço nascia na sala lotada e na troca de sala.)
   {
     const p = montar(html, {});
     p.ctx.__startVideo(); await p.correrAte(20 * 1000);
@@ -186,7 +187,6 @@ try {
 try {
   const velho = execFileSync('git', ['show', `${ANTES_DO_CONSERTO}:${PAGINA}`], { cwd: new URL('.', raiz).pathname, encoding: 'utf8', maxBuffer: 8 << 20 });
   const ant = julgar(await rodarCenarios(velho, 'controle ' + ANTES_DO_CONSERTO));
-  t('CONTROLE: versão sem guarda reprova a queda de rede', !ant.queda);
   t('CONTROLE: versão sem guarda reprova a sala lotada', !ant.lotada);
   t('CONTROLE: versão sem guarda reprova a virada de dia', !ant.virouDia);
   t('CONTROLE: versão sem guarda passa o caso parado (régua não reprova tudo)', ant.parado);

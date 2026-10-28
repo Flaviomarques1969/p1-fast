@@ -336,6 +336,12 @@ function pararSim(){
 let call = null;
 let videoQuero = false;      // intenção: a transmissão deve estar no ar
 let videoRetryMs = 3000;
+// RELIGAÇÃO ÚNICA (27/10/2026, sala lotada + 429): a daily-js avisa 'left-meeting' também quando
+// ESTA página destrói a chamada velha — antes isso virava "queda nova" e o vídeo entrava e saía
+// sem parar; e erro de entrada ('error' + join rejeitado) agendava DUAS religações por queda.
+// Cada chamada ganha um número (aviso de chamada velha é ignorado) e só existe UMA religação marcada.
+let videoGeracao = 0;
+let videoReligarT = null;
 
 async function getRoom(){
   const r = await fetch('/api/room', { method:'POST' });
@@ -349,13 +355,17 @@ async function getRoom(){
 
 async function startVideo(){
   videoQuero = true;
+  clearTimeout(videoReligarT); videoReligarT = null;
+  const minha = ++videoGeracao;
   $('btnStart').disabled = true;
   try {
     pill($('vStatus'),'conectando…','warn'); boardPill($('bVideo'),'VÍDEO · conectando…','warn');
     log('Pedindo sala de vídeo…');
     const room = await getRoom();
+    if (minha !== videoGeracao) return;   // outra religação começou enquanto eu pedia a sala
     log('Sala: ' + room.roomName);
-    if (call) { try { await call.destroy(); } catch{} call = null; }
+    if (call) { const velha = call; call = null; try { await velha.destroy(); } catch{} }
+    if (minha !== videoGeracao) return;
     call = window.DailyIframe.createCallObject();
     salaAtual = room.roomName;
     // chamada NOVA começa na câmera padrão: zera a marca para listCams() fixar de novo a escolhida
@@ -369,40 +379,45 @@ async function startVideo(){
       camCuraTimer = setTimeout(() => { camCuraTimer = null; repicarCamera('erro de câmera', true); }, 2500);
     });
     call.on('joined-meeting', () => {
+      if (minha !== videoGeracao) return;
       videoNaSala = true;
       pill($('vStatus'),'NO AR ✓','ok'); boardPill($('bVideo'),'VÍDEO · no ar ✓','ok');
       videoRetryMs = 3000; log('Transmissão no ar.');
     });
     call.on('participant-updated', renderLocal);
-    call.on('left-meeting', onVideoDown);
-    call.on('error', e => { log('Vídeo deu erro: ' + (e.errorMsg||'desconhecido')); onVideoDown(); });
+    call.on('left-meeting', () => onVideoDown(minha));
+    call.on('error', e => { log('Vídeo deu erro: ' + (e.errorMsg||'desconhecido')); onVideoDown(minha); });
     call.on('network-connection', e => { if (e.event === 'interrupted') log('Internet do vídeo oscilou…'); });
     await call.join({ url: room.roomUrl, token: room.tokenPiloto });
+    if (minha !== videoGeracao) return;
     await call.setLocalVideo(true);
     await call.setLocalAudio(false);
     await aplicarQualidade();
     await listCams();
     renderLocal();
   } catch(e){
+    if (minha !== videoGeracao) return;   // falha de uma chamada que já foi trocada
     pill($('vStatus'),'falhou','bad'); boardPill($('bVideo'),'VÍDEO · falhou','bad');
     log('FALHA no vídeo: ' + e.message);
     // 429 = o servidor de vídeo está LIMITANDO (pedidos demais em pouco tempo). Insistir
     // rápido só prolonga o bloqueio — espera bem mais antes de tentar de novo.
     if (e && e.status === 429) { videoRetryMs = 60000; log('Servidor de vídeo limitou (429, pedidos demais). Aguardando 60s — não adianta insistir agora.'); }
-    onVideoDown();
+    onVideoDown(minha);
   }
 }
 
-function onVideoDown(){
+function onVideoDown(minha){
+  if (minha !== videoGeracao) return;     // aviso da chamada velha (que eu mesmo destruí)
   videoNaSala = false;
   if (!videoQuero) return;
+  if (videoReligarT) return;              // a mesma queda já tem religação marcada
   pill($('vStatus'),'religando…','warn'); boardPill($('bVideo'),'VÍDEO · religando…','warn');
   log('Vídeo caiu. Religando em '+(videoRetryMs/1000)+'s…');
   const wait = videoRetryMs;
   // teto de 60s (antes 15s): em queda persistente, espaça as tentativas pra NÃO martelar
   // o servidor de sala (era isso que estourava o 429 e travava no "religando").
   videoRetryMs = Math.min(videoRetryMs * 2, 60000);
-  setTimeout(() => { if (videoQuero) startVideo(); }, wait);
+  videoReligarT = setTimeout(() => { videoReligarT = null; if (videoQuero) startVideo(); }, wait);
 }
 
 // TETO DE QUALIDADE (E3, 27/10/2026): 720p, 24 quadros, 1 camada de no máx. 1 Mbps (~450 MB/h
@@ -725,6 +740,7 @@ function assumirLider(motivo){
 function abdicar(){
   if (!souLider) return;
   souLider = false; videoQuero = false; videoNaSala = false;
+  videoGeracao++; clearTimeout(videoReligarT); videoReligarT = null;
   if (call) { try { call.destroy(); } catch(e){} call = null; }
   log('Outra aba mais antiga já está no ar — esta vira RESERVA.');
   vigiarReserva();
