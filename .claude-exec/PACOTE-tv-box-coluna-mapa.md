@@ -14,20 +14,24 @@ A TV do box (`https://p1box.vercel.app/tv/?tv=1`) troca o mapa com texto por cim
 - linha do trecho e "a última perdeu" contam só as voltas que valem: saem a 1ª volta depois de uma parada (aquecimento),
   a volta com a parada dentro e a volta que fecha logo antes de o carro parar (resfriamento). Na gravação de 21/06 o
   "perdeu CURVA 01 +1,38" que a TV mostrava vinha da volta de aquecimento e some.
+- blocos sem dado do RaceBox SOMEM da TV (painel p1fast-tv-blocos-sem-racebox-1151, 28/10, opção B): carro, pneus,
+  combustível, checklist e shift light deixam de aparecer com "não vem do RaceBox"; coach e stint vão até a borda direita
+  (stint até o pé da tela, sem cortar a última linha), frenagem dobra de largura, e a letra do coach/stint cresce junto.
+  Só na TV (`?tv=1`) com o modo RaceBox: o editor da Vista Piloto continua com os 16 blocos.
 
 ## O que muda para a operação
 - Só a tela da TV em `/tv/`. O favorito da Fire TV continua o mesmo endereço.
 - Menu, Vista Piloto e Frenagem & Aceleração (as 41 telas do ar) seguem byte a byte iguais.
 
 ## Origem em desenvolvimento
-- Worktree `~/Projetos/p1fast-worktrees/tv-box-aovivo`, branch `claude/tv-box-aovivo-e2-20261027`, commit `4b866482f`.
+- Worktree `~/Projetos/p1fast-worktrees/tv-box-aovivo`, branch `claude/tv-box-aovivo-e2-20261027`, commit `4b866482f` + opção B (commit da ficha "opção B").
 - Montador `tools/montar-p1box-tv.mjs` (o mesmo de 27/10) → `dist/p1box-tv` (82 arquivos), base
   `.claude-exec/p1box-ar-20261027/arquivos` (as 41 telas do ar, sem mudança).
 
 ## ENTRA (site p1box.vercel.app — projeto Vercel `p1box`, `prj_EE2vFPmwyKxRtvdmVNykAgRPtudi`)
 Medido em 28/10 com `node tools/conferir-p1box-no-ar.mjs dpl_F3jLYeJ2NmS9g7xQb3Y68mpp4we5 dist/p1box-tv`:
 82 × 82 arquivos, 79 idênticos (sha1), só estes 3 diferentes:
-1. `tv/index.html` — a TV (coluna, pista limpa, stint, rótulos do G).
+1. `tv/index.html` — a TV (coluna, pista limpa, stint, rótulos do G, blocos sem RaceBox fora).
 2. `tv/web/command-box/cerebro/cerebro-gps-tv.js` — cérebro: voltas descartadas (`s.trechos.validas`) e ideal pelos
    trechos das voltas que valem (`validas.voltaIdealS`, a TV ainda não mostra; fica pronto para o quadro de curvas).
 3. `tv/web/command-box/cerebro/cerebro-tv-blocos-gps.js` — o pacote do stint repassa a consistência.
@@ -47,9 +51,13 @@ Medido em 28/10 com `node tools/conferir-p1box-no-ar.mjs dpl_F3jLYeJ2NmS9g7xQb3Y
 - Régua da coluna `.claude-exec/obra-mapa-coluna-20261028/provar-coluna.mjs` (TV real, gravação 21/06, fim e `--pior`):
   0 pontos da pista cobertos, 0 cortes, 0 fora da coluna, menor letra 9,76 px na tela, 0 erros de script.
   Controle `--controle-antigo` (rótulos do G como antes) acusa ACEL/FREIO 3,9 px.
+- Opção B `.claude-exec/obra-mapa-coluna-20261028/blocos-b/medir-b.mjs` (TV real, gravação 21/06): APROVADO — os 5
+  blocos fora, 11 blocos com dado na tela, 0 avisos "não vem do RaceBox", coach/stint/frenagem sem sobrepor ninguém nem
+  sair da tela, 0 textos cortados; controle editor (`?tv=0`) 16 blocos. Controle negativo (arquivo de antes): REPROVADO
+  pelos 5 blocos, pelos avisos e pela frase cortada do coach. Montado de novo em 28/10 12h1x: conferir × ar = os mesmos 3.
 - Ensaio do pacote montado `.claude-exec/ensaio-pacote-p1box/ensaio-pacote.mjs`: 17 ok / 0 falha
   (AO VIVO / SEM SINAL / ATRASADO, isolamento em /tv/, 3 telas do ar sem nada de /tv/).
-- Já existia antes desta obra e continua: `header × shift-light` encavalados 538×86 px no HEAD de 27/10 (medir-encavalados.mjs).
+- Já existia antes desta obra: `header × shift-light` encavalados 538×86 px no HEAD de 27/10 — na TV some com a opção B (o shift light sai).
 
 ## Passos (só depois da frase)
 0. Conferir que o ar não mudou: produção do p1box ainda é `dpl_F3jLYeJ2NmS9g7xQb3Y68mpp4we5`
