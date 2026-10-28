@@ -93,3 +93,20 @@ Painel aberto p1fast-tv-blocos-sem-racebox-1151 (blocos "não vem do RaceBox"). 
    Ela usa `freio-trecho.js` (simulado pela física); na TV preferir G MEDIDO do RaceBox via cérebro. Confirmar com
    ele mostrando a TV pronta (não perguntar antes).
 Ferramentas: `blocos-b/foto-url.mjs <url> <png>`, `blocos-b/medir-b.mjs` (prova opção B, reposicionar se layout mudar).
+
+## RETOMADA 1028-1222 (28/10 tarde) — cérebro do pedido novo PRONTO (commit ff797dfef)
+- cerebro-gps-tv.js: `kmSessao` (odômetro saiu da tela; mesmas regras) + `perfilAtual` (guardarVoltas). Cópia iOS igualada.
+- cerebro-tv-blocos-gps.js: `pacote(s, { plano })` → `faixa` (200 casas por posição: G atual × melhor, Δ por posição,
+  cursor, curvas; fonte 'medido' só com as 2 voltas com zero do box, senão 'velocidade' das duas), `plano` (planoDoStint),
+  stint.voltas[].ultima/descarte, stint.idealS.
+- treino-stint.js: porta `lerUltimoPlanoStint` (plano + dia + deHoje); buscarPlanoStintDaNuvem reusa (59/59).
+- Prova nova tests/node-smoke-tv-faixa-volta.mjs 28/28; mutações Δ e G invertidos REPROVAM. gps-tv 106, blocos 25,
+  arquitetura 39, honesta 37, pagina-volta 46, trechos 24, montar 17 — todos 0 falha. Falta pôr no package.json (smoke).
+- Leitura do ar (GET anon): último plano do Bubi = 10/07 (10 voltas, box na 4); hoje não há plano.
+PRÓXIMO (TV, só pinta): (a) __hudReal no modo TV lê window.__tvGps (agora.kmh + kmSessao) e o MODO RACEBOX deixa
+de somar km (pinta do pacote); hud sai de cb-aguardando como o mapa; (b) hud TV menor (top 8.5% h 24%) + faixa nova
+(left 35.5% top 33% w 28% h 20.5%, sem data-block-id): linha atual AZUL acelera/VERMELHO freia, melhor = ghost
+dourado, cursor, faixa Δ embaixo, fonte escrita; (c) stint vira painel de voltas (plano no topo, MELHOR/ÚLTIMA/MÉDIA/IDEAL,
+lista com barra Δ, melhor verde, última dourada); loader do plano: import lerUltimoPlanoStint, carro Bubi
+641a81e7-3192-4e68-8183-b8401f105574 (?carro=), a cada 60 s, passa em blocos.pacote(s,{plano}); (d) CONTRATO_DADOS
+§2 citar faixa/plano/km; package.json smoke; reposicionar medir-b.mjs; rodar provas + ensaio; abrir a TV e perguntar.
