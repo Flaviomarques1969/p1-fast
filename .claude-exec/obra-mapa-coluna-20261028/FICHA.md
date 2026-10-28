@@ -71,3 +71,9 @@ Retomado do passe /Users/imac/.claude/retomadas/20261028-1108-p1fast.md (mesma j
 - Achado: ACEL/FREIO do G com 3,9 px na coluna (régua cega media SVG pela escala da coluna) → rótulos ao lado (9,76 px), régua mede SVG real + ::before/::after, controle --controle-antigo acusa 3,9.
 - Smokes: montar 17/0, arquitetura 39/0, tv-blocos 25/0; ensaio do pacote 17/0; conferir × dpl_F3jLY (o que está no ar): 79 iguais, 3 diferentes = ENTRA.
 - imac-9c avisada (SendMessage). Commit 4b866482f. PACOTE-tv-box-coluna-mapa.md pronto.
+
+## PONTO DE PARADA 1028-1152 (11h52)
+Painel aberto p1fast-tv-blocos-sem-racebox-1151 (blocos "não vem do RaceBox"). Passe /Users/imac/.claude/retomadas/20261028-1152-p1fast.md, PRÓXIMO PASSO item 1.
+
+## PONTO DE PARADA 1028-1152 (11h53)
+Painel aberto p1fast-tv-blocos-sem-racebox-1151 (blocos "não vem do RaceBox"). Passe /Users/imac/.claude/retomadas/20261028-1152-p1fast.md, PRÓXIMO PASSO item 1.

@@ -8730,6 +8730,14 @@ html,body{
   body.tv-racebox [data-block-id="video"].tv-nao-racebox::after{content:"câmera ainda não ligada à TV"!important;}
   /* bloco estreito: o aviso quebra linha dentro do bloco em vez de sair cortado pela borda */
   body.tv-racebox [data-block-id].tv-nao-racebox::after{white-space:normal!important;max-width:calc(100% - 10px);text-align:center;line-height:1.35!important;}
+  /* TV (28/10, painel p1fast-tv-blocos-sem-racebox-1151, opção B): bloco sem fonte SOME e os que têm dado
+     ocupam o lugar — coach e stint até a borda direita (era o checklist), stint até o pé (pneus e combustível),
+     frenagem até o stint (carro). Só na TV: o editor continua mostrando todos os blocos no lugar aprovado.
+     A câmera fica (diz ela mesma se não há imagem). */
+  html.modo-tv body.tv-racebox [data-block-id].tv-nao-racebox:not([data-block-id="video"]){display:none!important;}
+  html.modo-tv body.tv-racebox [data-block-id="coach"]{left:64%!important;top:9%!important;width:35.9%!important;height:40%!important;}
+  html.modo-tv body.tv-racebox [data-block-id="stint"]{left:64%!important;top:50%!important;width:35.9%!important;height:49.9%!important;}
+  html.modo-tv body.tv-racebox [data-block-id="frenagem"]{left:46%!important;width:18%!important;}
 </style>
 <script type="module">
   (function(){
