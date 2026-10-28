@@ -788,7 +788,8 @@ window.addEventListener('beforeunload', () => { if (gravador) gravador.desligar(
 
 function abdicar(){
   if (!souLider) return;
-  if (gravador) gravador.desligar('outra aba assumiu');
+  // typeof: a catraca da religação roda esta função sozinha, sem o resto da página
+  if (typeof gravador !== 'undefined' && gravador) gravador.desligar('outra aba assumiu');
   souLider = false; videoQuero = false; videoNaSala = false;
   videoGeracao++; clearTimeout(videoReligarT); videoReligarT = null;
   if (call) { try { call.destroy(); } catch(e){} call = null; }

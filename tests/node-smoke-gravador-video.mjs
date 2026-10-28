@@ -150,8 +150,8 @@ await secao('página e servidor local', async () => {
   t('gravador carregado depois do servidor local, pela raiz', /if \(!r\.ok\) throw[\s\S]{0,300}await import\('\/web\/teste-aparelhos\/gravador-video\.js'\)/.test(p));
   const lider = p.slice(p.indexOf('function assumirLider'), p.indexOf('function assumirLider') + 400);
   t('a aba LÍDER liga a gravação junto com a transmissão', /startVideo\(\);\s*\n\s*ligarGravacao\(\);/.test(lider));
-  const abd = p.slice(p.indexOf('function abdicar'), p.indexOf('function abdicar') + 200);
-  t('aba que vira reserva desliga a gravação', /if \(gravador\) gravador\.desligar/.test(abd));
+  const abd = p.slice(p.indexOf('function abdicar'), p.indexOf('function abdicar') + 400);
+  t('aba que vira reserva desliga a gravação', /gravador\) gravador\.desligar\('outra aba assumiu'\)/.test(abd));
   t('só liga com o servidor local respondendo', /async function ligarGravacao[\s\S]{0,200}fetch\('\/api\/gravar'\)[\s\S]{0,120}if \(!r\.ok\) throw/.test(p));
   t('quadro de status da gravação existe', p.includes('id="bGrav"') && p.includes('id="gStatus"'));
   const s = ler('windows/cockpit/servidor-video-local.ps1');
