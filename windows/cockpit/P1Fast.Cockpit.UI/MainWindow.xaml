@@ -187,8 +187,11 @@
                         <Polygon.RenderTransform><TranslateTransform x:Name="VoltaCaretXf"/></Polygon.RenderTransform>
                     </Polygon>
 
-                    <!-- ───────── DELTA à ESQUERDA ───────── -->
-                    <StackPanel x:Name="DeltaPanel"
+                    <!-- ───────── FREADA à ESQUERDA (Flávio 2026-10-28) ─────────
+                         Metros entre onde freou nesta passagem e onde freou na MESMA curva da
+                         MELHOR VOLTA, sem sinal: amarelo = antes, verde = até 10% do ponto de
+                         referência, vermelho = depois. Sem frase embaixo (saiu a do treinador). -->
+                    <StackPanel x:Name="FreadaPanel"
                                 HorizontalAlignment="Left"
                                 VerticalAlignment="Center"
                                 Width="430"
@@ -197,23 +200,16 @@
                         <StackPanel.RenderTransform>
                             <TranslateTransform Y="-30"/>
                         </StackPanel.RenderTransform>
-                        <TextBlock x:Name="DeltaText"
-                                   Text="0.00"
+                        <TextBlock x:Name="FreadaNum"
+                                   Text=""
                                    FontSize="116"
                                    FontWeight="ExtraBold"
-                                   Foreground="#A0A0A0"
-                                   HorizontalAlignment="Left"/>
-                        <TextBlock x:Name="AcaoText"
-                                   Text=""
-                                   FontSize="26"
-                                   FontWeight="ExtraBold"
-                                   Foreground="#F0C040"
-                                   TextWrapping="NoWrap"
+                                   Foreground="#4FE060"
                                    HorizontalAlignment="Left"/>
                     </StackPanel>
 
-                    <!-- ───────── RESULTADO DA FREADA à DIREITA ───────── -->
-                    <StackPanel x:Name="BrakeResultPanel"
+                    <!-- ───────── SAÍDA à DIREITA (Flávio 2026-10-28) ───────── -->
+                    <StackPanel x:Name="SaidaPanel"
                                 HorizontalAlignment="Right"
                                 VerticalAlignment="Center"
                                 Width="220"
@@ -222,11 +218,10 @@
                         <StackPanel.RenderTransform>
                             <TranslateTransform Y="-30"/>
                         </StackPanel.RenderTransform>
-                        <!-- Resultado da freada = NÚMERO da distância (m) que freou vs o ponto da
-                             MELHOR passagem naquele trecho, COLORIDO (Flávio 2026-07-03): verde =
-                             no ponto (±0,5 m), amarelo = freou antes, vermelho = freou depois.
-                             Sem palavra. -->
-                        <TextBlock x:Name="BrakeResultNum"
+                        <!-- km/h entre a velocidade de SAÍDA desta passagem e a da MESMA curva na
+                             MELHOR VOLTA, sem sinal: verde = saiu mais rápido (ou igual), vermelho =
+                             mais lento. Sem palavra. -->
+                        <TextBlock x:Name="SaidaNum"
                                    Text=""
                                    FontSize="92"
                                    FontWeight="ExtraBold"

@@ -244,8 +244,9 @@ public sealed partial class MainWindow : Window
             {
                 if (keys.Contains("trechoStatus")) ApplyHalo(cur.TrechoStatus);
                 if (keys.Contains("shift"))        ApplyShift(cur.Shift);
-                if (keys.Contains("delta"))        ApplyDelta(cur.Delta);
-                if (keys.Contains("acao"))         ApplyAcao(cur.Acao);
+                // Números grandes = freada/saída vs a melhor volta (Flávio 2026-10-28). Delta de tempo e
+                // frase do treinador seguem no estado (web/publicação), mas não aparecem mais no notebook.
+                if (keys.Contains("numeros"))      ApplyNumeros(cur.Numeros);
                 if (keys.Contains("apex"))         ApplyApex(cur.Apex);
                 if (keys.Contains("message"))      ApplyMessage(cur.Message);
                 if (keys.Contains("freio"))        ApplyFreio(cur.Freio);
@@ -257,8 +258,7 @@ public sealed partial class MainWindow : Window
         var initial = _cockpitState.Get();
         ApplyHalo(initial.TrechoStatus);
         ApplyShift(initial.Shift);
-        ApplyDelta(initial.Delta);
-        ApplyAcao(initial.Acao);
+        ApplyNumeros(initial.Numeros);
         ApplyApex(initial.Apex);
         ApplyMessage(initial.Message);
 
@@ -726,8 +726,12 @@ public sealed partial class MainWindow : Window
         if (s.StintPattern is not null)
             ApplyStintPattern(s.StintPattern);
 
-        // Resultado da freada (à direita) — espelha o ponto de freio do trecho.
-        ApplyBrakeResult(s.FreioEstado, s.FreioAtualM, s.FreioRefM);
+        // Números grandes no demo: a freada da cena vs a referência da cena (sem saída nas cenas).
+        // As cenas medem da ENTRADA (maior = freou depois); os números medem até o ÁPICE (maior =
+        // freou antes) — por isso o espelho 2·ref − atual.
+        _cockpitState.SetNumeros(s.FreioAtualM > 0 && s.FreioRefM > 0
+            ? NumerosInfo.Comparar(2 * s.FreioRefM - s.FreioAtualM, null, new ReferenciaCurva(s.FreioRefM, null))
+            : NumerosInfo.Vazio());
 
         // Sensores: motor/movimento comunicando (verde); chassi "a instalar" (vermelho).
         // Falha de motor (mensagem GRAVE) acende água/lambda/alarme em amarelo.
@@ -1053,21 +1057,6 @@ public sealed partial class MainWindow : Window
         _   => LedOff,
     };
 
-    // ── Resultado da freada (à direita, espelha o delta) ───
-    private void ApplyBrakeResult(ApexEstado estado, double atualM, double refM)
-    {
-        // NÚMERO da distância (m) COLORIDO (Flávio 2026-07-03). Sem comparação = verde.
-        if (atualM <= 0 || refM <= 0)
-        {
-            BrakeResultNum.Text = "";   // sem comparação = em branco (nunca "—")
-            BrakeResultNum.Foreground = new SolidColorBrush(Bom);
-            return;
-        }
-        var diff = (int)Math.Round(atualM - refM);
-        BrakeResultNum.Text = Math.Abs(diff).ToString();
-        BrakeResultNum.Foreground = new SolidColorBrush(ColorForApexEstado(estado));
-    }
-
     // ── Luz de freio REAL (observada do CockpitState, comandada pelo maestro) ──
     // Lit (0..9) enche por tempo; FlashSeq sobe → pisca no ponto; resultado à direita.
     private int _lastBrakeFlashSeq;
@@ -1078,7 +1067,6 @@ public sealed partial class MainWindow : Window
     {
         _lastBrakeLit = f.Lit;
         ApplyBrake(f.Lit);
-        ApplyFreioResultado(f);
 
         if (f.FlashSeq != _lastBrakeFlashSeq)
         {
@@ -1088,21 +1076,21 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private void ApplyFreioResultado(FreioState f)
+    // Os 2 números grandes (Flávio 2026-10-28), vs a MESMA curva na MELHOR VOLTA, sem sinal e sem
+    // frase — a cor diz a direção. Esquerda = freada (m): amarelo = freou ANTES, verde = até 10% do
+    // ponto de referência, vermelho = freou DEPOIS. Direita = saída (km/h): verde = mais rápido,
+    // vermelho = mais lento. Sem referência da curva = EM BRANCO, nunca "—" (Flávio 2026-07-03).
+    private void ApplyNumeros(NumerosInfo n)
     {
-        // NÚMERO da distância (m) que freou vs o ponto da melhor passagem, COLORIDO (Flávio
-        // 2026-07-03): verde = no ponto (±0,5 m), amarelo = freou antes, vermelho = freou depois.
-        // Sem palavra. Repouso/referência = verde.
-        var color = f.ResultadoTom switch
+        FreadaNum.Text = n.FreadaM is { } f ? f.ToString() : "";
+        FreadaNum.Foreground = new SolidColorBrush(n.FreadaTom switch
         {
             FreioTom.Foco => Foco,   // freou ANTES  → amarelo
             FreioTom.Erro => Erro,   // freou DEPOIS → vermelho
-            _             => Bom,    // no ponto / repouso → verde
-        };
-        // Sem resultado ainda (sem referência / 1ª passagem) = EM BRANCO, nunca "—"
-        // (o traço aparecia por cima da mensagem — Flávio 2026-07-03).
-        BrakeResultNum.Text = f.ResultadoM is { } m ? m.ToString() : "";
-        BrakeResultNum.Foreground = new SolidColorBrush(color);
+            _             => Bom,    // dentro dos 10% → verde
+        });
+        SaidaNum.Text = n.SaidaKmh is { } s ? s.ToString() : "";
+        SaidaNum.Foreground = new SolidColorBrush(n.SaidaTom == Tone.Erro ? Erro : Bom);
     }
 
     // Pisca as luzes laterais todas vermelhas no ponto de freada e restaura o nível.
@@ -1155,31 +1143,9 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private void ApplyDelta(DeltaInfo delta)
-    {
-        // Sem sinal (+/-): a COR diz se é bom (verde) ou ruim (vermelho) — nem sempre
-        // negativo é ruim. Mostra só o valor absoluto.
-        var txt = string.IsNullOrEmpty(delta.Value) ? "0.00" : delta.Value.TrimStart('+', '-', ' ');
-        DeltaText.Text = txt;
-        DeltaText.Foreground = new SolidColorBrush(ColorForTone(delta.Tone, fallback: Muted));
-    }
-
-    private void ApplyAcao(AcaoInfo acao)
-    {
-        AcaoText.Text = acao.Texto ?? string.Empty;
-        AcaoText.Foreground = new SolidColorBrush(ColorForTone(acao.Tone, fallback: Foco));
-    }
-
     // Tira o prefixo de trecho/curva ("C6 — ", "V7 — ") — fica só a mensagem.
     private static string StripCurva(string? texto) =>
         System.Text.RegularExpressions.Regex.Replace(texto ?? string.Empty, @"^[CV]\d+\s*[—\-:]\s*", "");
-
-    private static Color ColorForTone(Tone tone, Color fallback) => tone switch
-    {
-        Tone.Bom    => Bom,
-        Tone.Erro   => Erro,
-        _           => fallback,
-    };
 
     private void ApplyApex(ApexState apex)
     {
@@ -1336,7 +1302,7 @@ public sealed partial class MainWindow : Window
         {
             StopAlertPulse();
             AlertBlocoRoot.Visibility = Visibility.Collapsed;
-            BrakeResultPanel.Visibility = Visibility.Visible;   // mensagem saiu → volta a FREADA
+            SaidaPanel.Visibility = Visibility.Visible;   // mensagem saiu → volta a SAÍDA
             return;
         }
 
@@ -1344,7 +1310,7 @@ public sealed partial class MainWindow : Window
         AlertText.Text = msg.Texto;
         AlertText.Foreground = new SolidColorBrush(Sistema);
         AlertBlocoRoot.Visibility = Visibility.Visible;
-        BrakeResultPanel.Visibility = Visibility.Collapsed;     // mensagem ocupa a direita → some a FREADA
+        SaidaPanel.Visibility = Visibility.Collapsed;     // mensagem ocupa a direita → some a SAÍDA
         StopAlertPulse();
     }
 
@@ -1361,9 +1327,9 @@ public sealed partial class MainWindow : Window
             CoachZoomRoot.Visibility = on ? Visibility.Collapsed : Visibility.Visible;
 
         var normal = on ? Visibility.Collapsed : Visibility.Visible;
-        DeltaPanel.Visibility = normal;
+        FreadaPanel.Visibility = normal;
         ApiceRow.Visibility   = normal;
-        if (on) BrakeResultPanel.Visibility = Visibility.Collapsed;
+        if (on) SaidaPanel.Visibility = Visibility.Collapsed;
 
         // 2.1 — CRÍTICO SEMPRE VENCE a tela térmica (que é declarada DEPOIS no XAML e, opaca,
         // cobriria o alerta). Ao ENTRAR no crítico: some com a térmica AGORA e trava a reabertura

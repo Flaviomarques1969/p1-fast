@@ -65,6 +65,38 @@ public sealed class CockpitOrchestrator
     // memória) → sem recorde absoluto → 1º grande ganho vira "Recorde", como antes.
     private readonly Dictionary<string, double> _recordeAbsolutoTrechoS = new();
 
+    // Os 2 números grandes do painel do notebook comparam com a MESMA curva na MELHOR VOLTA
+    // (Flávio 2026-10-28): freada (m) à esquerda, saída (km/h) à direita. A UI semeia a referência
+    // gravada ao abrir e fecha cada volta no cruzamento da linha (FecharVolta).
+    private readonly ReferenciaMelhorVolta _melhorVolta = new();
+
+    /// <summary>Referência da melhor volta em uso (tempo + curvas) — a UI grava quando muda.</summary>
+    public ReferenciaMelhorVolta MelhorVolta => _melhorVolta;
+
+    /// <summary>Semeia a referência gravada da melhor volta (UI, ao abrir a sessão / trocar de pista).</summary>
+    public void SemearMelhorVolta(double? tempoMs, IReadOnlyDictionary<string, ReferenciaCurva>? curvas)
+    {
+        _melhorVolta.Semear(tempoMs, curvas);
+        MirarLuzNaMelhorVolta();
+    }
+
+    /// <summary>Fecha a volta no cruzamento da linha (tempoMs null = cruzamento que não fecha volta
+    /// válida). Devolve true quando esta volta virou a nova referência — a UI então grava.</summary>
+    public bool FecharVolta(double? tempoMs)
+    {
+        var virou = _melhorVolta.FecharVolta(tempoMs);
+        if (virou) MirarLuzNaMelhorVolta();
+        return virou;
+    }
+
+    // As luzes laterais miram o MESMO ponto que o número da esquerda compara.
+    private void MirarLuzNaMelhorVolta()
+    {
+        if (_luzFreio is null) return;
+        foreach (var (seg, c) in _melhorVolta.Curvas)
+            if (c.FreadaM is { } f) _luzFreio.DefinirPontoMelhorVolta(seg, f);
+    }
+
     /// <summary>Semeia o recorde ABSOLUTO (histórico) de um trecho, em segundos — a UI chama uma vez,
     /// no início da sessão, a partir do ArmazemRecordes local. Só a UI conhece a persistência; o
     /// cérebro segue puro. (Flávio 2026-07-09, item 3.6.)</summary>
@@ -138,6 +170,7 @@ public sealed class CockpitOrchestrator
         _segPorId = segmentos.ToDictionary(s => s.Id, s => s);
         _detector = new TrechoDetector(segmentos, OnTrechoEvento);
         _luzFreio = new LuzFreio(segmentos);
+        MirarLuzNaMelhorVolta();   // luz nova nasce já mirando a melhor volta (se houver)
         return true;
     }
 
@@ -435,13 +468,22 @@ public sealed class CockpitOrchestrator
         // Tempo REAL desta passagem (entrada→saída), em segundos. gps.T vem em ms.
         var tempoAtualS = (_buf[^1].T - _buf[0].T) / 1000.0;
 
-        // Resultado da frenagem (à direita): onde freou nesta passagem vs a melhor.
+        // Resultado da frenagem: onde freou nesta passagem vs a melhor (estado legado do web).
+        double? onsetM = null;
         if (_luzFreio is not null)
         {
             var resultado = _luzFreio.FecharTrecho(segId, tempoAtualS);
             if (resultado is not null)
+            {
                 _cockpit.SetFreioResultado(resultado.DiffM, resultado.Palavra, resultado.Tom);
+                onsetM = resultado.OnsetM;
+            }
         }
+
+        // Os 2 números grandes (Flávio 2026-10-28): freada e saída desta passagem vs a mesma curva
+        // na melhor volta; e anota a passagem na volta corrente (vira referência se a volta for a melhor).
+        _cockpit.SetNumeros(NumerosInfo.Comparar(onsetM, _pSai, _melhorVolta.Obter(segId)));
+        _melhorVolta.AnotarPassagem(segId, onsetM, _pSai);
 
         var total = Math.Max(1, _buf[^1].CumDist);
         var pontosRaw = _buf.Select(b => new PontoPassagem(

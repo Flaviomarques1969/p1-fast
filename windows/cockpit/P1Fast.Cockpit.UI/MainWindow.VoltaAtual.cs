@@ -156,6 +156,7 @@ public sealed partial class MainWindow
                 // trecho box→linha (sair do box e cruzar a chegada) NÃO vira uma "volta" de ~30 s.
                 var tick = Environment.TickCount64;
                 if (_ultimoCruzTickLive > 0) RegistrarVoltaCompleta(tick - _ultimoCruzTickLive);
+                else _orquestrador?.FecharVolta(null);   // 1º cruzamento: as curvas do box→linha não contam
                 _ultimoCruzTickLive = tick;
                 SetVoltaAtual((_voltaAtualIdx < 0 ? 0 : _voltaAtualIdx) + 1);
             }

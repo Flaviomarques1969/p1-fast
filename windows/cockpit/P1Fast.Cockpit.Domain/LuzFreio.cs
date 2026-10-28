@@ -26,8 +26,10 @@ public enum FreioTom
 /// <summary>Preenchimento das luzes laterais (0..9) + se deve PISCAR a tela neste instante.</summary>
 public sealed record FreioFill(int Lit, bool Flash);
 
-/// <summary>Resultado da frenagem do trecho fechado: número (m) + palavra + tom. Número null = "—".</summary>
-public sealed record FreioResultado(int? DiffM, string Palavra, FreioTom Tom);
+/// <summary>Resultado da frenagem do trecho fechado: número (m) + palavra + tom. Número null = "—".
+/// OnsetM = onde a freada começou NESTA passagem (m até o ápice) — a medida que os números grandes
+/// comparam com a melhor volta (Flávio 2026-10-28).</summary>
+public sealed record FreioResultado(int? DiffM, string Palavra, FreioTom Tom, double? OnsetM = null);
 
 /// <summary>
 /// Calculadora com estado da luz de freio. Uma instância por sessão; o maestro a
@@ -52,6 +54,9 @@ public sealed class LuzFreio
 
     private readonly IReadOnlyList<TrechoSegmento> _segs;
     private readonly Dictionary<string, double> _pontoFreadaRef = new(); // segId → ponto de freada da MELHOR passagem
+    // segId → ponto de freada da curva na MELHOR VOLTA (Flávio 2026-10-28). Quando existe, é ele que
+    // a luz mira — o mesmo ponto do número grande da esquerda. Sem ele, segue a melhor passagem.
+    private readonly Dictionary<string, double> _pontoMelhorVolta = new();
     private readonly Dictionary<string, double> _melhorTempo    = new(); // segId → menor tempo do trecho (s)
     private readonly Dictionary<string, double> _onset          = new(); // segId → onde a freada começou NESTA aproximação
     private readonly Dictionary<string, (double ReacaoS, int N)> _reacao = new(); // segId → reação aprendida (EMA)
@@ -68,6 +73,19 @@ public sealed class LuzFreio
     /// <summary>Ponto de freada de referência do trecho (distância ao ápice da melhor passagem), se houver.</summary>
     public double? PontoFreadaDe(string segId)
         => _pontoFreadaRef.TryGetValue(segId, out var p) ? p : null;
+
+    /// <summary>Faz a luz mirar o ponto de freada da curva na MELHOR VOLTA (m até o ápice).</summary>
+    public void DefinirPontoMelhorVolta(string segId, double pontoM)
+    {
+        if (string.IsNullOrEmpty(segId) || !double.IsFinite(pontoM) || pontoM <= 0) return;
+        _pontoMelhorVolta[segId] = pontoM;
+    }
+
+    /// <summary>Ponto que a luz mira agora: melhor volta → melhor passagem → partida (50 m).</summary>
+    public double PontoMirado(string segId)
+        => _pontoMelhorVolta.TryGetValue(segId, out var mv) ? mv
+         : _pontoFreadaRef.TryGetValue(segId, out var pf) ? pf
+         : FreioFallbackM;
 
     /// <summary>Tempo de reação (s) do trecho pro zero adiantado; default enquanto não aprendeu.</summary>
     public double ReacaoS(string segId)
@@ -114,7 +132,7 @@ public sealed class LuzFreio
         if (id != _approachId) { _approachId = id; _vMaxApp = 0; _bdAtVmax = double.PositiveInfinity; }
 
         var aproximando = bd < _prevDFreio - 0.4;
-        var pontoFreada = _pontoFreadaRef.TryGetValue(id, out var pf) ? pf : FreioFallbackM;
+        var pontoFreada = PontoMirado(id);
 
         double fill = 0;
         var flash = false;
@@ -155,13 +173,13 @@ public sealed class LuzFreio
         if (_pontoFreadaRef.TryGetValue(segId, out var refOnset))
         {
             var m = (int)Math.Round(onset - refOnset); // + freou ANTES, − freou DEPOIS (vs melhor)
-            if (Math.Abs(m) <= FreioTolM) res = new FreioResultado(Math.Abs(m), "NO PONTO", FreioTom.Bom);
-            else if (m > 0)               res = new FreioResultado(m, "ANTES", FreioTom.Foco);
-            else                          res = new FreioResultado(-m, "DEPOIS", FreioTom.Erro);
+            if (Math.Abs(m) <= FreioTolM) res = new FreioResultado(Math.Abs(m), "NO PONTO", FreioTom.Bom, onset);
+            else if (m > 0)               res = new FreioResultado(m, "ANTES", FreioTom.Foco, onset);
+            else                          res = new FreioResultado(-m, "DEPOIS", FreioTom.Erro, onset);
         }
         else
         {
-            res = new FreioResultado(null, "REFERÊNCIA", FreioTom.Neutro); // 1ª passagem vira referência
+            res = new FreioResultado(null, "REFERÊNCIA", FreioTom.Neutro, onset); // 1ª passagem vira referência
         }
 
         if (tempoS > 0.5 && (!_melhorTempo.TryGetValue(segId, out var bt) || tempoS < bt))

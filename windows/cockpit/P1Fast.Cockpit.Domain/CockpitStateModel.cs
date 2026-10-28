@@ -43,6 +43,10 @@ public sealed record CockpitStateModel(
     /// vermelho; spec 2026-07-04). Off = sem chuva (janela ideal ou sem dado vivo).</summary>
     public FaseChuva Chuva { get; init; } = FaseChuva.Off;
 
+    /// <summary>Os 2 números grandes do painel do notebook (Flávio 2026-10-28): freada (m) à
+    /// esquerda e saída (km/h) à direita, vs a mesma curva na melhor volta. Vazio = em branco.</summary>
+    public NumerosInfo Numeros { get; init; } = NumerosInfo.Vazio();
+
     /// <summary>Retorna o estado default (espelha o que o mockup carrega ao boot).</summary>
     public static CockpitStateModel Default() => new(
         TrechoStatus: TrechoStatus.Neutro,

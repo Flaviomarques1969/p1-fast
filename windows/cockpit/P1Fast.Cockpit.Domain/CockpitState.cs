@@ -357,6 +357,18 @@ public sealed class CockpitState
         Emit(prev, new[] { "freio" });
     }
 
+    /// <summary>Os 2 números grandes (freada à esquerda, saída à direita). Emite "numeros".</summary>
+    public void SetNumeros(NumerosInfo numeros)
+    {
+        ArgumentNullException.ThrowIfNull(numeros);
+        AssertEnumDefined(numeros.FreadaTom, nameof(numeros));
+        AssertEnumDefined(numeros.SaidaTom, nameof(numeros));
+        if (_state.Numeros == numeros) return;
+        var prev = _state;
+        _state = prev with { Numeros = numeros };
+        Emit(prev, new[] { "numeros" });
+    }
+
     // ── Helpers estáticos ──────────────────────────────────────────
 
     /// <summary>Quantos LEDs acendem quando mode=LIT e level=N. Map linear; clampa fora do range.</summary>

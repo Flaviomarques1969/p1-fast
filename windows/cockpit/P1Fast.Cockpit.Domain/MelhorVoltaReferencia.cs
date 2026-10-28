@@ -71,13 +71,15 @@ public sealed class ReferenciaMelhorVolta
     public ReferenciaCurva? Obter(string segId)
         => _referencia.TryGetValue(segId, out var r) ? r : null;
 
-    /// <summary>Carrega a referência gravada (UI, ao abrir a sessão). Substitui a atual inteira.</summary>
-    public void Semear(double tempoMs, IReadOnlyDictionary<string, ReferenciaCurva> curvas)
+    /// <summary>Carrega a referência gravada (UI, ao abrir a sessão ou trocar de pista). Substitui a
+    /// atual inteira; sem referência gravada (tempo inválido ou nenhuma curva) = fica sem referência.</summary>
+    public void Semear(double? tempoMs, IReadOnlyDictionary<string, ReferenciaCurva>? curvas)
     {
-        if (!double.IsFinite(tempoMs) || tempoMs <= 0 || curvas is null || curvas.Count == 0) return;
         _referencia.Clear();
+        TempoMs = null;
+        if (tempoMs is not { } t || !double.IsFinite(t) || t <= 0 || curvas is null || curvas.Count == 0) return;
         foreach (var (seg, c) in curvas) _referencia[seg] = c;
-        TempoMs = tempoMs;
+        TempoMs = t;
     }
 
     /// <summary>Anota a passagem desta volta. Passar de novo pela mesma curva sobrescreve (fica a última).</summary>

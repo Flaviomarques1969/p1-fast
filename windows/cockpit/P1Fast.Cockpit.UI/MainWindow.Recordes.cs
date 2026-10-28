@@ -63,8 +63,13 @@ public sealed partial class MainWindow
         if (_recordes is null || _orquestrador is null) return;
         var sufixo = "." + ArmazemRecordes.MetTempo;   // ".tempo"
         foreach (var (chave, valor) in _recordes.Itens)
-            if (chave.EndsWith(sufixo, StringComparison.Ordinal))
+            if (chave.EndsWith(sufixo, StringComparison.Ordinal)
+                && !chave.StartsWith(ArmazemRecordes.PrefixoMelhorVolta, StringComparison.Ordinal))
                 _orquestrador.SemearRecordeTrecho(chave[..^sufixo.Length], valor.Valor);
+
+        // Os 2 números grandes (Flávio 2026-10-28): referência = curvas da melhor volta gravada.
+        var (tempoMs, curvas) = _recordes.LerReferenciaMelhorVolta();
+        _orquestrador.SemearMelhorVolta(tempoMs, curvas);
     }
 
     private MetadadosRecorde MetaAgora()
@@ -82,6 +87,17 @@ public sealed partial class MainWindow
     // entra na média da sessão NEM vira recorde (contaminaria o alvo da térmica pra sempre).
     private void RegistrarVoltaCompleta(double tempoMs)
     {
+        // Números grandes (Flávio 2026-10-28): toda volta fecha a anotação das curvas; se esta é a
+        // mais rápida com curvas gravadas, as curvas DELA viram a referência e vão para o arquivo.
+        // Replay: o armazém é em memória (MemoriaRecordesStore) — usa na sessão, nunca grava em disco.
+        var plausivel = double.IsFinite(tempoMs) && tempoMs >= ArmazemRecordes.VoltaMinimaPlausivelMs;
+        if (_orquestrador?.FecharVolta(plausivel ? tempoMs : null) == true && _recordes is not null
+            && _orquestrador.MelhorVolta.TempoMs is { } refMs)
+        {
+            _recordes.GravarReferenciaMelhorVolta(refMs, _orquestrador.MelhorVolta.Curvas, MetaAgora());
+            SalvarRecordes();
+        }
+
         if (_recordes is null || double.IsNaN(tempoMs) || double.IsInfinity(tempoMs)) return;
         if (tempoMs < ArmazemRecordes.VoltaMinimaPlausivelMs) return;   // implausível: descarta
         _sessaoLapsMs.Add(tempoMs);

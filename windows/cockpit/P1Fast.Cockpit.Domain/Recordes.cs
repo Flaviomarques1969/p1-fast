@@ -115,4 +115,48 @@ public sealed class ArmazemRecordes
         if (tempoMs < pisoPlausivelMs) return false;   // implausível (box→linha / ruído): não é volta
         return Tentar(ChaveVolta, tempoMs, SentidoRecorde.Menor, meta);
     }
+
+    // ── Referência da MELHOR VOLTA por curva (Flávio 2026-10-28) ──────────
+    // Os 2 números grandes do painel comparam com a mesma curva na melhor volta (MelhorVoltaReferencia).
+    // Chaves: "melhorvolta.tempo" (ms da volta-referência) e "melhorvolta.<segId>.freada|saida".
+    // É um CONJUNTO de uma volta só: gravar substitui o conjunto inteiro (nada de misturar voltas
+    // como as métricas por dado acima, que são independentes).
+    public const string PrefixoMelhorVolta = "melhorvolta.";
+    public const string ChaveMelhorVoltaTempo = PrefixoMelhorVolta + "tempo";
+
+    /// <summary>Grava a referência da melhor volta (substitui a anterior inteira).</summary>
+    public void GravarReferenciaMelhorVolta(double tempoMs, IReadOnlyDictionary<string, ReferenciaCurva> curvas, MetadadosRecorde meta)
+    {
+        foreach (var k in Itens.Keys.Where(k => k.StartsWith(PrefixoMelhorVolta, StringComparison.Ordinal)).ToList())
+            Itens.Remove(k);
+        Itens[ChaveMelhorVoltaTempo] = new ValorRecorde(tempoMs, meta);
+        foreach (var (seg, c) in curvas)
+        {
+            if (c.FreadaM is { } f) Itens[$"{PrefixoMelhorVolta}{seg}.freada"] = new ValorRecorde(f, meta);
+            if (c.SaidaKmh is { } s) Itens[$"{PrefixoMelhorVolta}{seg}.saida"] = new ValorRecorde(s, meta);
+        }
+    }
+
+    /// <summary>Lê a referência gravada: (tempo da volta, curvas). Sem referência = (null, vazio).</summary>
+    public (double? TempoMs, IReadOnlyDictionary<string, ReferenciaCurva> Curvas) LerReferenciaMelhorVolta()
+    {
+        var curvas = new Dictionary<string, ReferenciaCurva>();
+        if (Obter(ChaveMelhorVoltaTempo) is not { } tempo) return (null, curvas);
+        foreach (var (chave, v) in Itens)
+        {
+            if (!chave.StartsWith(PrefixoMelhorVolta, StringComparison.Ordinal) || chave == ChaveMelhorVoltaTempo) continue;
+            var resto = chave[PrefixoMelhorVolta.Length..];
+            var ponto = resto.LastIndexOf('.');
+            if (ponto <= 0) continue;
+            var seg = resto[..ponto];
+            var c = curvas.GetValueOrDefault(seg) ?? new ReferenciaCurva(null, null);
+            curvas[seg] = resto[(ponto + 1)..] switch
+            {
+                "freada" => c with { FreadaM = v.Valor },
+                "saida"  => c with { SaidaKmh = v.Valor },
+                _        => c,
+            };
+        }
+        return (tempo.Valor, curvas);
+    }
 }
