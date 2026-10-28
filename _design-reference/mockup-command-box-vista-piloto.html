@@ -8661,15 +8661,36 @@ html,body{
       : ts.ultima.map(function(p){ return tri(p, 6, .35); }).join('') + ts.volta.map(function(p){ return tri(p, 8, .9); }).join('');
   }
 
-  // trechos da metodologia: entrada (anel) e saída (ponto) de cada curva de freada; a do trecho em curso acesa
+  // trechos da metodologia: entrada (anel) e saída (ponto) de cada curva de freada; a do trecho em curso acesa.
+  // Ápice (Flávio 28/10): cruz branca no ápice cadastrado; «N,N m do ápice» = menor distância do GPS ao ápice
+  // (conta do cérebro: apiceAgoraM na curva em curso, trechos[j].apiceM na última curva feita desta volta)
   function desenharTrechosMapa(el, s){
-    var tr = s.trechos, at = s.voltaAtual, h = '';
+    var tr = s.trechos, at = s.voltaAtual, h = '', rot = {};
     if(!tr || !tr.lista.length){ el.innerHTML = ''; return; }
+    var ctm = el.getCTM && el.getCTM(), giro = ctm ? Math.atan2(ctm.b, ctm.a) * 180 / Math.PI : 0;   // giro da pista na tela
+    if(at){
+      var cur = at.trechoAtual ? tr.lista[at.trechoAtual - 1] : null;
+      if(cur && cur.tipo === 'curva' && at.apiceAgoraM != null) rot[cur.i] = { m: at.apiceAgoraM, agora: true };
+      for(var j = (at.trechos || []).length - 1; j >= 0; j--){
+        if(tr.lista[j].tipo === 'curva' && at.trechos[j] && at.trechos[j].apiceM != null){ rot[tr.lista[j].i] = { m: at.trechos[j].apiceM, agora: false }; break; }
+      }
+    }
     tr.lista.forEach(function(t){
       if(t.tipo !== 'curva') return;
       var aceso = at && at.trechoAtual === t.i, op = aceso ? 1 : .55;
       h += '<circle cx="' + t.entrada.x + '" cy="' + t.entrada.y + '" r="' + (aceso ? 7 : 5) + '" fill="none" stroke="#D4AF37" stroke-opacity="' + op + '" stroke-width="1.8"/>'
         + '<circle cx="' + t.saida.x + '" cy="' + t.saida.y + '" r="' + (aceso ? 4.5 : 3.2) + '" fill="#D4AF37" fill-opacity="' + op + '"/>';
+      if(t.apice){
+        var a = t.apice, r = aceso ? 5 : 4;
+        h += '<path data-tv-apice="' + t.i + '" d="M' + (a.x - r) + ' ' + a.y + 'H' + (a.x + r) + 'M' + a.x + ' ' + (a.y - r) + 'V' + (a.y + r)
+          + '" stroke="#FFFFFF" stroke-opacity="' + (aceso ? .95 : .6) + '" stroke-width="1.8" stroke-linecap="round"/>';
+        var q = rot[t.i];
+        // a pista é desenhada girada (.track-transformed): o texto desfaz o giro em volta do ápice e fica deitado na tela;
+        // 18 unidades × escala do mapa na TV 1920 ≈ 12 px (medir-apice.mjs exige ≥ 11 px)
+        if(q) h += '<text data-tv-apice-m="' + t.i + '" x="' + (a.x + 9) + '" y="' + (a.y + 6) + '" transform="rotate(' + (-giro).toFixed(1) + ' ' + a.x + ' ' + a.y + ')"'
+          + ' fill="' + (q.agora ? '#FFFFFF' : '#F5F0E0') + '" fill-opacity="' + (q.agora ? 1 : .8) + '" font-size="18" font-family="JetBrains Mono,Menlo,monospace" stroke="#05060C" stroke-width="4.5"'
+          + ' paint-order="stroke" stroke-linejoin="round">' + q.m.toFixed(1).replace('.', ',') + ' m do ápice</text>';
+      }
     });
     el.innerHTML = h;
   }

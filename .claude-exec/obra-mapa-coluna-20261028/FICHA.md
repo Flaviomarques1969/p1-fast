@@ -237,3 +237,13 @@ bak-faixa-vel/ e bak-apice/. Migração SEGURADA.
 Escopo: (1) consertar o "gráfico de voltas sobrepostas VAZANDO" (faixa de velocidade); (2) ápice: prova + desenho no
 mapa + commit; (3) itens 2 e 3 do painel p1fast-tv-quadro-melhorias-1425. Migração SEGURADA.
 - 28/10 15h4x: queixa 'voltas sobrepostas vazando' = gráfico do comparativo.html (porta 5198) da janela «P1FAST - GPS TV modo RaceBox» (imac-9c), aberto às 15h17; a faixa da TV oficial não vaza (varri 295 quadros, 9 tamanhos). Recado enviado a ela por SendMessage; nada mexido aqui.
+- 28/10 ~16h: ÁPICE PRONTO EM DEV, SEM COMMIT PRÓPRIO (o auto-save 1eee7f047 das 15:51 levou cérebro + trechos-volta):
+  tests/node-smoke-tv-apice.mjs 16/0 (conta independente: cruzamento das LINHAS do cadastro + haversine; mutações
+  sem-ápice 10 falhas e ponto-mais-longe 12 falhas REPROVAM), na bateria do package.json. Mapa: cruz branca no ápice
+  de cada curva + «N,N m do ápice» (curva em curso e última feita), texto desfaz o giro da pista (getCTM), 18 un = 12 px.
+  blocos-b/medir-apice.mjs APROVADO (7 cruzes, 8,9 e 4,2 = cérebro, 12,09 px, dentro do mapa); controle bak-apice REPROVA.
+  Regressão: gps-tv 106, quadro 23, faixa 37, blocos 26, trechos-volta 24, arquitetura 39, medir-quadro APROVADO.
+  Smoke individual 89 provas, 2 falham: schema-parity (antiga) e pagina-volta (NOVA: «os 16 arquivos da página têm
+  cópia idêntica no app» — cerebro-gps-tv.js, trechos-volta.js, trecho-detector.js mudaram/entraram; achar a cópia do
+  app iPhone e o roteiro de sincronizar, sincronizar, rodar de novo, commit).
+- 28/10 RETOMADA 1028-1603: cópias do app iPhone sincronizadas (cerebro-gps-tv.js, trechos-volta.js, web/cockpit/trecho-detector.js novo — pasta Resources/Cockpit é referência de pasta, entra no build sozinha); pagina-volta 46/0; tv 106/23/37/26/16, trechos-volta 24, arquitetura 39; medir-apice e medir-quadro APROVADO. Commit na branch, sem push. Migração SEGURADA.

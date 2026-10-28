@@ -315,3 +315,4 @@ PONTO DE PARADA 1027-1903 (27/10 ~19h03): E5 pronta em DEV (1b9857db6), PACOTE e
 - 28/10 14:57: ponto de parada RETOMAR 1028-1457 (passe ~/.claude/retomadas/20261028-1457-p1fast.md): itens a528b1bc0 + 336c06de9 prontos; próximo = faixa de velocidade, depois ápice, depois itens 2 e 3.
 
 - 28/10 15h20 (ponto de parada 1028-1520): faixa de velocidade PRONTA (bd6d4b241); ápice no cérebro escrito sem commit (bak-apice/); queixa nova dele: gráfico das voltas sobrepostas vazando — próximo passo 1. Migração SEGURADA.
+- 28/10 16h03 (ponto de parada 1028-1603): ápice pronto e provado em DEV sem commit próprio; falta sincronizar cópia do app iPhone (pagina-volta) e commit. Queixa do vazamento = comparativo.html da janela «P1FAST - GPS TV modo RaceBox», recado enviado. Migração SEGURADA.

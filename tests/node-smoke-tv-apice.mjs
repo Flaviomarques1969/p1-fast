@@ -3,9 +3,13 @@
 // ponto do GPS ao ápice cadastrado (apice_gps de trechos-brasilia.js) → voltas[v].trechos[i].apiceM e, na curva em
 // curso, voltaAtual.apiceAgoraM. Aqui a conta é refeita de outro jeito: cruzamento das LINHAS de entrada e saída do
 // cadastro (segmento × segmento, não a posição projetada no traçado) e haversine (não a conta plana do carro).
-// Gravação REAL de 21/06; offline. Controles: ápice deslocado 30 m muda o número; um cérebro que ignora o ápice reprova.
+// Gravação REAL de 21/06; offline. Controles: ápice deslocado 30 m muda o número; um cérebro que ignora o ápice
+// (APICE_CEREBRO, abaixo) e um que mede no ponto mais LONGE reprovam.
 import { readFileSync } from 'node:fs';
-import { criarCerebroGpsTv } from '../web/command-box/cerebro/cerebro-gps-tv.js';
+import { pathToFileURL } from 'node:url';
+// Mutação: APICE_CEREBRO=<cópia do cerebro-gps-tv.js NA MESMA PASTA> roda a prova contra outra versão (sem o ápice, reprova)
+const { criarCerebroGpsTv } = await import(process.env.APICE_CEREBRO
+  ? pathToFileURL(process.env.APICE_CEREBRO).href : '../web/command-box/cerebro/cerebro-gps-tv.js');
 import { TRECHOS_BRASILIA } from '../web/command-box/trechos-brasilia.js';
 import { TIPO_POR_CURVA } from '../web/command-box/tipos-curva-brasilia.js';
 
@@ -78,11 +82,5 @@ t('na curva em curso a distância ao ápice só diminui', subiu.length === 0, su
   const mudou = lista.filter((x, i) => x.tipo === 'curva' && Math.abs(v.trechos[i].apiceM - v2.trechos[i].apiceM) > 3).length;
   t('controle: ápice deslocado 30 m muda a distância nas 7 curvas', mudou === 7, mudou);
 }
-{ // cadastro sem ápice: o cérebro não inventa número
-  const sem = TRECHOS_BRASILIA.map(c => ({ ...c, apice_gps: { lat: NaN, lng: NaN } }));
-  const r = rodar({ trechos: sem, tipoPorCurva: TIPO_POR_CURVA }), v = r.s.voltas.find(x => x.n === 2);
-  t('controle: ápice sem coordenada → nenhum número (régua reprovaria esse cérebro)', v.trechos.every(x => x.apiceM == null || Number.isNaN(x.apiceM)), v.trechos.map(x => x.apiceM));
-}
-
 console.log(`\nnode-smoke-tv-apice: ${ok} ok, ${fail} falha`);
 process.exit(fail ? 1 : 0);

@@ -39,7 +39,8 @@ export function montarTrechosDaVolta(cadastro, o) {
     if (!(s.p > e.p)) return { lista: [], erro: `${c.nome}: saída não vem depois da entrada (ou a curva passa pela chegada)` };
     const tipo = tipoPorCurva[c.nome] || null;
     const item = { nome: c.nome, tipoCurva: tipo, de: e.p, ate: s.p, apiceP: a.p,
-      entrada: { x: r1(e.x), y: r1(e.y) }, apice: { x: r1(a.x), y: r1(a.y) }, saida: { x: r1(s.x), y: r1(s.y) } };
+      entrada: { x: r1(e.x), y: r1(e.y) }, apice: { x: r1(a.x), y: r1(a.y) }, saida: { x: r1(s.x), y: r1(s.y) },
+      apiceGps: { lat: c.apice_gps.lat, lng: c.apice_gps.lng } };
     (tipo === TIPO_PE_EMBAIXO ? peEmbaixo : curvas).push(item);
   }
   curvas.sort((x, y) => x.de - y.de);
@@ -55,7 +56,7 @@ export function montarTrechosDaVolta(cadastro, o) {
   for (const c of curvas) {
     if (c.de > cursor) reta(cursor, c.de, c.nome);
     lista.push({ tipo: 'curva', nome: c.nome, tipoCurva: c.tipoCurva, de: c.de, ate: c.ate,
-      entrada: c.entrada, apice: c.apice, saida: c.saida });
+      entrada: c.entrada, apice: c.apice, saida: c.saida, apiceGps: c.apiceGps });
     cursor = c.ate;
   }
   if (cursor < 1) reta(cursor, 1, 'chegada');
