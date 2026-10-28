@@ -77,3 +77,19 @@ Painel aberto p1fast-tv-blocos-sem-racebox-1151 (blocos "não vem do RaceBox"). 
 
 ## PONTO DE PARADA 1028-1152 (11h53)
 Painel aberto p1fast-tv-blocos-sem-racebox-1151 (blocos "não vem do RaceBox"). Passe /Users/imac/.claude/retomadas/20261028-1152-p1fast.md, PRÓXIMO PASSO item 1.
+
+## PEDIDO NOVO 28/10 ~12h30 (Flávio) — TV "ainda bem fraca"; migração SEGURADA por ordem dele (PACOTE carimbado)
+1. Plano do stint feito no celular aparecer na TV. Fonte: app iOS grava em `envelopes_seguranca_stint` (nuvem);
+   leitor web já existe: `web/cockpit/treino-stint.js:110` (último envelope por carro_id) e `configuracao-stint.js`.
+   Hoje o bloco stint diz "sem plano nem recorde". Achar a casa no cérebro (CONTRATO_DADOS) — tela não abre conexão.
+2. Velocímetro: tirar "AGUARDANDO SENSOR" (lista AGUARDA_SENSOR ~linha 7844); velocidade E km vêm do GPS.
+   Na gravação 21/06 a agulha/odômetro ficam em 0/000.0 — o feed do MODO RACEBOX só soma `source==='racebox'`.
+3. Diminuir o velocímetro para caber faixa HORIZONTAL com o gráfico em linha da volta inteira (acelera/freia),
+   volta atual × melhor volta, cursor andando no trecho — cores pedidas: AZUL acelera, VERMELHO freia.
+4. "Painel que estava ótimo" (voltas, melhor, última, indicadores, linha que passa no trecho): busca feita —
+   NÃO é bloco da TV (16 blocos iguais desde antes de 21/06), nem rastro do mapa (sempre por velocidade), nem
+   replay-hoje, nem Vista demo. Mais próximo = tela "Comparar Voltas" (`_design-reference/mockup-command-box-comparar-voltas.html`,
+   existe no projeto principal e no ar; NÃO está nesta branch — pegar de `.claude-exec/p1box-ar-20261027/arquivos/`).
+   Ela usa `freio-trecho.js` (simulado pela física); na TV preferir G MEDIDO do RaceBox via cérebro. Confirmar com
+   ele mostrando a TV pronta (não perguntar antes).
+Ferramentas: `blocos-b/foto-url.mjs <url> <png>`, `blocos-b/medir-b.mjs` (prova opção B, reposicionar se layout mudar).
