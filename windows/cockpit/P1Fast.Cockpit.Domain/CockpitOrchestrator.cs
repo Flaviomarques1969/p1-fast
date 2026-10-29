@@ -317,9 +317,11 @@ public sealed class CockpitOrchestrator
 
         // Luz de freio lateral: enche por tempo na aproximação do ponto de freada
         // da melhor passagem; pisca a tela ao chegar. modoCritico = mensagem GRAVE na tela.
+        // Na 1ª versão da tela (TelaPrimeiraVersao) nenhuma mensagem aparece, então o GRAVE
+        // não pode apagar o aviso de freio: ele é a única coisa além dos 2 números.
         if (_luzFreio is not null)
         {
-            var critico = _cockpit.Get().Message is { Tipo: MsgTipo.Grave };
+            var critico = TelaPrimeiraVersao.MensagensNaTela() && _cockpit.Get().Message is { Tipo: MsgTipo.Grave };
             var f = _luzFreio.Atualizar(gps.Lat, gps.Lng, gps.Kmh, critico);
             _cockpit.SetFreioFill(f.Lit, f.Flash);
         }

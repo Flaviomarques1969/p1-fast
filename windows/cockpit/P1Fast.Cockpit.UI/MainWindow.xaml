@@ -39,6 +39,12 @@
                 </Border.RenderTransform>
                 <Grid>
 
+                    <!-- 1ª VERSÃO (Flávio 2026-10-29): na tela só os 2 números + o aviso de FREIO.
+                         Tudo o que sai fica dentro de um dos 4 Grids "Escondido*", que o code-behind
+                         deixa Collapsed pela chave Domain/TelaPrimeiraVersao (AplicarPrimeiraVersao).
+                         As peças de dentro continuam vivas; desligar a chave devolve a tela de antes.
+                         Peça nova fora desses Grids reprova a catraca TelaPrimeiraVersaoTests. -->
+                    <Grid x:Name="EscondidoFundo">
                     <Rectangle x:Name="HaloRect" IsHitTestVisible="False" Opacity="1.0">
                         <Rectangle.Fill>
                             <RadialGradientBrush x:Name="HaloBrush"
@@ -60,9 +66,11 @@
                             Background="Black"
                             BorderBrush="#0E0E0E"
                             BorderThickness="1"/>
+                    </Grid>
 
                     <!-- ───────── LUZ DE FREIO ESQUERDA (vertical) ───────── -->
-                    <StackPanel HorizontalAlignment="Left"
+                    <StackPanel x:Name="BrakeLColuna"
+                                HorizontalAlignment="Left"
                                 VerticalAlignment="Center"
                                 Margin="6,0,0,0"
                                 Spacing="11">
@@ -81,7 +89,8 @@
                     </StackPanel>
 
                     <!-- ───────── LUZ DE FREIO DIREITA ───────── -->
-                    <StackPanel HorizontalAlignment="Right"
+                    <StackPanel x:Name="BrakeRColuna"
+                                HorizontalAlignment="Right"
                                 VerticalAlignment="Center"
                                 Margin="0,0,6,0"
                                 Spacing="11">
@@ -99,6 +108,7 @@
                         <Canvas Width="14" Height="14"><Ellipse x:Name="BrakeRGlow9" Width="46" Height="46" Opacity="0" IsHitTestVisible="False"/><Ellipse x:Name="BrakeR9" Width="14" Height="14" Fill="#161616"/></Canvas>
                     </StackPanel>
 
+                    <Grid x:Name="EscondidoTopo">
                     <!-- ───────── CLUSTER DE SENSORES (topo) ───────── -->
                     <Border HorizontalAlignment="Center"
                             VerticalAlignment="Top"
@@ -186,6 +196,7 @@
                              HorizontalAlignment="Left" VerticalAlignment="Top" Visibility="Collapsed">
                         <Polygon.RenderTransform><TranslateTransform x:Name="VoltaCaretXf"/></Polygon.RenderTransform>
                     </Polygon>
+                    </Grid>
 
                     <!-- ───────── FREADA à ESQUERDA (Flávio 2026-10-28) ─────────
                          Metros entre onde freou nesta passagem e onde freou na MESMA curva da
@@ -229,6 +240,7 @@
                                    HorizontalAlignment="Center"/>
                     </StackPanel>
 
+                    <Grid x:Name="EscondidoMeio">
                     <!-- ═══ VIDRO DO MAPA CENTRAL (coach-zoom) — spec do iMac via canal 2026-07-11
                          (coach-miolo.css + coach-zoom-live.js, estado c840e129; cores oklch→ARGB).
                          Cartão 330×228 @ (346,84) com zoom do trecho atual + ghost + gap ao vivo.
@@ -521,6 +533,7 @@
                             </RadialGradientBrush>
                         </Rectangle.Fill>
                     </Rectangle>
+                    </Grid>
 
                     <!-- LAVADO DA FREADA (hora de frear): VERMELHO, nasce EM CIMA (Flávio 2026-07-03)
                          — separado do wash BRANCO/azul do câmbio (que nasce EMBAIXO, de onde vem a
@@ -537,6 +550,7 @@
                         </Rectangle.Fill>
                     </Rectangle>
 
+                    <Grid x:Name="EscondidoCamadas">
                     <!-- TELAS DEDICADAS de AQUECIMENTO / RESFRIAMENTO (Flávio 2026-07-06):
                          durante a 1ª volta (motor frio) e a última (motor quente) a telemetria
                          normal desativa e entra esta tela cheia. Anel = PROGRESSO rumo ao ideal,
@@ -648,6 +662,7 @@
                                    FontSize="89" FontWeight="Black" Foreground="#FF3B30"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"
                                    TextAlignment="Center" TextWrapping="Wrap" LineHeight="86"/>
+                    </Grid>
                     </Grid>
 
                 </Grid>

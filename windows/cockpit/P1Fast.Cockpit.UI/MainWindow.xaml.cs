@@ -216,6 +216,7 @@ public sealed partial class MainWindow : Window
         _options = options;
         InitializeComponent();
         ApplyDisplayPlacement();
+        AplicarPrimeiraVersao();
 
         _leds = new[] { Led01, Led02, Led03, Led04, Led05, Led06, Led07, Led08, Led09,
                         Led10, Led11, Led12, Led13, Led14, Led15, Led16, Led17 };
@@ -317,6 +318,18 @@ public sealed partial class MainWindow : Window
             AtualizarStint();            // monta a barra (placeholder) → UltimoBlocoReal/painel válidos
             StartTelaTermicaDemo();
         }
+    }
+
+    // 1ª versão (Flávio 2026-10-29): só os 2 números + o aviso de freio. Os 4 grupos do XAML que
+    // embrulham o resto ficam Collapsed com a chave ligada — único lugar que mexe neles. As peças de
+    // dentro seguem vivas (o código delas pode ligar/desligar a si mesmas; o grupo fechado vence).
+    private void AplicarPrimeiraVersao()
+    {
+        var grupos = TelaPrimeiraVersao.MostraGrupos() ? Visibility.Visible : Visibility.Collapsed;
+        EscondidoFundo.Visibility = grupos;
+        EscondidoTopo.Visibility = grupos;
+        EscondidoMeio.Visibility = grupos;
+        EscondidoCamadas.Visibility = grupos;
     }
 
     // ── Varredura demo do SHIFT (marcha) ──────────────────────
@@ -728,10 +741,14 @@ public sealed partial class MainWindow : Window
 
         // Números grandes no demo: a freada da cena vs a referência da cena (sem saída nas cenas).
         // As cenas medem da ENTRADA (maior = freou depois); os números medem até o ÁPICE (maior =
-        // freou antes) — por isso o espelho 2·ref − atual.
-        _cockpitState.SetNumeros(s.FreioAtualM > 0 && s.FreioRefM > 0
-            ? NumerosInfo.Comparar(2 * s.FreioRefM - s.FreioAtualM, null, new ReferenciaCurva(s.FreioRefM, null))
-            : NumerosInfo.Vazio());
+        // freou antes) — por isso o espelho 2·ref − atual. Na 1ª versão (só os 2 números na tela) a
+        // demo usa casos que mostram as cores dos dois lados (TelaPrimeiraVersao.NumerosDemo).
+        if (TelaPrimeiraVersao.Ligada)
+            _cockpitState.SetNumeros(TelaPrimeiraVersao.NumerosDemo(index));
+        else
+            _cockpitState.SetNumeros(s.FreioAtualM > 0 && s.FreioRefM > 0
+                ? NumerosInfo.Comparar(2 * s.FreioRefM - s.FreioAtualM, null, new ReferenciaCurva(s.FreioRefM, null))
+                : NumerosInfo.Vazio());
 
         // Sensores: motor/movimento comunicando (verde); chassi "a instalar" (vermelho).
         // Falha de motor (mensagem GRAVE) acende água/lambda/alarme em amarelo.
@@ -1298,11 +1315,12 @@ public sealed partial class MainWindow : Window
             return;
         }
 
+        // 1ª versão: a mensagem não aparece (grupo escondido), então não pode tirar a SAÍDA da direita.
         if (msg is null)
         {
             StopAlertPulse();
             AlertBlocoRoot.Visibility = Visibility.Collapsed;
-            SaidaPanel.Visibility = Visibility.Visible;   // mensagem saiu → volta a SAÍDA
+            if (TelaPrimeiraVersao.MensagensNaTela()) SaidaPanel.Visibility = Visibility.Visible;   // mensagem saiu → volta a SAÍDA
             return;
         }
 
@@ -1310,7 +1328,7 @@ public sealed partial class MainWindow : Window
         AlertText.Text = msg.Texto;
         AlertText.Foreground = new SolidColorBrush(Sistema);
         AlertBlocoRoot.Visibility = Visibility.Visible;
-        SaidaPanel.Visibility = Visibility.Collapsed;     // mensagem ocupa a direita → some a SAÍDA
+        if (TelaPrimeiraVersao.MensagensNaTela()) SaidaPanel.Visibility = Visibility.Collapsed;     // mensagem ocupa a direita → some a SAÍDA
         StopAlertPulse();
     }
 
@@ -1326,10 +1344,12 @@ public sealed partial class MainWindow : Window
         if (CoachZoomRoot is not null)
             CoachZoomRoot.Visibility = on ? Visibility.Collapsed : Visibility.Visible;
 
+        // 1ª versão: o crítico não aparece (grupo escondido), então não apaga os 2 números — senão a
+        // tela do piloto ficaria preta durante o alerta.
         var normal = on ? Visibility.Collapsed : Visibility.Visible;
-        FreadaPanel.Visibility = normal;
+        if (TelaPrimeiraVersao.MensagensNaTela()) FreadaPanel.Visibility = normal;
         ApiceRow.Visibility   = normal;
-        if (on) SaidaPanel.Visibility = Visibility.Collapsed;
+        if (on && TelaPrimeiraVersao.MensagensNaTela()) SaidaPanel.Visibility = Visibility.Collapsed;
 
         // 2.1 — CRÍTICO SEMPRE VENCE a tela térmica (que é declarada DEPOIS no XAML e, opaca,
         // cobriria o alerta). Ao ENTRAR no crítico: some com a térmica AGORA e trava a reabertura
