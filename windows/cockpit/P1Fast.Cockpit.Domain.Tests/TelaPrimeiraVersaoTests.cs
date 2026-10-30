@@ -4,6 +4,9 @@
 // MainWindow*.cs de verdade (sobe pastas a partir do bin até achar P1Fast.Cockpit.UI). Fail-closed: peça
 // não achada = REPROVA. Cada régua tem o controle que DEVE reprovar (indicador escondido, número no canto,
 // número por baixo do mapa, mensagem sem a chave).
+// 29/10 ~23h ("o shift light do freio só que vai funcionar. põe ele na parte debaixo no shift light
+// horizontal"): as 2 colunas de freio dos lados saem da lista do que fica (TPV_03/TPV_05) — a luz de freio
+// passa para a barra de baixo, e o shift de giro sai dela (TPV_10 a TPV_12).
 
 using System.Globalization;
 using System.Text.RegularExpressions;
@@ -97,12 +100,12 @@ public class TelaPrimeiraVersaoTests
         Assert.NotEqual(TelaPrimeiraVersao.TextosEscondidos, EscondidosPelaChave(comApice));
     }
 
-    // O que ele disse que tinha sumido e devia continuar: shift light, sensores, barra de voltas, mapa,
-    // ápice (entrada/freio/vmin/ápice/saída), halo, e o aviso de freio.
+    // O que ele disse que tinha sumido e devia continuar: a barra de luzes de baixo (agora a luz de freio),
+    // sensores, barra de voltas, mapa, ápice (entrada/freio/vmin/ápice/saída), halo e o lavado da freada.
     private static readonly string[] ResteDaTela =
         new[] { "HaloRect", "SensorRpm", "SensorGps", "SensorPneus", "StintBar", "CoachZoomRoot", "ApiceRow",
                 "ApexEntradaValor", "ApexFreioValor", "ApexVminValor", "ApexSaidaValor", "ApiceBolaNum",
-                "BrakeLColuna", "BrakeRColuna", "BrakeWashRect" }
+                "BrakeWashRect" }
         .Concat(Enumerable.Range(1, 17).Select(i => $"Led{i:00}")).ToArray();
 
     /// <summary>Peças do resto que moram dentro de algo nascido escondido (ou de um texto escondido).</summary>
@@ -170,9 +173,9 @@ public class TelaPrimeiraVersaoTests
         Assert.Contains("SaidaPanel empurrado por margem", ForaDoLugar(canto));
     }
 
-    // Quem pode tirar os números/freio da tela: só código guardado pela chave (mensagem e crítico).
+    // Quem pode tirar os números/lavado da freada da tela: só código guardado pela chave (mensagem e crítico).
     private static readonly Regex MexeNasPecasQueFicam =
-        new(@"\b(FreadaPanel|SaidaPanel|BrakeLColuna|BrakeRColuna|BrakeWashRect)\.Visibility\s*=(?!=)");
+        new(@"\b(FreadaPanel|SaidaPanel|BrakeWashRect)\.Visibility\s*=(?!=)");
 
     private static bool Guardada(string linha) => linha.Contains("TelaPrimeiraVersao.MensagensNaTela(");
 
@@ -293,5 +296,197 @@ public class TelaPrimeiraVersaoTests
         // Controle: o ApplyMessage sem a guarda reprova.
         var semGuarda = msg.Replace("if (!TelaPrimeiraVersao.MensagensNaTela())", "if (false)");
         Assert.False(SaiPelaChaveAntes(semGuarda, "AplicarModoCritico("));
+    }
+
+    // ── Luz de freio na barra de baixo (29/10 ~23h) ─────────────────────────
+
+    /// <summary>As luzes da barra de baixo que o nível 0..9 da luz de freio acende (o ApplyBrake acende os
+    /// degraus 0..nível-1 dos dois lados).</summary>
+    private static HashSet<int> AcesasNoNivel(Func<int, (int Esquerda, int Direita)> degrau, int nivel) =>
+        Enumerable.Range(0, nivel).SelectMany(d => new[] { degrau(d).Esquerda, degrau(d).Direita }).ToHashSet();
+
+    /// <summary>O enchimento da luz de freio na barra: nível 0 nada; nível n = as n luzes de cada PONTA
+    /// (simétricas, só crescem); nível 9 = a barra inteira.</summary>
+    private static List<string> ErrosDoEnchimento(Func<int, (int Esquerda, int Direita)> degrau)
+    {
+        var erros = new List<string>();
+        var n = TelaPrimeiraVersao.LuzesDaBarra;
+        var antes = new HashSet<int>();
+        for (var nivel = 0; nivel <= LuzFreio.FreioN; nivel++)
+        {
+            var acesas = AcesasNoNivel(degrau, nivel);
+            if (!acesas.SetEquals(Enumerable.Range(0, n).Where(i => i < nivel || i >= n - nivel)))
+                erros.Add($"nível {nivel} não enche das pontas");
+            if (acesas.Any(i => !acesas.Contains(n - 1 - i))) erros.Add($"nível {nivel} torto");
+            if (!antes.IsSubsetOf(acesas)) erros.Add($"nível {nivel} apagou luz do nível de baixo");
+            antes = acesas;
+        }
+        return erros;
+    }
+
+    [Fact]
+    public void TPV_10_Luz_de_freio_enche_a_barra_de_baixo_das_pontas_para_o_centro()
+    {
+        Assert.Empty(ErrosDoEnchimento(TelaPrimeiraVersao.LuzesDoDegrau));
+        Assert.Equal((0, 16), TelaPrimeiraVersao.LuzesDoDegrau(0));
+        Assert.Equal((8, 8), TelaPrimeiraVersao.LuzesDoDegrau(LuzFreio.FreioN - 1));   // o último degrau é a luz do centro
+        Assert.Equal(2 * LuzFreio.FreioN - 1, TelaPrimeiraVersao.LuzesDaBarra);
+        Assert.Equal(LuzesDaBarra, AcesasNoNivel(TelaPrimeiraVersao.LuzesDoDegrau, LuzFreio.FreioN).Count);
+
+        // A barra do XAML tem exatamente essas 17 luzes, cada uma com o seu halo.
+        var nomes = Xaml().Descendants().Select(Nome).OfType<string>().ToList();
+        Assert.Equal(LuzesDaBarra, nomes.Count(x => Regex.IsMatch(x, @"^Led\d\d$")));
+        Assert.Equal(LuzesDaBarra, nomes.Count(x => Regex.IsMatch(x, @"^LedGlow\d\d$")));
+
+        // Controle: encher do CENTRO para as pontas reprova.
+        Assert.Contains("nível 1 não enche das pontas", ErrosDoEnchimento(d => (8 - d, 8 + d)));
+    }
+
+    private const int LuzesDaBarra = TelaPrimeiraVersao.LuzesDaBarra;
+
+    /// <summary>A 1ª linha de código do corpo (depois da "{", sem comentário de fim de linha).</summary>
+    private static string PrimeiraInstrucao(string corpo)
+    {
+        var l = corpo[(corpo.IndexOf('{') + 1)..].Split('\n').Select(x => x.Trim())
+                     .First(x => x.Length > 0 && !x.StartsWith("//", StringComparison.Ordinal));
+        var c = l.IndexOf("//", StringComparison.Ordinal);
+        return (c >= 0 ? l[..c] : l).Trim();
+    }
+
+    /// <summary>De onde a onde vai o bloco { } que abre logo depois de <paramref name="de"/> (só espaço entre).</summary>
+    private static (int Ini, int Fim) Bloco(string s, int de)
+    {
+        var ini = s.IndexOf('{', de);
+        if (ini < 0 || s[de..ini].Trim().Length > 0) return (-1, -1);
+        for (int i = ini, nivel = 0; i < s.Length; i++)
+        {
+            if (s[i] == '{') nivel++;
+            else if (s[i] == '}' && --nivel == 0) return (ini, i);
+        }
+        return (-1, -1);
+    }
+
+    /// <summary>O que tem de estar fiado no MainWindow.xaml.cs para a barra de baixo ser a luz de freio e o
+    /// giro não acender nela.</summary>
+    private static List<string> FiacaoDoFreioEmbaixo(string src)
+    {
+        var erros = new List<string>();
+        var freio = CorpoDoMetodo(src, "private void AplicarFreioNaBarraDeBaixo()");
+        if (PrimeiraInstrucao(freio) != "if (!TelaPrimeiraVersao.FreioNaBarraDeBaixo()) return;") erros.Add("freio sem a chave no início");
+        if (!EscondidosPelaChave(freio).SequenceEqual(TelaPrimeiraVersao.ColunasDeFreioEscondidas)) erros.Add("colunas escondidas erradas");
+        if (!freio.Contains("Enumerable.Range(0, LuzFreio.FreioN).Select(TelaPrimeiraVersao.LuzesDoDegrau)")) erros.Add("degraus fora do domínio");
+        foreach (var (arr, fonte, lado) in new[] { ("_brakeLeft", "_leds", "Esquerda"), ("_brakeRight", "_leds", "Direita"),
+                                                    ("_brakeLeftGlow", "_ledGlows", "Esquerda"), ("_brakeRightGlow", "_ledGlows", "Direita") })
+            if (!Regex.IsMatch(freio, $@"\b{arr}\s*=\s*degraus\.Select\(p => {fonte}\[p\.{lado}\]\)\.ToArray\(\);"))
+                erros.Add(arr + " não aponta para a barra de baixo");
+
+        // Chamado no construtor DEPOIS das luzes e halos existirem (e dos halos dos lados dimensionados).
+        var ctor = CorpoDoMetodo(src, "public MainWindow(LaunchOptions options)");
+        var chamada = ctor.IndexOf("AplicarFreioNaBarraDeBaixo();", StringComparison.Ordinal);
+        var prontos = new[] { "_leds = new[]", "_ledGlows = new[]", "_brakeRightGlow = new[]", "foreach (var g in _brakeRightGlow)" }
+            .Select(s => ctor.IndexOf(s, StringComparison.Ordinal));
+        if (chamada < 0 || prontos.Any(i => i < 0 || i > chamada)) erros.Add("freio embaixo chamado antes das luzes existirem");
+
+        if (PrimeiraInstrucao(CorpoDoMetodo(src, "private void ApplyShift(")) != "if (!TelaPrimeiraVersao.ShiftDeGiroNaTela()) return;")
+            erros.Add("giro sem a chave no início");
+
+        // A varredura demo de marcha só nasce (e só liga) dentro do if da chave.
+        const string se = "if (TelaPrimeiraVersao.ShiftDeGiroNaTela())";
+        var i0 = ctor.IndexOf(se, StringComparison.Ordinal);
+        var (ini, fim) = i0 < 0 ? (-1, -1) : Bloco(ctor, i0 + se.Length);
+        bool Dentro(string trecho) { var k = ctor.IndexOf(trecho, StringComparison.Ordinal); return k > ini && k < fim; }
+        if (ini < 0 || !Dentro("_shiftSweepTimer = DispatcherQueue.CreateTimer();") || !Dentro("_shiftSweepTimer.Start();"))
+            erros.Add("varredura de giro fora da chave");
+        return erros;
+    }
+
+    [Fact]
+    public void TPV_11_Com_a_chave_ligada_a_barra_de_baixo_e_do_freio_e_o_giro_nao_acende()
+    {
+        Assert.True(TelaPrimeiraVersao.FreioNaBarraDeBaixo(ligada: true));
+        Assert.False(TelaPrimeiraVersao.FreioNaBarraDeBaixo(ligada: false));
+        Assert.False(TelaPrimeiraVersao.ShiftDeGiroNaTela(ligada: true));
+        Assert.True(TelaPrimeiraVersao.ShiftDeGiroNaTela(ligada: false));
+
+        var src = Codigo();
+        Assert.Empty(FiacaoDoFreioEmbaixo(src));
+        var doc = Xaml();
+        foreach (var c in TelaPrimeiraVersao.ColunasDeFreioEscondidas) Peca(doc, c);   // as colunas existem no XAML
+
+        // Só o AplicarFreioNaBarraDeBaixo mexe nas colunas dos lados; a varredura de marcha nasce num lugar só.
+        var freio = CorpoDoMetodo(src, "private void AplicarFreioNaBarraDeBaixo()");
+        var colunas = new Regex(@"\b(BrakeLColuna|BrakeRColuna)\.Visibility\s*=(?!=)");
+        var fora = LinhasDaUi().Where(x => colunas.IsMatch(x.Linha) && !freio.Contains(x.Linha))
+                               .Select(x => $"{x.Arquivo}: {x.Linha.Trim()}").ToList();
+        Assert.True(fora.Count == 0, "coluna de freio mexida fora da chave:\n" + string.Join("\n", fora));
+        Assert.Equal(1, LinhasDaUi().Count(x => x.Linha.Contains("_shiftSweepTimer = ")));
+
+        // Controles: cada fio solto reprova.
+        Assert.Contains("freio sem a chave no início",
+            FiacaoDoFreioEmbaixo(src.Replace("if (!TelaPrimeiraVersao.FreioNaBarraDeBaixo()) return;", "")));
+        Assert.Contains("_brakeLeft não aponta para a barra de baixo",
+            FiacaoDoFreioEmbaixo(src.Replace("_leds[p.Esquerda]", "_leds[p.Direita]")));
+        Assert.Contains("giro sem a chave no início",
+            FiacaoDoFreioEmbaixo(src.Replace("if (!TelaPrimeiraVersao.ShiftDeGiroNaTela()) return;", "")));
+        var timerSolto = src.Replace("if (TelaPrimeiraVersao.ShiftDeGiroNaTela())\n            {\n",
+                                     "if (TelaPrimeiraVersao.ShiftDeGiroNaTela())\n            { }\n            {\n");
+        Assert.NotEqual(src, timerSolto);
+        Assert.Contains("varredura de giro fora da chave", FiacaoDoFreioEmbaixo(timerSolto));
+        var cedo = src.Replace("        AplicarFreioNaBarraDeBaixo();\n", "")
+                      .Replace("AplicarPrimeiraVersao();\n", "AplicarPrimeiraVersao();\n        AplicarFreioNaBarraDeBaixo();\n");
+        Assert.NotEqual(src, cedo);
+        Assert.Contains("freio embaixo chamado antes das luzes existirem", FiacaoDoFreioEmbaixo(cedo));
+    }
+
+    // Quem pode acender a barra de baixo com o giro: os métodos do shift light — chamados só pelo ApplyShift
+    // (que sai pela chave) e pela varredura demo (que só nasce com a chave desligada) — e quem reaponta a luz
+    // de freio para ela. Lista à mão só pode reprovar a mais (método renomeado), nunca esconder: linha nova
+    // fora dela reprova.
+    private static readonly string[] DonosDaBarra =
+        { "ApplyShift", "BeginShiftFlash", "EndShiftFlash", "StartShiftStrobe", "RenderShiftLeds", "DemoShiftRender",
+          "RenderShiftFill", "RenderAllShift", "WashTroca", "AplicarFreioNaBarraDeBaixo" };
+
+    // Lê _leds/_ledGlows (atribuir não conta) ou chama um método do shift light.
+    private static readonly Regex MexeNaBarra =
+        new(@"\b_(leds|ledGlows)\b(?!\s*=[^=])|\b(BeginShiftFlash|EndShiftFlash|StartShiftStrobe|RenderShiftLeds|DemoShiftRender|RenderShiftFill|RenderAllShift|WashTroca)\(");
+
+    private static readonly Regex Assinatura = new(@"^    (private|public|internal)[^=;]*?\b(\w+)\(");
+
+    /// <summary>Linhas que mexem na barra de baixo fora dos donos dela. Dono da linha = o último método
+    /// declarado acima. Fora da conta: a varredura demo (guardada no TPV_11) e o tamanho dos halos.</summary>
+    private static List<string> MexemNaBarraDeFora(string arquivo, IEnumerable<string> linhas, List<string>? donosVistos = null)
+    {
+        var fora = new List<string>();
+        var dono = "";
+        foreach (var l in linhas)
+        {
+            var m = Assinatura.Match(l);
+            if (m.Success) dono = m.Groups[2].Value;
+            if (!MexeNaBarra.IsMatch(l)) continue;
+            donosVistos?.Add(dono);
+            if (DonosDaBarra.Contains(dono) || l.Contains("_shiftSweepTimer.Tick +=") || l.Contains("InitGlow(")) continue;
+            fora.Add($"{arquivo} ({dono}): {l.Trim()}");
+        }
+        return fora;
+    }
+
+    [Fact]
+    public void TPV_12_So_o_shift_light_e_o_freio_embaixo_mexem_na_barra_de_baixo()
+    {
+        var vistos = new List<string>();
+        var fora = Directory.GetFiles(PastaUi(), "MainWindow*.cs")
+            .SelectMany(f => MexemNaBarraDeFora(Path.GetFileName(f), File.ReadAllLines(f), vistos)).ToList();
+        Assert.True(fora.Count == 0, "barra de baixo mexida fora do shift light/freio embaixo:\n" + string.Join("\n", fora));
+
+        // A régua enxerga o shift light e o freio embaixo de hoje (não está olhando o vazio).
+        Assert.Contains("RenderShiftLeds", vistos);
+        Assert.Contains("AplicarFreioNaBarraDeBaixo", vistos);
+
+        // Controle: o shift light chamado de dentro do ApplyFreio reprova.
+        var src = Codigo();
+        var sabotado = src.Replace("        ApplyBrake(f.Lit);\n", "        ApplyBrake(f.Lit);\n        RenderAllShift(LedOff, on: false);\n");
+        Assert.NotEqual(src, sabotado);
+        Assert.Contains("MainWindow.xaml.cs (ApplyFreio): RenderAllShift(LedOff, on: false);",
+                        MexemNaBarraDeFora("MainWindow.xaml.cs", sabotado.Split('\n')));
     }
 }

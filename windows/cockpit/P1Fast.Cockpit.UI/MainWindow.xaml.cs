@@ -235,6 +235,7 @@ public sealed partial class MainWindow : Window
         foreach (var g in _ledGlows)        InitGlow(g, 60, 13);
         foreach (var g in _brakeLeftGlow)   InitGlow(g, 72, 14);
         foreach (var g in _brakeRightGlow)  InitGlow(g, 72, 14);
+        AplicarFreioNaBarraDeBaixo();
         _sensorsMotor  = new Shape[] { SensorRpm, SensorAcel, SensorFreioPedal, SensorAgua, SensorLambda, SensorBateria, SensorAlarme };
         _sensorsMov    = new Shape[] { SensorGps, SensorAccel };
         _sensorsChassi = new Shape[] { SensorPneus, SensorSusp, SensorCambio, SensorFreioDed, SensorDirecao };
@@ -297,10 +298,14 @@ public sealed partial class MainWindow : Window
 
             // Shift light de marcha: varre das pontas pro centro (sequencial), pisca
             // vermelho ao atingir o topo (ponto de troca), reinicia. É o "RPM subindo".
-            _shiftSweepTimer = DispatcherQueue.CreateTimer();
-            _shiftSweepTimer.Interval = TimeSpan.FromMilliseconds(110);
-            _shiftSweepTimer.Tick += (_, _) => { DemoShiftRender(_shiftStep); _shiftStep = (_shiftStep + 1) % 16; };
-            _shiftSweepTimer.Start();
+            // 1ª versão: a barra de baixo é da luz de freio — a varredura de marcha não roda.
+            if (TelaPrimeiraVersao.ShiftDeGiroNaTela())
+            {
+                _shiftSweepTimer = DispatcherQueue.CreateTimer();
+                _shiftSweepTimer.Interval = TimeSpan.FromMilliseconds(110);
+                _shiftSweepTimer.Tick += (_, _) => { DemoShiftRender(_shiftStep); _shiftStep = (_shiftStep + 1) % 16; };
+                _shiftSweepTimer.Start();
+            }
         }
         else if (_options.Replay)
         {
@@ -330,6 +335,21 @@ public sealed partial class MainWindow : Window
         StatusText.Visibility = Visibility.Collapsed;
         CriticoBorda.Visibility = Visibility.Collapsed;
         CriticoOverlay.Visibility = Visibility.Collapsed;
+    }
+
+    // 1ª versão (Flávio 2026-10-29 ~23h): a luz de freio vai para a barra de 17 luzes de baixo. As 2 colunas
+    // verticais saem da tela e os 9 degraus de cada lado passam a ser as luzes da barra, das pontas para o
+    // centro — ApplyBrake, o pisca do ponto e a demo do freio seguem iguais, só acendem embaixo.
+    private void AplicarFreioNaBarraDeBaixo()
+    {
+        if (!TelaPrimeiraVersao.FreioNaBarraDeBaixo()) return;   // chave desligada: as colunas dos lados
+        BrakeLColuna.Visibility = Visibility.Collapsed;
+        BrakeRColuna.Visibility = Visibility.Collapsed;
+        var degraus = Enumerable.Range(0, LuzFreio.FreioN).Select(TelaPrimeiraVersao.LuzesDoDegrau).ToArray();
+        _brakeLeft      = degraus.Select(p => _leds[p.Esquerda]).ToArray();
+        _brakeRight     = degraus.Select(p => _leds[p.Direita]).ToArray();
+        _brakeLeftGlow  = degraus.Select(p => _ledGlows[p.Esquerda]).ToArray();
+        _brakeRightGlow = degraus.Select(p => _ledGlows[p.Direita]).ToArray();
     }
 
     // ── Varredura demo do SHIFT (marcha) ──────────────────────
@@ -797,6 +817,7 @@ public sealed partial class MainWindow : Window
 
     private void ApplyShift(ShiftState shift)
     {
+        if (!TelaPrimeiraVersao.ShiftDeGiroNaTela()) return;   // 1ª versão: a barra de baixo é da luz de freio
         if (_leds.Length != 17) return;
 
         // Upshift = vinha em RPM alto (level>=5) e caiu — em modo Lit nos dois
