@@ -1,44 +1,40 @@
-// TelaPrimeiraVersao — a 1ª versão da tela do piloto no notebook (Flávio 2026-10-29, depois de ver a
-// demonstração da f251c0be: "tá cheio de frases... não é assim que nós vamos trabalhar"). Na tela fica
-// SÓ: os 2 números (freada em m à esquerda, saída em km/h à direita, vs a melhor volta) e o aviso de
-// FREIO (luzes das duas laterais + o lavado vermelho do ponto de freada). Sai tudo o resto: mensagem,
-// alerta crítico, sensores, barra de voltas, mapa, ápice, status, telas térmicas, chuva, halo do fundo
-// e o shift light de MARCHA (leitura de "shift light avisando do freio somente").
+// TelaPrimeiraVersao — a 1ª versão da tela do piloto no notebook (Flávio 2026-10-29). Depois de ver a
+// f251c0be ("tá cheio de frases... não é assim que nós vamos trabalhar") e a b9dfd3cd (que escondia a tela
+// inteira — errado): "eu me referia somente aos dois números do centro e não aparecerem mensagens
+// escritas... todo o resto era para se manter" + "os números podem ser 40% maiores e ficarem
+// centralizados nas suas metades da tela".
 //
-// Como: UMA chave (Ligada). A UI embrulha cada trecho escondido num Grid com nome (GruposEscondidos,
-// na ordem do MainWindow.xaml) e o deixa Collapsed com a chave ligada. O código de cada peça segue
-// intacto e roda por baixo (o estado e a publicação para a TV não mudam); desligar a chave devolve a
-// tela de antes. A catraca TelaPrimeiraVersaoTests lê o MainWindow.xaml e reprova qualquer peça nova
-// que apareça fora dos grupos. Puro: zero UI.
+// Como: UMA chave (Ligada). Com ela ligada, só os TEXTOS ESCRITOS saem da tela (TextosEscondidos:
+// mensagem, linha de status, borda e palavra do alerta crítico). Sensores, barra de voltas, mapa,
+// ápice (entrada/freio/vmin/ápice/saída), shift light, halo, luzes e lavados de freio, tela térmica e
+// chuva ficam como estavam. Os 2 números (MainWindow.xaml) ficam 40% maiores, cada um no centro da
+// sua metade. A mensagem segue no estado (gravação e TV não mudam); desligar a chave devolve a tela
+// de antes. Catraca: TelaPrimeiraVersaoTests (lê o MainWindow.xaml e os MainWindow*.cs). Puro: zero UI.
 
 namespace P1Fast.Cockpit.Domain;
 
 public static class TelaPrimeiraVersao
 {
-    /// <summary>A chave da 1ª versão. true = só os 2 números + aviso de freio na tela.</summary>
+    /// <summary>A chave da 1ª versão. true = sem mensagem escrita na tela.</summary>
     public static readonly bool Ligada = true;
 
-    /// <summary>Filhos diretos do device (MainWindow.xaml) que ficam na tela, na ordem do XAML.</summary>
-    public static readonly IReadOnlyList<string> Ficam = new[]
+    /// <summary>Os textos escritos que saem da tela com a chave ligada (x:Name no MainWindow.xaml).</summary>
+    public static readonly IReadOnlyList<string> TextosEscondidos = new[]
     {
-        "BrakeLColuna", "BrakeRColuna", "FreadaPanel", "SaidaPanel", "BrakeWashRect",
+        "AlertBlocoRoot",   // mensagem (comunicação)
+        "StatusText",       // linha de status de baixo
+        "CriticoBorda",     // alerta crítico: borda piscando
+        "CriticoOverlay",   // alerta crítico: palavra vermelha
     };
 
-    /// <summary>Grids com nome que embrulham o que sai da tela, na ordem do XAML.</summary>
-    public static readonly IReadOnlyList<string> GruposEscondidos = new[]
-    {
-        "EscondidoFundo",    // halo colorido do fundo + moldura preta da esquerda
-        "EscondidoTopo",     // sensores + barra de voltas (cápsulas, brilho e sinal da volta atual)
-        "EscondidoMeio",     // mapa, mensagem, ápice, shift de marcha, status, lavado da troca
-        "EscondidoCamadas",  // telas térmicas, chuva, alerta crítico (borda + palavra)
-    };
+    /// <summary>Quanto os 2 números cresceram sobre a f251c0be (116 e 92 de fonte).</summary>
+    public const double AumentoDosNumeros = 1.4;
 
-    /// <summary>Os grupos escondidos aparecem? Só com a chave desligada.</summary>
-    public static bool MostraGrupos(bool? ligada = null) => !(ligada ?? Ligada);
+    /// <summary>Os textos escondidos aparecem? Só com a chave desligada.</summary>
+    public static bool MostraTextos(bool? ligada = null) => !(ligada ?? Ligada);
 
     /// <summary>Mensagem e alerta crítico aparecem na tela (e por isso podem esconder os 2 números e
-    /// apagar a luz de freio enquanto tomam a tela)? Só com a chave desligada. Com ela ligada nenhum
-    /// texto aparece — então nada pode tirar os números nem o aviso de freio da frente do piloto.</summary>
+    /// apagar a luz de freio enquanto tomam a tela)? Só com a chave desligada.</summary>
     public static bool MensagensNaTela(bool? ligada = null) => !(ligada ?? Ligada);
 
     // Demonstração (--demo): as cenas antigas não têm saída e quase sempre freiam igual à

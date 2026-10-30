@@ -1,9 +1,11 @@
-// TelaPrimeiraVersaoTests — catraca da 1ª versão da tela do piloto (Flávio 2026-10-29: só os 2
-// números + o aviso de freio, nenhuma mensagem). A régua nasce da FONTE: lê o MainWindow.xaml e os
-// MainWindow*.cs de verdade (sobe pastas a partir do bin até achar P1Fast.Cockpit.UI). Fail-closed:
-// peça nova fora dos grupos escondidos, peça sem nome ou arquivo não achado = REPROVA. Cada régua
-// tem o controle que DEVE reprovar (chave desligada, peça movida para fora do grupo, linha sem guarda).
+// TelaPrimeiraVersaoTests — catraca da 1ª versão da tela do piloto (Flávio 2026-10-29: "somente os dois
+// números do centro e não aparecerem mensagens escritas... todo o resto era para se manter" + "40% maiores
+// e centralizados nas suas metades da tela"). A régua nasce da FONTE: lê o MainWindow.xaml e os
+// MainWindow*.cs de verdade (sobe pastas a partir do bin até achar P1Fast.Cockpit.UI). Fail-closed: peça
+// não achada = REPROVA. Cada régua tem o controle que DEVE reprovar (indicador escondido, número no canto,
+// número por baixo do mapa, mensagem sem a chave).
 
+using System.Globalization;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using P1Fast.Cockpit.Domain;
@@ -36,25 +38,7 @@ public class TelaPrimeiraVersaoTests
         return dev.Elements().Single(e => e.Name.LocalName == "Grid");
     }
 
-    /// <summary>Nomes dos filhos diretos do device que aparecem com a chave <paramref name="ligada"/>.
-    /// Grupo escondido aparece só se MostraGrupos. Fora dos grupos TUDO conta como na tela, mesmo o
-    /// que nasce Visibility="Collapsed" no XAML (o código liga depois — é assim que a mensagem aparece).
-    /// Peça sem nome aparece como "(sem nome: Tag)" — e por isso reprova a comparação.</summary>
-    private static List<string> VisiveisNaTela(XDocument doc, bool ligada)
-    {
-        var visiveis = new List<string>();
-        foreach (var filho in GridDoDevice(doc).Elements())
-        {
-            var nome = Nome(filho);
-            if (nome is not null && TelaPrimeiraVersao.GruposEscondidos.Contains(nome))
-            {
-                if (TelaPrimeiraVersao.MostraGrupos(ligada)) visiveis.Add(nome);
-                continue;
-            }
-            visiveis.Add(nome ?? $"(sem nome: {filho.Name.LocalName})");
-        }
-        return visiveis;
-    }
+    private static XElement Peca(XDocument doc, string nome) => doc.Descendants().Single(e => Nome(e) == nome);
 
     private static IEnumerable<(string Arquivo, string Linha)> LinhasDaUi()
     {
@@ -65,57 +49,125 @@ public class TelaPrimeiraVersaoTests
                 yield return (Path.GetFileName(f), l);
     }
 
+    private static string Codigo() => File.ReadAllText(Path.Combine(PastaUi(), "MainWindow.xaml.cs"));
+
+    private static string CorpoDoMetodo(string src, string assinatura)
+    {
+        var ini = src.IndexOf(assinatura, StringComparison.Ordinal);
+        Assert.True(ini >= 0, assinatura + " não achado no MainWindow.xaml.cs");
+        var fim = src.IndexOf("\n    }", ini, StringComparison.Ordinal);
+        Assert.True(fim > ini);
+        return src[ini..fim];
+    }
+
+    private static readonly Regex EscondeAlgo = new(@"\b(\w+)\.Visibility\s*=\s*Visibility\.Collapsed");
+
+    private static List<string> EscondidosPelaChave(string corpo) =>
+        EscondeAlgo.Matches(corpo).Select(m => m.Groups[1].Value).ToList();
+
     [Fact]
     public void TPV_01_Chave_ligada_e_a_primeira_versao()
     {
-        Assert.True(TelaPrimeiraVersao.Ligada, "a 1ª versão da tela (só 2 números + freio) é a que vai para o notebook");
-        Assert.False(TelaPrimeiraVersao.MostraGrupos(ligada: true));
-        Assert.True(TelaPrimeiraVersao.MostraGrupos(ligada: false));
+        Assert.True(TelaPrimeiraVersao.Ligada, "a 1ª versão da tela (sem mensagem escrita) é a que vai para o notebook");
+        Assert.False(TelaPrimeiraVersao.MostraTextos(ligada: true));
+        Assert.True(TelaPrimeiraVersao.MostraTextos(ligada: false));
         Assert.False(TelaPrimeiraVersao.MensagensNaTela(ligada: true));
         Assert.True(TelaPrimeiraVersao.MensagensNaTela(ligada: false));
     }
 
     [Fact]
-    public void TPV_02_Com_a_chave_ligada_so_os_2_numeros_e_o_freio_ficam_na_tela()
+    public void TPV_02_Com_a_chave_ligada_so_os_textos_escritos_saem_da_tela()
     {
+        var src = Codigo();
+        var corpo = CorpoDoMetodo(src, "private void AplicarPrimeiraVersao()");
+        Assert.Contains("if (TelaPrimeiraVersao.MostraTextos()) return;", corpo);
+        Assert.Equal(TelaPrimeiraVersao.TextosEscondidos, EscondidosPelaChave(corpo));
+
+        var ctor = CorpoDoMetodo(src, "public MainWindow(LaunchOptions options)");
+        Assert.Contains("AplicarPrimeiraVersao();", ctor);
+
+        // Cada texto escondido existe no XAML (a régua não pode estar olhando o vazio) e não sobrou
+        // grupo "Escondido*" (a b9dfd3cd escondia a tela inteira assim).
         var doc = Xaml();
+        foreach (var t in TelaPrimeiraVersao.TextosEscondidos) Peca(doc, t);
+        Assert.DoesNotContain(doc.Descendants(), e => (Nome(e) ?? "").StartsWith("Escondido", StringComparison.Ordinal));
 
-        // Na janela só existe o device (nada solto ao lado dele).
-        var root = doc.Descendants().Single(e => Nome(e) == "RootGrid");
-        Assert.Equal(new[] { "DeviceBorder" }, root.Elements().Select(e => Nome(e) ?? $"(sem nome: {e.Name.LocalName})"));
+        // Controle: um indicador (o ápice) posto junto dos textos reprova.
+        var comApice = corpo.Replace("CriticoOverlay.Visibility", "ApiceRow.Visibility = Visibility.Collapsed;\n        CriticoOverlay.Visibility");
+        Assert.NotEqual(TelaPrimeiraVersao.TextosEscondidos, EscondidosPelaChave(comApice));
+    }
 
-        // Os 4 grupos existem como filhos diretos do device (régua não pode estar olhando o vazio).
-        var filhos = GridDoDevice(doc).Elements().Select(Nome).ToList();
-        foreach (var g in TelaPrimeiraVersao.GruposEscondidos) Assert.Contains(g, filhos);
+    // O que ele disse que tinha sumido e devia continuar: shift light, sensores, barra de voltas, mapa,
+    // ápice (entrada/freio/vmin/ápice/saída), halo, e o aviso de freio.
+    private static readonly string[] ResteDaTela =
+        new[] { "HaloRect", "SensorRpm", "SensorGps", "SensorPneus", "StintBar", "CoachZoomRoot", "ApiceRow",
+                "ApexEntradaValor", "ApexFreioValor", "ApexVminValor", "ApexSaidaValor", "ApiceBolaNum",
+                "BrakeLColuna", "BrakeRColuna", "BrakeWashRect" }
+        .Concat(Enumerable.Range(1, 17).Select(i => $"Led{i:00}")).ToArray();
 
-        Assert.Equal(TelaPrimeiraVersao.Ficam, VisiveisNaTela(doc, ligada: true));
+    /// <summary>Peças do resto que moram dentro de algo nascido escondido (ou de um texto escondido).</summary>
+    private static List<string> RestoEscondido(XDocument doc)
+    {
+        var dev = Peca(doc, "DeviceBorder");
+        var ruins = new List<string>();
+        foreach (var nome in ResteDaTela)
+        {
+            var e = Peca(doc, nome);
+            foreach (var a in e.Ancestors().TakeWhile(a => a != dev))
+                if ((string?)a.Attribute("Visibility") == "Collapsed" || TelaPrimeiraVersao.TextosEscondidos.Contains(Nome(a) ?? ""))
+                { ruins.Add(nome); break; }
+        }
+        return ruins;
     }
 
     [Fact]
-    public void TPV_03_Controle_chave_desligada_devolve_a_tela_de_antes()
+    public void TPV_03_O_resto_da_tela_de_antes_continua()
     {
-        var visiveis = VisiveisNaTela(Xaml(), ligada: false);
-        Assert.NotEqual(TelaPrimeiraVersao.Ficam, visiveis);
-        foreach (var g in TelaPrimeiraVersao.GruposEscondidos) Assert.Contains(g, visiveis);
-        foreach (var f in TelaPrimeiraVersao.Ficam) Assert.Contains(f, visiveis);
+        var doc = Xaml();
+        Assert.Empty(RestoEscondido(doc));
+        foreach (var nome in ResteDaTela) Assert.DoesNotContain(nome, TelaPrimeiraVersao.TextosEscondidos);
+
+        // Controle: o shift light embrulhado num Grid escondido reprova.
+        var led = Peca(doc, "Led01");
+        var pai = led.Parent!;
+        led.Remove();
+        pai.Add(new XElement(pai.Name.Namespace + "Grid", new XAttribute("Visibility", "Collapsed"), led));
+        Assert.Contains("Led01", RestoEscondido(doc));
+    }
+
+    private static int Fonte(XDocument doc, string nome) =>
+        int.Parse((string)Peca(doc, nome).Attribute("FontSize")!, CultureInfo.InvariantCulture);
+
+    /// <summary>Os 2 números 40% maiores que na f251c0be (116 e 92), cada um no centro da sua metade.</summary>
+    private static List<string> ForaDoLugar(XDocument doc)
+    {
+        var erros = new List<string>();
+        var metade = double.Parse((string)Peca(doc, "DeviceBorder").Attribute("Width")!, CultureInfo.InvariantCulture) / 2;
+        if (Fonte(doc, "FreadaNum") != (int)Math.Round(116 * TelaPrimeiraVersao.AumentoDosNumeros)) erros.Add("fonte da freada");
+        if (Fonte(doc, "SaidaNum") != (int)Math.Round(92 * TelaPrimeiraVersao.AumentoDosNumeros)) erros.Add("fonte da saída");
+        foreach (var (painel, num, lado) in new[] { ("FreadaPanel", "FreadaNum", "Left"), ("SaidaPanel", "SaidaNum", "Right") })
+        {
+            var p = Peca(doc, painel);
+            if ((string?)p.Attribute("HorizontalAlignment") != lado) erros.Add(painel + " fora da sua metade");
+            if ((string?)p.Attribute("Width") != metade.ToString(CultureInfo.InvariantCulture)) erros.Add(painel + " não ocupa a metade");
+            if (p.Attribute("Margin") is not null) erros.Add(painel + " empurrado por margem");
+            if ((string?)Peca(doc, num).Attribute("HorizontalAlignment") != "Center") erros.Add(num + " não centralizado");
+        }
+        return erros;
     }
 
     [Fact]
-    public void TPV_04_Controle_peca_fora_dos_grupos_ou_sem_nome_reprova()
+    public void TPV_04_Os_2_numeros_40_por_cento_maiores_no_centro_de_cada_metade()
     {
-        // Mensagem (AlertBlocoRoot) tirada do grupo e posta solta no device → apareceria → reprova.
-        var doc = Xaml();
-        var alerta = doc.Descendants().Single(e => Nome(e) == "AlertBlocoRoot");
-        alerta.Remove();
-        GridDoDevice(doc).Add(alerta);
-        var comAlerta = VisiveisNaTela(doc, ligada: true);
-        Assert.Contains("AlertBlocoRoot", comAlerta);
-        Assert.NotEqual(TelaPrimeiraVersao.Ficam, comAlerta);
+        Assert.Empty(ForaDoLugar(Xaml()));
+        Assert.Equal(162, Fonte(Xaml(), "FreadaNum"));
+        Assert.Equal(129, Fonte(Xaml(), "SaidaNum"));
 
-        // Peça nova sem nome posta no device → reprova também.
-        var doc2 = Xaml();
-        GridDoDevice(doc2).Add(new XElement(GridDoDevice(doc2).Name.Namespace + "TextBlock", new XAttribute("Text", "x")));
-        Assert.NotEqual(TelaPrimeiraVersao.Ficam, VisiveisNaTela(doc2, ligada: true));
+        // Controles: a fonte de antes e o número encostado no canto (f251c0be) reprovam.
+        var antiga = Xaml(); Peca(antiga, "FreadaNum").SetAttributeValue("FontSize", "116");
+        Assert.Contains("fonte da freada", ForaDoLugar(antiga));
+        var canto = Xaml(); Peca(canto, "SaidaPanel").SetAttributeValue("Margin", "0,0,72,0");
+        Assert.Contains("SaidaPanel empurrado por margem", ForaDoLugar(canto));
     }
 
     // Quem pode tirar os números/freio da tela: só código guardado pela chave (mensagem e crítico).
@@ -138,28 +190,27 @@ public class TelaPrimeiraVersaoTests
         Assert.False(Guardada(semGuarda));
     }
 
-    [Fact]
-    public void TPV_06_Grupos_escondidos_so_mudam_em_AplicarPrimeiraVersao_chamada_no_construtor()
+    /// <summary>Os 2 números estão DEPOIS do mapa (por cima dele) e ANTES da tela térmica e do crítico.</summary>
+    private static bool NumerosNaCamadaCerta(XDocument doc)
     {
-        var src = File.ReadAllText(Path.Combine(PastaUi(), "MainWindow.xaml.cs"));
-        var ini = src.IndexOf("private void AplicarPrimeiraVersao()", StringComparison.Ordinal);
-        Assert.True(ini >= 0, "AplicarPrimeiraVersao() não achado no MainWindow.xaml.cs");
-        var fim = src.IndexOf("\n    }", ini, StringComparison.Ordinal);
-        Assert.True(fim > ini);
-        var corpo = src[ini..fim];
+        var mapa = Peca(doc, "CoachZoomRoot");
+        var termica = Peca(doc, "TermicaOverlay");
+        var critico = Peca(doc, "CriticoOverlay");
+        return new[] { "FreadaPanel", "SaidaPanel" }.Select(n => Peca(doc, n))
+            .All(p => p.IsAfter(mapa) && p.IsBefore(termica) && p.IsBefore(critico));
+    }
 
-        var mexeGrupo = new Regex(@"\bEscondido\w+\.Visibility\s*=(?!=)");
-        foreach (var g in TelaPrimeiraVersao.GruposEscondidos)
-            Assert.Contains($"{g}.Visibility = grupos;", corpo);
-        Assert.Equal(TelaPrimeiraVersao.GruposEscondidos.Count, mexeGrupo.Matches(corpo).Count);
+    [Fact]
+    public void TPV_06_Numeros_por_cima_do_mapa_e_por_baixo_da_termica_e_do_critico()
+    {
+        Assert.True(NumerosNaCamadaCerta(Xaml()));
 
-        var noTotal = LinhasDaUi().Count(x => mexeGrupo.IsMatch(x.Linha));
-        Assert.Equal(TelaPrimeiraVersao.GruposEscondidos.Count, noTotal);   // ninguém fora dela
-
-        var ctor = src.IndexOf("public MainWindow(LaunchOptions options)", StringComparison.Ordinal);
-        Assert.True(ctor >= 0);
-        var fimCtor = src.IndexOf("\n    }", ctor, StringComparison.Ordinal);
-        Assert.Contains("AplicarPrimeiraVersao();", src[ctor..fimCtor]);
+        // Controle: a freada de volta antes do mapa (como na f251c0be) reprova.
+        var doc = Xaml();
+        var freada = Peca(doc, "FreadaPanel");
+        freada.Remove();
+        Peca(doc, "CoachZoomRoot").AddBeforeSelf(freada);
+        Assert.False(NumerosNaCamadaCerta(doc));
     }
 
     [Fact]
@@ -212,5 +263,35 @@ public class TelaPrimeiraVersaoTests
         // Controle: a luz em modo crítico apaga — é a chave que impede o orquestrador de pedir isso.
         var luz = new LuzFreio(new[] { Curva() });
         Assert.All(Aproximacao(), g => Assert.Equal(0, luz.Atualizar(g.Lat, g.Lng, g.Kmh, modoCritico: true).Lit));
+    }
+
+    /// <summary>O método começa saindo quando a chave está ligada (antes de qualquer outra linha).</summary>
+    private static bool SaiPelaChaveAntes(string corpo, string primeiraAcao)
+    {
+        var guarda = corpo.IndexOf("if (!TelaPrimeiraVersao.MensagensNaTela())", StringComparison.Ordinal);
+        var acao = corpo.IndexOf(primeiraAcao, StringComparison.Ordinal);
+        return guarda >= 0 && acao > guarda;
+    }
+
+    [Fact]
+    public void TPV_09_Mensagem_e_critico_escritos_nao_acendem_com_a_chave_ligada()
+    {
+        var src = Codigo();
+        var msg = CorpoDoMetodo(src, "private void ApplyMessage(");
+        var crit = CorpoDoMetodo(src, "private void AplicarModoCritico(");
+        Assert.True(SaiPelaChaveAntes(msg, "AplicarModoCritico("), "ApplyMessage chama o crítico antes da chave");
+        Assert.True(SaiPelaChaveAntes(msg, "AlertBlocoRoot.Visibility = Visibility.Visible"), "a mensagem acende antes da chave");
+        Assert.True(SaiPelaChaveAntes(crit, "CriticoOverlay.Visibility"), "o crítico acende antes da chave");
+
+        // Só esses 2 métodos (depois da chave) e o AplicarPrimeiraVersao mexem nos textos escondidos.
+        var acende = new Regex(@"\b(AlertBlocoRoot|CriticoOverlay|CriticoBorda|StatusText)\.Visibility\s*=(?!=)");
+        var fora = LinhasDaUi().Where(x => acende.IsMatch(x.Linha) && !msg.Contains(x.Linha) && !crit.Contains(x.Linha)
+                                         && !CorpoDoMetodo(src, "private void AplicarPrimeiraVersao()").Contains(x.Linha))
+                               .Select(x => $"{x.Arquivo}: {x.Linha.Trim()}").ToList();
+        Assert.True(fora.Count == 0, "texto escondido ligado fora da chave:\n" + string.Join("\n", fora));
+
+        // Controle: o ApplyMessage sem a guarda reprova.
+        var semGuarda = msg.Replace("if (!TelaPrimeiraVersao.MensagensNaTela())", "if (false)");
+        Assert.False(SaiPelaChaveAntes(semGuarda, "AplicarModoCritico("));
     }
 }

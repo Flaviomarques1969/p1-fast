@@ -39,12 +39,6 @@
                 </Border.RenderTransform>
                 <Grid>
 
-                    <!-- 1ª VERSÃO (Flávio 2026-10-29): na tela só os 2 números + o aviso de FREIO.
-                         Tudo o que sai fica dentro de um dos 4 Grids "Escondido*", que o code-behind
-                         deixa Collapsed pela chave Domain/TelaPrimeiraVersao (AplicarPrimeiraVersao).
-                         As peças de dentro continuam vivas; desligar a chave devolve a tela de antes.
-                         Peça nova fora desses Grids reprova a catraca TelaPrimeiraVersaoTests. -->
-                    <Grid x:Name="EscondidoFundo">
                     <Rectangle x:Name="HaloRect" IsHitTestVisible="False" Opacity="1.0">
                         <Rectangle.Fill>
                             <RadialGradientBrush x:Name="HaloBrush"
@@ -66,7 +60,6 @@
                             Background="Black"
                             BorderBrush="#0E0E0E"
                             BorderThickness="1"/>
-                    </Grid>
 
                     <!-- ───────── LUZ DE FREIO ESQUERDA (vertical) ───────── -->
                     <StackPanel x:Name="BrakeLColuna"
@@ -108,7 +101,6 @@
                         <Canvas Width="14" Height="14"><Ellipse x:Name="BrakeRGlow9" Width="46" Height="46" Opacity="0" IsHitTestVisible="False"/><Ellipse x:Name="BrakeR9" Width="14" Height="14" Fill="#161616"/></Canvas>
                     </StackPanel>
 
-                    <Grid x:Name="EscondidoTopo">
                     <!-- ───────── CLUSTER DE SENSORES (topo) ───────── -->
                     <Border HorizontalAlignment="Center"
                             VerticalAlignment="Top"
@@ -196,51 +188,7 @@
                              HorizontalAlignment="Left" VerticalAlignment="Top" Visibility="Collapsed">
                         <Polygon.RenderTransform><TranslateTransform x:Name="VoltaCaretXf"/></Polygon.RenderTransform>
                     </Polygon>
-                    </Grid>
 
-                    <!-- ───────── FREADA à ESQUERDA (Flávio 2026-10-28) ─────────
-                         Metros entre onde freou nesta passagem e onde freou na MESMA curva da
-                         MELHOR VOLTA, sem sinal: amarelo = antes, verde = até 10% do ponto de
-                         referência, vermelho = depois. Sem frase embaixo (saiu a do treinador). -->
-                    <StackPanel x:Name="FreadaPanel"
-                                HorizontalAlignment="Left"
-                                VerticalAlignment="Center"
-                                Width="430"
-                                Margin="72,0,0,0"
-                                Spacing="6">
-                        <StackPanel.RenderTransform>
-                            <TranslateTransform Y="-30"/>
-                        </StackPanel.RenderTransform>
-                        <TextBlock x:Name="FreadaNum"
-                                   Text=""
-                                   FontSize="116"
-                                   FontWeight="ExtraBold"
-                                   Foreground="#4FE060"
-                                   HorizontalAlignment="Left"/>
-                    </StackPanel>
-
-                    <!-- ───────── SAÍDA à DIREITA (Flávio 2026-10-28) ───────── -->
-                    <StackPanel x:Name="SaidaPanel"
-                                HorizontalAlignment="Right"
-                                VerticalAlignment="Center"
-                                Width="220"
-                                Margin="0,0,72,0"
-                                Spacing="4">
-                        <StackPanel.RenderTransform>
-                            <TranslateTransform Y="-30"/>
-                        </StackPanel.RenderTransform>
-                        <!-- km/h entre a velocidade de SAÍDA desta passagem e a da MESMA curva na
-                             MELHOR VOLTA, sem sinal: verde = saiu mais rápido (ou igual), vermelho =
-                             mais lento. Sem palavra. -->
-                        <TextBlock x:Name="SaidaNum"
-                                   Text=""
-                                   FontSize="92"
-                                   FontWeight="ExtraBold"
-                                   Foreground="#4FE060"
-                                   HorizontalAlignment="Center"/>
-                    </StackPanel>
-
-                    <Grid x:Name="EscondidoMeio">
                     <!-- ═══ VIDRO DO MAPA CENTRAL (coach-zoom) — spec do iMac via canal 2026-07-11
                          (coach-miolo.css + coach-zoom-live.js, estado c840e129; cores oklch→ARGB).
                          Cartão 330×228 @ (346,84) com zoom do trecho atual + ghost + gap ao vivo.
@@ -385,6 +333,51 @@
                                    FontFamily="Consolas" FontSize="21" FontWeight="Black"
                                    Foreground="#FF45E059" Opacity="0"/>
                     </Grid>
+
+                    <!-- ───────── OS 2 NÚMEROS (Flávio 2026-10-29: 40% maiores, cada um no CENTRO da sua
+                         metade da tela). Declarados DEPOIS do vidro do mapa: um número de 2 algarismos
+                         passa por cima da borda do mapa em vez de ficar coberto por ela; e ANTES da
+                         tela térmica e do crítico, que continuam por cima de tudo. ─────────
+                    ───────── FREADA na METADE ESQUERDA (Flávio 2026-10-28) ─────────
+                         Metros entre onde freou nesta passagem e onde freou na MESMA curva da
+                         MELHOR VOLTA, sem sinal: amarelo = antes, verde = até 10% do ponto de
+                         referência, vermelho = depois. Sem frase embaixo (saiu a do treinador). -->
+                    <StackPanel x:Name="FreadaPanel"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Center"
+                                Width="478"
+                                Spacing="6">
+                        <StackPanel.RenderTransform>
+                            <TranslateTransform Y="-30"/>
+                        </StackPanel.RenderTransform>
+                        <TextBlock x:Name="FreadaNum"
+                                   Text=""
+                                   FontSize="162"
+                                   FontWeight="ExtraBold"
+                                   Foreground="#4FE060"
+                                   HorizontalAlignment="Center"/>
+                    </StackPanel>
+
+                    <!-- ───────── SAÍDA na METADE DIREITA (Flávio 2026-10-28) ───────── -->
+                    <StackPanel x:Name="SaidaPanel"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                Width="478"
+                                Spacing="4">
+                        <StackPanel.RenderTransform>
+                            <TranslateTransform Y="-30"/>
+                        </StackPanel.RenderTransform>
+                        <!-- km/h entre a velocidade de SAÍDA desta passagem e a da MESMA curva na
+                             MELHOR VOLTA, sem sinal: verde = saiu mais rápido (ou igual), vermelho =
+                             mais lento. Sem palavra. -->
+                        <TextBlock x:Name="SaidaNum"
+                                   Text=""
+                                   FontSize="129"
+                                   FontWeight="ExtraBold"
+                                   Foreground="#4FE060"
+                                   HorizontalAlignment="Center"/>
+                    </StackPanel>
+
 
                     <Border x:Name="AlertBlocoRoot"
                             HorizontalAlignment="Right"
@@ -533,7 +526,6 @@
                             </RadialGradientBrush>
                         </Rectangle.Fill>
                     </Rectangle>
-                    </Grid>
 
                     <!-- LAVADO DA FREADA (hora de frear): VERMELHO, nasce EM CIMA (Flávio 2026-07-03)
                          — separado do wash BRANCO/azul do câmbio (que nasce EMBAIXO, de onde vem a
@@ -550,7 +542,6 @@
                         </Rectangle.Fill>
                     </Rectangle>
 
-                    <Grid x:Name="EscondidoCamadas">
                     <!-- TELAS DEDICADAS de AQUECIMENTO / RESFRIAMENTO (Flávio 2026-07-06):
                          durante a 1ª volta (motor frio) e a última (motor quente) a telemetria
                          normal desativa e entra esta tela cheia. Anel = PROGRESSO rumo ao ideal,
@@ -662,7 +653,6 @@
                                    FontSize="89" FontWeight="Black" Foreground="#FF3B30"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"
                                    TextAlignment="Center" TextWrapping="Wrap" LineHeight="86"/>
-                    </Grid>
                     </Grid>
 
                 </Grid>

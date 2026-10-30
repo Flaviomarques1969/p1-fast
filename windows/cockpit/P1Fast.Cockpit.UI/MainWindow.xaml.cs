@@ -320,16 +320,16 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    // 1ª versão (Flávio 2026-10-29): só os 2 números + o aviso de freio. Os 4 grupos do XAML que
-    // embrulham o resto ficam Collapsed com a chave ligada — único lugar que mexe neles. As peças de
-    // dentro seguem vivas (o código delas pode ligar/desligar a si mesmas; o grupo fechado vence).
+    // 1ª versão (Flávio 2026-10-29): nenhuma mensagem ESCRITA na tela. Com a chave ligada, os textos
+    // da TelaPrimeiraVersao.TextosEscondidos nascem Collapsed aqui, e ApplyMessage/AplicarModoCritico
+    // não os ligam. Todo o resto da tela segue como antes.
     private void AplicarPrimeiraVersao()
     {
-        var grupos = TelaPrimeiraVersao.MostraGrupos() ? Visibility.Visible : Visibility.Collapsed;
-        EscondidoFundo.Visibility = grupos;
-        EscondidoTopo.Visibility = grupos;
-        EscondidoMeio.Visibility = grupos;
-        EscondidoCamadas.Visibility = grupos;
+        if (TelaPrimeiraVersao.MostraTextos()) return;   // chave desligada: a tela de antes
+        AlertBlocoRoot.Visibility = Visibility.Collapsed;
+        StatusText.Visibility = Visibility.Collapsed;
+        CriticoBorda.Visibility = Visibility.Collapsed;
+        CriticoOverlay.Visibility = Visibility.Collapsed;
     }
 
     // ── Varredura demo do SHIFT (marcha) ──────────────────────
@@ -1303,6 +1303,15 @@ public sealed partial class MainWindow : Window
 
     private void ApplyMessage(P1Fast.Cockpit.Domain.Message? msg)
     {
+        // 1ª versão: nenhuma mensagem escrita aparece, nem a comum nem a GRAVE; números, mapa e ápice
+        // ficam onde estão (a mensagem segue no estado para a gravação e a TV).
+        if (!TelaPrimeiraVersao.MensagensNaTela())
+        {
+            StopAlertPulse();
+            AlertBlocoRoot.Visibility = Visibility.Collapsed;
+            return;
+        }
+
         // Gap 6: mensagem GRAVE (super/crítica) = MODO CRÍTICO — toma a tela inteira.
         var critico = msg is { Tipo: P1Fast.Cockpit.Domain.MsgTipo.Grave };
         AplicarModoCritico(critico, msg?.Texto ?? "");
@@ -1315,7 +1324,7 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        // 1ª versão: a mensagem não aparece (grupo escondido), então não pode tirar a SAÍDA da direita.
+        // 1ª versão: a mensagem não aparece (sai no início do método), e não pode tirar a SAÍDA da direita.
         if (msg is null)
         {
             StopAlertPulse();
@@ -1337,6 +1346,7 @@ public sealed partial class MainWindow : Window
     // O cluster de sensores do topo permanece (mostra o que falhou). Só visual — não toca dados.
     private void AplicarModoCritico(bool on, string texto)
     {
+        if (!TelaPrimeiraVersao.MensagensNaTela()) return;   // 1ª versão: o crítico escrito não aparece
         if (on) CriticoMsg.Text = texto;
         CriticoOverlay.Visibility = on ? Visibility.Visible : Visibility.Collapsed;
         CriticoBorda.Visibility   = on ? Visibility.Visible : Visibility.Collapsed;
@@ -1344,7 +1354,7 @@ public sealed partial class MainWindow : Window
         if (CoachZoomRoot is not null)
             CoachZoomRoot.Visibility = on ? Visibility.Collapsed : Visibility.Visible;
 
-        // 1ª versão: o crítico não aparece (grupo escondido), então não apaga os 2 números — senão a
+        // 1ª versão: o crítico não aparece (sai no início do método) e não apaga os 2 números — senão a
         // tela do piloto ficaria preta durante o alerta.
         var normal = on ? Visibility.Collapsed : Visibility.Visible;
         if (TelaPrimeiraVersao.MensagensNaTela()) FreadaPanel.Visibility = normal;
