@@ -350,6 +350,11 @@ public sealed partial class MainWindow : Window
         _brakeRight     = degraus.Select(p => _leds[p.Direita]).ToArray();
         _brakeLeftGlow  = degraus.Select(p => _ledGlows[p.Esquerda]).ToArray();
         _brakeRightGlow = degraus.Select(p => _ledGlows[p.Direita]).ToArray();
+
+        // Lavado do ponto de freada BRANCO, o mais forte possível (Flávio 2026-10-29 ~0h: "wash branco o mais forte
+        // que você puder onde for o wash"): a tela inteira em branco puro, opaco no pico (WashFreio). Chave
+        // desligada: o vermelho que nasce em cima (MainWindow.xaml, 03/07).
+        BrakeWashRect.Fill = new SolidColorBrush(White);
     }
 
     // ── Varredura demo do SHIFT (marcha) ──────────────────────
@@ -477,6 +482,11 @@ public sealed partial class MainWindow : Window
         if (step <= 9)                               ApplyBrake(step);
         else if (step == 10 || step == 12 || step == 14) RenderAllBrake(LedShiftRed, on: true);
         else                                         ApplyBrake(0);
+
+        // 1ª versão (Flávio 2026-10-29 ~23h50: "a função de wash sumiu quando chega o ponto da frenagem"): a barra
+        // de baixo é da luz de freio e a varredura de marcha (que trazia o wash da troca) não roda — no ponto, a
+        // demo lava a tela como o freio real (ApplyFreio; branco na 1ª versão). Chave desligada: a demo de antes.
+        if (step == 10 && TelaPrimeiraVersao.FreioNaBarraDeBaixo()) WashFreio();
     }
 
     private void RenderAllBrake(Color color, bool on)

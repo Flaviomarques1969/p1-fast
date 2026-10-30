@@ -7,6 +7,9 @@
 // 29/10 ~23h ("o shift light do freio só que vai funcionar. põe ele na parte debaixo no shift light
 // horizontal"): as 2 colunas de freio dos lados saem da lista do que fica (TPV_03/TPV_05) — a luz de freio
 // passa para a barra de baixo, e o shift de giro sai dela (TPV_10 a TPV_12).
+// 29/10 ~23h50 ("a função de wash sumiu quando chega o ponto da frenagem"): sem a varredura de marcha, a demo
+// perdeu o wash; no ponto de freada ela lava a tela como o freio real (TPV_13). ~0h ("wash branco o mais forte
+// que você puder onde for o wash"): com a chave, o lavado é a tela inteira em branco puro, opaco no pico (TPV_13).
 
 using System.Globalization;
 using System.Text.RegularExpressions;
@@ -488,5 +491,76 @@ public class TelaPrimeiraVersaoTests
         Assert.NotEqual(src, sabotado);
         Assert.Contains("MainWindow.xaml.cs (ApplyFreio): RenderAllShift(LedOff, on: false);",
                         MexemNaBarraDeFora("MainWindow.xaml.cs", sabotado.Split('\n')));
+    }
+
+    /// <summary>O lavado do ponto de freada: o freio real dispara no ApplyFreio e a demo, com a chave
+    /// ligada, no 1º passo do pisca vermelho (lido da própria DemoBrakeRender, não digitado). A peça existe no
+    /// XAML e nada a esconde.</summary>
+    private static List<string> LavadoDoFreio(string src)
+    {
+        var erros = new List<string>();
+        if (!CorpoDoMetodo(src, "private void ApplyFreio(FreioState f)").Contains("WashFreio();"))
+            erros.Add("freio real sem o lavado");
+
+        var demo = CorpoDoMetodo(src, "private void DemoBrakeRender(int step)");
+        var pisca = Regex.Match(demo, @"else if \(step == (\d+)[^\n]*RenderAllBrake\(LedShiftRed");
+        if (!pisca.Success) { erros.Add("pisca vermelho da demo não achado"); return erros; }
+        var lavado = demo.Split('\n').Where(l => l.Contains("WashFreio(")).ToList();
+        if (lavado.Count == 0) erros.Add("demo sem o lavado no ponto");
+        foreach (var l in lavado)
+        {
+            if (!l.Contains($"step == {pisca.Groups[1].Value} ")) erros.Add("lavado da demo fora do ponto");
+            if (!l.Contains("TelaPrimeiraVersao.FreioNaBarraDeBaixo()")) erros.Add("lavado da demo sem a chave");
+        }
+        if (LinhasDaUi().Any(x => x.Linha.Contains("BrakeWashRect.Visibility")))
+            erros.Add("lavado escondido");
+
+        // Branco puro, o mais forte (29/10 ~0h): a tela inteira em branco opaco, só com a chave (depois da guarda).
+        var freio = CorpoDoMetodo(src, "private void AplicarFreioNaBarraDeBaixo()");
+        var guarda = freio.IndexOf("if (!TelaPrimeiraVersao.FreioNaBarraDeBaixo()) return;", StringComparison.Ordinal);
+        var branco = freio.IndexOf("BrakeWashRect.Fill = new SolidColorBrush(White);", StringComparison.Ordinal);
+        if (branco < 0) erros.Add("lavado não é branco na 1ª versão");
+        else if (guarda < 0 || branco < guarda) erros.Add("lavado branco sem a chave");
+        if (!Regex.IsMatch(src, @"Color White\s*=\s*Color\.FromArgb\(0xFF, 0xFF, 0xFF, 0xFF\);"))
+            erros.Add("White não é branco puro opaco");
+        if (!Regex.IsMatch(CorpoDoMetodo(src, "private void WashFreio()"), @"WashPulseInto\(sb, BrakeWashRect, ""Opacity"", 1\.0\)"))
+            erros.Add("lavado sem pico de 100%");
+        if (src.Split('\n').Count(l => l.Contains("BrakeWashRect.Fill")) != 1)
+            erros.Add("cor do lavado mexida fora da chave");
+        return erros;
+    }
+
+    [Fact]
+    public void TPV_13_No_ponto_de_freada_a_tela_lava_de_branco_no_real_e_na_demo()
+    {
+        var src = Codigo();
+        Assert.Empty(LavadoDoFreio(src));
+        Peca(Xaml(), "BrakeWashRect");
+        Assert.DoesNotContain("BrakeWashRect", TelaPrimeiraVersao.TextosEscondidos);
+
+        const string linhaBranco = "        BrakeWashRect.Fill = new SolidColorBrush(White);\n";
+        Assert.Contains(linhaBranco, src);
+        Assert.Contains("lavado não é branco na 1ª versão", LavadoDoFreio(src.Replace(linhaBranco, "")));
+        Assert.Contains("lavado não é branco na 1ª versão",
+            LavadoDoFreio(src.Replace("BrakeWashRect.Fill = new SolidColorBrush(White);", "BrakeWashRect.Fill = new SolidColorBrush(Erro);")));
+        var semChave = src.Replace(linhaBranco, "")
+                          .Replace("        if (!TelaPrimeiraVersao.FreioNaBarraDeBaixo()) return;", linhaBranco + "        if (!TelaPrimeiraVersao.FreioNaBarraDeBaixo()) return;");
+        Assert.NotEqual(src, semChave);
+        Assert.Contains("lavado branco sem a chave", LavadoDoFreio(semChave));
+        Assert.Contains("White não é branco puro opaco",
+            LavadoDoFreio(src.Replace("Color White       = Color.FromArgb(0xFF, 0xFF, 0xFF, 0xFF);", "Color White       = Color.FromArgb(0xC0, 0xFF, 0xFF, 0xFF);")));
+        Assert.Contains("lavado sem pico de 100%",
+            LavadoDoFreio(src.Replace("WashPulseInto(sb, BrakeWashRect, \"Opacity\", 1.0)", "WashPulseInto(sb, BrakeWashRect, \"Opacity\", 0.6)")));
+
+        // Controles: cada fio solto reprova.
+        const string linhaDemo = "        if (step == 10 && TelaPrimeiraVersao.FreioNaBarraDeBaixo()) WashFreio();\n";
+        Assert.Contains(linhaDemo, src);
+        Assert.Contains("demo sem o lavado no ponto", LavadoDoFreio(src.Replace(linhaDemo, "")));
+        Assert.Contains("lavado da demo fora do ponto", LavadoDoFreio(src.Replace("step == 10 && Tela", "step == 11 && Tela")));
+        Assert.Contains("lavado da demo sem a chave",
+            LavadoDoFreio(src.Replace("step == 10 && TelaPrimeiraVersao.FreioNaBarraDeBaixo()", "step == 10 ")));
+        var semReal = src.Replace("            WashFreio();             // + a tela LAVA", "            //WashFreio  // + a tela LAVA");
+        Assert.NotEqual(src, semReal);
+        Assert.Contains("freio real sem o lavado", LavadoDoFreio(semReal));
     }
 }
