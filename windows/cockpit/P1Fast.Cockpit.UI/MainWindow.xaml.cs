@@ -122,6 +122,7 @@ public sealed partial class MainWindow : Window
     // Animações demo: varredura sequencial do shift e da luz de freio (com flash no topo).
     private Microsoft.UI.Dispatching.DispatcherQueueTimer? _brakeTimer;
     private Microsoft.UI.Dispatching.DispatcherQueueTimer? _shiftSweepTimer;
+    private Microsoft.UI.Dispatching.DispatcherQueueTimer? _deltaDemoTimer;
     private int _brakeStep;
     private int _shiftStep;
 
@@ -291,6 +292,25 @@ public sealed partial class MainWindow : Window
             };
             _demoTimer.Start();
             ApplyScene(0);
+
+            // Cartão do delta ANDANDO (Flávio 2026-10-30: "o delta tem de andar o tempo todo"): 10×/s, como o
+            // delta ao vivo a cada GPS, indo de uma cena à seguinte no tempo de uma cena. É o único dono do
+            // delta na demo (ApplyScene só põe a linha de baixo).
+            if (TelaPrimeiraVersao.Ligada)
+            {
+                var passosPorCena = (int)Math.Round(_demoTimer.Interval.TotalMilliseconds / 100);
+                var passo = 0;
+                _deltaDemoTimer = DispatcherQueue.CreateTimer();
+                _deltaDemoTimer.Interval = TimeSpan.FromMilliseconds(100);
+                _deltaDemoTimer.Tick += (_, _) =>
+                {
+                    passo++;
+                    _cockpitState.SetDeltaVolta(TelaPrimeiraVersao.DeltaVoltaDemoAndando(
+                        passo / passosPorCena, (double)(passo % passosPorCena) / passosPorCena));
+                };
+                _cockpitState.SetDeltaVolta(TelaPrimeiraVersao.DeltaVoltaDemoAndando(0, 0));
+                _deltaDemoTimer.Start();
+            }
 
             // Luz de freio: varre 0→9 (sequencial), pisca vermelho no fim, repete.
             _brakeTimer = DispatcherQueue.CreateTimer();
@@ -514,6 +534,7 @@ public sealed partial class MainWindow : Window
         AlertaLimites? alertaLimites = null, AprendizadoLimites? aprendizadoLimites = null)
     {
         _demoTimer?.Stop();
+        _deltaDemoTimer?.Stop();
         _brakeTimer?.Stop();
         _shiftSweepTimer?.Stop();
         _orquestrador = new CockpitOrchestrator(_cockpitState, curvas,
@@ -780,8 +801,7 @@ public sealed partial class MainWindow : Window
         if (TelaPrimeiraVersao.Ligada)
         {
             _cockpitState.SetNumeros(TelaPrimeiraVersao.NumerosDemo(index));
-            // Cartão do centro na demo: delta dos dois lados e a linha de baixo (melhor / última volta).
-            _cockpitState.SetDeltaVolta(TelaPrimeiraVersao.DeltaVoltaDemo(index));
+            // Cartão do centro na demo: a linha de baixo (melhor / última volta). O delta anda pelo _deltaDemoTimer.
             var (melhorMs, ultimaMs) = TelaPrimeiraVersao.VoltasDemo(index);
             ApplyVoltasDoCartao(melhorMs, ultimaMs);
         }

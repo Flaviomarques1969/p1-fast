@@ -13,6 +13,9 @@
 // 30/10 (painel p1fast-cartao-delta-mapa-0013): os 2 números vão para as bordas de fora e o centro é do cartão do
 // delta da volta, SEM mapa — o vidro do mapa sai da lista do que fica (TPV_03), o cartão entra na posição (TPV_04)
 // e na camada (TPV_06), o mapa só liga pela chave (TPV_14) e o cartão é fiado ao cérebro (TPV_15).
+// 30/10 ~11h: os 2 números dos lados 20% menores e cada um no CENTRO do espaço de 2 algarismos ("o 8 no centro do
+// 12") — caixa na borda de fora com um molde "88" invisível na mesma fonte (TPV_04); a demo do cartão anda 10×/s
+// (TPV_15).
 
 using System.Globalization;
 using System.Text.RegularExpressions;
@@ -149,8 +152,8 @@ public class TelaPrimeiraVersaoTests
         int.Parse((string)Peca(doc, nome).Attribute("FontSize")!, CultureInfo.InvariantCulture);
 
     // Largura de um algarismo e da vírgula, em fração da fonte (ESTIMATIVA para o ExtraBold, com folga): dá o pior
-    // caso da conta de espaço — 2 algarismos em cada número dos lados, "0,42"/"12,3" (3 algarismos e a vírgula) no
-    // cartão. O vão do vidro é o raio do canto do corpo do cartão (CornerRadius 28).
+    // caso da conta de espaço — 2 algarismos em cada número dos lados (a caixa do molde "88"), "1,07"/"12,3" (3
+    // algarismos e a vírgula) no cartão. O vão do vidro é o raio do canto do corpo do cartão (CornerRadius 28).
     private const double LarguraDoAlgarismo = 0.6, LarguraDaVirgula = 0.3, VaoDoVidro = 28;
     private const double BordaDeFora = 40;
 
@@ -192,8 +195,10 @@ public class TelaPrimeiraVersaoTests
         return alturaDaTela - Margem(a)[3] - Num(a, "Height");
     }
 
-    /// <summary>Os 2 números 40% maiores que na f251c0be (116 e 92), cada um na borda de FORA da sua metade, e o
-    /// cartão do delta no centro, com o número maior que os dois, sem encostar neles, na barra de voltas ou no ápice.</summary>
+    /// <summary>Os 2 números 40% maiores que na f251c0be (116 e 92) e depois 20% menores (30/10 ~11h), cada um no
+    /// centro de uma caixa de 2 algarismos (molde "88" invisível, mesma fonte) encostada na borda de FORA da sua
+    /// metade, e o cartão do delta no centro, com o número maior que os dois, sem encostar neles, na barra de voltas
+    /// ou no ápice.</summary>
     private static List<string> ForaDoLugar(XDocument doc)
     {
         var erros = new List<string>();
@@ -201,8 +206,9 @@ public class TelaPrimeiraVersaoTests
         var (largura, altura) = (Num(dev, "Width"), Num(dev, "Height"));
         var metade = largura / 2;
         var (freada, saida) = (Fonte(doc, "FreadaNum"), Fonte(doc, "SaidaNum"));
-        if (freada != (int)Math.Round(116 * TelaPrimeiraVersao.AumentoDosNumeros)) erros.Add("fonte da freada");
-        if (saida != (int)Math.Round(92 * TelaPrimeiraVersao.AumentoDosNumeros)) erros.Add("fonte da saída");
+        var escala = TelaPrimeiraVersao.AumentoDosNumeros * TelaPrimeiraVersao.ReducaoDosLados;
+        if (freada != (int)Math.Round(116 * escala)) erros.Add("fonte da freada");
+        if (saida != (int)Math.Round(92 * escala)) erros.Add("fonte da saída");
         var borda = BordaDeFora.ToString(CultureInfo.InvariantCulture);
         foreach (var (painel, num, lado, margem) in new[] { ("FreadaPanel", "FreadaNum", "Left", $"{borda},0,0,0"),
                                                             ("SaidaPanel", "SaidaNum", "Right", $"0,0,{borda},0") })
@@ -212,7 +218,17 @@ public class TelaPrimeiraVersaoTests
             if ((string?)p.Attribute("Width") != metade.ToString(CultureInfo.InvariantCulture)) erros.Add(painel + " não ocupa a metade");
             if (p.Attribute("Margin") is not null) erros.Add(painel + " empurrado por margem");
             var n = Peca(doc, num);
-            if ((string?)n.Attribute("HorizontalAlignment") != lado || (string?)n.Attribute("Margin") != margem) erros.Add(num + " fora da borda de fora");
+            var caixa = n.Parent!;
+            if (caixa.Parent != p || caixa.Name.LocalName != "Grid") { erros.Add(num + " fora da caixa de 2 algarismos"); continue; }
+            if ((string?)caixa.Attribute("HorizontalAlignment") != lado || (string?)caixa.Attribute("Margin") != margem) erros.Add(num + " fora da borda de fora");
+            if ((string?)n.Attribute("HorizontalAlignment") != "Center" || n.Attribute("Margin") is not null) erros.Add(num + " fora do centro dos 2 algarismos");
+            // A largura da caixa é a do molde: um "88" invisível na MESMA fonte do número, e nada mais na caixa.
+            var molde = caixa.Elements().Where(e => e != n).ToList();
+            if (caixa.Attribute("Width") is not null || molde.Count != 1 || molde[0].Name.LocalName != "TextBlock"
+                || (string?)molde[0].Attribute("Text") != "88" || (string?)molde[0].Attribute("Opacity") != "0"
+                || new[] { "FontSize", "FontWeight", "FontFamily", "CharacterSpacing" }
+                       .Any(a => (string?)molde[0].Attribute(a) != (string?)n.Attribute(a)))
+                erros.Add(num + " sem o molde de 2 algarismos");
         }
 
         var cartao = Peca(doc, "DeltaVoltaCard");
@@ -239,11 +255,11 @@ public class TelaPrimeiraVersaoTests
     }
 
     [Fact]
-    public void TPV_04_Os_2_numeros_nas_bordas_de_fora_e_o_delta_maior_no_centro()
+    public void TPV_04_Os_2_numeros_nas_bordas_de_fora_centrados_em_2_algarismos_e_o_delta_maior_no_centro()
     {
         Assert.Empty(ForaDoLugar(Xaml()));
-        Assert.Equal(162, Fonte(Xaml(), "FreadaNum"));
-        Assert.Equal(129, Fonte(Xaml(), "SaidaNum"));
+        Assert.Equal(130, Fonte(Xaml(), "FreadaNum"));   // 162 × 0,8 (Flávio 30/10 ~11h: "20% menores")
+        Assert.Equal(103, Fonte(Xaml(), "SaidaNum"));    // 129 × 0,8
         Assert.True(Fonte(Xaml(), "DvNum") > 162, "o delta tem de ser maior que 162 (painel p1fast-cartao-delta-mapa-0013)");
         // A régua enxerga o que mede (não está olhando o vazio): a aura/sombra passam da caixa nos 4 lados, a
         // altura das cápsulas entra no fim da barra de voltas e o ápice começa dentro da tela.
@@ -258,10 +274,31 @@ public class TelaPrimeiraVersaoTests
         Assert.Contains("fonte da freada", ForaDoLugar(antiga));
         var canto = Xaml(); Peca(canto, "SaidaPanel").SetAttributeValue("Margin", "0,0,72,0");
         Assert.Contains("SaidaPanel empurrado por margem", ForaDoLugar(canto));
-        var noMeio = Xaml(); Peca(noMeio, "FreadaNum").SetAttributeValue("HorizontalAlignment", "Center");
-        Peca(noMeio, "FreadaNum").SetAttributeValue("Margin", null);
+        var semReducao = Xaml();
+        foreach (var t in new[] { "FreadaNum", "FreadaMolde" }) Peca(semReducao, t).SetAttributeValue("FontSize", "162");
+        Assert.Contains("fonte da freada", ForaDoLugar(semReducao));
+        var noMeio = Xaml(); Peca(noMeio, "FreadaCaixa").SetAttributeValue("HorizontalAlignment", "Center");
+        Peca(noMeio, "FreadaCaixa").SetAttributeValue("Margin", null);
         Assert.Contains("FreadaNum fora da borda de fora", ForaDoLugar(noMeio));
-        var menor = Xaml(); Peca(menor, "DvNum").SetAttributeValue("FontSize", "150");
+        // O pedido de 30/10 ~11h: o número no CANTO da caixa (o "8" onde começaria o "12") reprova.
+        var noCanto = Xaml(); Peca(noCanto, "SaidaNum").SetAttributeValue("HorizontalAlignment", "Right");
+        Assert.Contains("SaidaNum fora do centro dos 2 algarismos", ForaDoLugar(noCanto));
+        var umAlgarismo = Xaml(); Peca(umAlgarismo, "FreadaMolde").SetAttributeValue("Text", "8");
+        Assert.Contains("FreadaNum sem o molde de 2 algarismos", ForaDoLugar(umAlgarismo));
+        var visivel = Xaml(); Peca(visivel, "SaidaMolde").SetAttributeValue("Opacity", "1");
+        Assert.Contains("SaidaNum sem o molde de 2 algarismos", ForaDoLugar(visivel));
+        var outraFonte = Xaml(); Peca(outraFonte, "FreadaMolde").SetAttributeValue("FontSize", "162");
+        Assert.Contains("FreadaNum sem o molde de 2 algarismos", ForaDoLugar(outraFonte));
+        var larguraFixa = Xaml(); Peca(larguraFixa, "SaidaCaixa").SetAttributeValue("Width", "124");
+        Assert.Contains("SaidaNum sem o molde de 2 algarismos", ForaDoLugar(larguraFixa));
+        // O jeito antigo (número solto no painel, encostado na borda): sem caixa reprova.
+        var solto = Xaml(); var fn = Peca(solto, "FreadaNum"); var cx = fn.Parent!;
+        fn.Remove(); cx.AddAfterSelf(fn); cx.Remove();
+        fn.SetAttributeValue("HorizontalAlignment", "Left"); fn.SetAttributeValue("Margin", "40,0,0,0");
+        Assert.Contains("FreadaNum fora da caixa de 2 algarismos", ForaDoLugar(solto));
+        // Delta do tamanho do maior número dos lados (lido do XAML, não digitado: os lados mudam de tamanho).
+        var menor = Xaml();
+        Peca(menor, "DvNum").SetAttributeValue("FontSize", Math.Max(Fonte(menor, "FreadaNum"), Fonte(menor, "SaidaNum")).ToString(CultureInfo.InvariantCulture));
         Assert.Contains("delta não é o maior número da tela", ForaDoLugar(menor));
         Assert.Contains("relevo do delta com fonte diferente", ForaDoLugar(menor));
         var largo = Xaml(); Peca(largo, "DeltaVoltaCard").SetAttributeValue("Width", "560");
@@ -732,14 +769,29 @@ public class TelaPrimeiraVersaoTests
         if (!arr.Success || !arr.Groups[1].Value.Split(',').Select(x => x.Trim()).ToHashSet().SetEquals(relevo))
             erros.Add("camada do relevo sem o número");
 
-        // Demo (chave ligada): o cartão passa pelas cenas e mostra a linha de baixo.
-        var cena = CorpoDoMetodo(src, "private void ApplyScene(int index)");
-        const string se = "if (TelaPrimeiraVersao.Ligada)";
-        var i0 = cena.IndexOf(se, StringComparison.Ordinal);
-        var (ini, fim) = i0 < 0 ? (-1, -1) : Bloco(cena, i0 + se.Length);
-        var bloco = ini < 0 ? "" : cena[ini..fim];
-        if (!bloco.Contains("_cockpitState.SetDeltaVolta(TelaPrimeiraVersao.DeltaVoltaDemo(index));") || !bloco.Contains("ApplyVoltasDoCartao("))
-            erros.Add("demo sem o cartão");
+        // Demo (chave ligada): a cena põe a linha de baixo; o delta é só do relógio de 100 ms (um dono).
+        string DentroDe(string s, string se)
+        {
+            var i0 = s.IndexOf(se, StringComparison.Ordinal);
+            var (ini, fim) = i0 < 0 ? (-1, -1) : Bloco(s, i0 + se.Length);
+            return ini < 0 ? "" : s[ini..fim];
+        }
+        var bloco = DentroDe(CorpoDoMetodo(src, "private void ApplyScene(int index)"), "if (TelaPrimeiraVersao.Ligada)");
+        if (!bloco.Contains("ApplyVoltasDoCartao(")) erros.Add("demo sem o cartão");
+        if (bloco.Contains("SetDeltaVolta(")) erros.Add("delta da demo com dois donos");
+
+        // Delta da demo ANDANDO (Flávio 2026-10-30): relógio de até 100 ms dentro do --demo, que a cada tique anda
+        // um passo da fração da cena (Domain DV_16 confere a conta), e que para quando entra o dado real.
+        var demo = DentroDe(DentroDe(ctor, "if (_options.Demo)"), "if (TelaPrimeiraVersao.Ligada)");
+        var tique = Regex.Match(demo, @"_deltaDemoTimer\.Interval = TimeSpan\.FromMilliseconds\((\d+)\);");
+        var anda = DentroDe(demo, "_deltaDemoTimer.Tick += (_, _) =>");
+        if (!tique.Success || int.Parse(tique.Groups[1].Value) > 100 || !demo.Contains("_deltaDemoTimer.Start();")
+            || !anda.Contains("passo++;")
+            || !anda.Contains("_cockpitState.SetDeltaVolta(TelaPrimeiraVersao.DeltaVoltaDemoAndando(\n                        passo / passosPorCena, (double)(passo % passosPorCena) / passosPorCena));")
+            || !demo.Contains("var passosPorCena = (int)Math.Round(_demoTimer.Interval.TotalMilliseconds / 100);"))
+            erros.Add("demo do delta parada");
+        if (!CorpoDoMetodo(src, "public void IniciarFeedReal(").Contains("_deltaDemoTimer?.Stop();"))
+            erros.Add("demo do delta por cima do dado real");
 
         // Linha de baixo: atualiza quando a volta entra na sessão e quando a melhor é semeada, e lê a referência do delta.
         var volta = CorpoDoMetodo(recordes, "private void RegistrarVoltaCompleta(double tempoMs)");
@@ -779,8 +831,30 @@ public class TelaPrimeiraVersaoTests
             FiacaoDoCartao(chave, src.Replace("ApplyDeltaVolta(initial.DeltaVolta);", ""), cartao, recordes, doc));
         Assert.Contains("camada do relevo sem o número",
             FiacaoDoCartao(chave, src, cartao.Replace(", DvNum }", " }"), recordes, doc));
-        Assert.Contains("demo sem o cartão",
-            FiacaoDoCartao(chave, src.Replace("_cockpitState.SetDeltaVolta(TelaPrimeiraVersao.DeltaVoltaDemo(index));", ""), cartao, recordes, doc));
+        const string linhaDeBaixo = "ApplyVoltasDoCartao(melhorMs, ultimaMs);";
+        Assert.Contains(linhaDeBaixo, src);
+        Assert.Contains("demo sem o cartão", FiacaoDoCartao(chave, src.Replace(linhaDeBaixo, ""), cartao, recordes, doc));
+        Assert.Contains("delta da demo com dois donos", FiacaoDoCartao(chave,
+            src.Replace(linhaDeBaixo, linhaDeBaixo + "\n            _cockpitState.SetDeltaVolta(TelaPrimeiraVersao.DeltaVoltaDemo(index));"),
+            cartao, recordes, doc));
+
+        // Controles do delta andando: o delta parado na cena (o que ele viu em 30/10 10:53), o relógio que não liga,
+        // lento demais, e o relógio que segue por cima do dado real reprovam.
+        const string passoDaCena = "passo / passosPorCena, (double)(passo % passosPorCena) / passosPorCena));";
+        Assert.Contains(passoDaCena, src);
+        foreach (var (de, para) in new[]
+                 {
+                     (passoDaCena, "passo / passosPorCena, 0));"),
+                     ("_deltaDemoTimer.Start();", ""),
+                     ("_deltaDemoTimer.Interval = TimeSpan.FromMilliseconds(100);", "_deltaDemoTimer.Interval = TimeSpan.FromMilliseconds(2000);"),
+                     ("passo++;", ""),
+                 })
+        {
+            Assert.Contains(de, src);
+            Assert.Contains("demo do delta parada", FiacaoDoCartao(chave, src.Replace(de, para), cartao, recordes, doc));
+        }
+        Assert.Contains("demo do delta por cima do dado real",
+            FiacaoDoCartao(chave, src.Replace("_deltaDemoTimer?.Stop();", ""), cartao, recordes, doc));
         const string ultima = "_sessaoLapsMs.Add(tempoMs);\n        AtualizarVoltasDoCartao();";
         Assert.Contains(ultima, recordes);
         Assert.Contains("última volta não chega ao cartão",

@@ -1,11 +1,15 @@
 // DeltaAoVivo — o número do cartão do centro MOMENTO A MOMENTO (Flávio 2026-10-30, painel
 // p1fast-cartao-delta-mapa-0013): tempo da volta corrente × tempo da melhor volta no MESMO PONTO do
-// traçado. Trava: volta igual = "0,00" verde no meio da volta; mais lenta num trecho = vermelho com o
+// traçado. Trava: volta igual = "00" verde no meio da volta; mais lenta num trecho = vermelho com o
 // tamanho certo; o cruzamento da linha interpolado (e os fixes que entram depois da linha, no replay,
 // vão para a volta nova); reancoragem depois de buraco de GPS; buraco curto e ré nunca mostram número
 // falso (o carro fora da janela de busca não casa com a ponta dela); traço ruim nunca vira régua (nem fica o
 // antigo); traço de outra volta é recusado ao abrir; sem traço o número só muda no fim da curva;
 // no máximo 10 números por segundo; o arquivo do traço (ida e volta, corrompido, replay).
+// 30/10 ~11h ("tem de andar com o GPS o tempo todo"): melhor volta gravada SEM traço → a volta mais rápida da
+// sessão empresta o traço esticado para o tempo da melhor volta e o número anda a cada fix (DA_15); a melhor
+// volta e a linha de baixo não mudam; volta mais rápida que a melhor tira a régua provisória; volta lenta demais
+// não empresta (DA_16); a conta do esticar sozinha (DA_17).
 
 using P1Fast.Cockpit.Domain;
 using Xunit;
@@ -153,7 +157,7 @@ public class DeltaAoVivoTests
         var tempo = carro.Cruzamentos[1] - carro.Cruzamentos[0];
         Assert.Equal(tempo, orq.TracoMelhorVolta!.Pontos[^1].Ms, 0);   // a volta acaba na linha, não 240 ms depois
 
-        // A volta seguinte conta do cruzamento: igual = "0,00" verde (com 240 ms de erro daria 0,24).
+        // A volta seguinte conta do cruzamento: igual = "00" verde (com 240 ms de erro daria "24").
         AteS(orq, carro, V30, Volta * 0.5);
         Assert.Equal(new DeltaVoltaInfo(0, Tone.Bom), c.Get().DeltaVolta);
     }
@@ -221,14 +225,14 @@ public class DeltaAoVivoTests
     }
 
     // Confere CADA número que o cartão mostra contra a verdade da pista de teste: a melhor volta foi a
-    // 30 m/s do começo ao fim (no ponto s ela tinha s/30 segundos); a volta corrente tem T − cruzamento.
-    private static List<string> ConferirCadaNumero(CockpitState c, Carro carro)
+    // vRef m/s do começo ao fim (no ponto s ela tinha s/vRef segundos); a volta corrente tem T − cruzamento.
+    private static List<string> ConferirCadaNumero(CockpitState c, Carro carro, double vRef = 30)
     {
         var erros = new List<string>();
         c.OnChange((_, _, keys) =>
         {
             if (!keys.Contains("deltaVolta") || c.Get().DeltaVolta is not { Centesimos: { } cs } d) return;
-            var verdade = ((carro.T - carro.Cruzamentos[^1]) - carro.NaVolta / 30 * 1000) / 10;
+            var verdade = ((carro.T - carro.Cruzamentos[^1]) - carro.NaVolta / vRef * 1000) / 10;
             var mostrado = d.Tom == Tone.Erro ? cs : -cs;
             if (Math.Abs(mostrado - verdade) > 2) erros.Add($"s={carro.NaVolta:0.0} mostrou {mostrado} cs, verdade {verdade:0.0}");
         });
@@ -269,7 +273,110 @@ public class DeltaAoVivoTests
         Assert.Equal(Tone.Erro, c.Get().DeltaVolta.Tom);    // perdeu ~1,7 s de verdade
     }
 
+    // ── Régua provisória: a melhor volta gravada sem traço ───────────
+
+    // Maestro semeado como no notebook hoje: a melhor volta gravada ANTES do traço (tempo de uma volta a vMelhor
+    // m/s, curvas sem tempo de volta, sem traço).
+    private static (CockpitState Estado, CockpitOrchestrator Orq, Carro Carro, double MelhorMs) MelhorAntigaSemTraco(double vMelhor)
+    {
+        var (_, orq1, _) = ComMelhorVolta();
+        var curvas = orq1.MelhorVolta.Curvas.ToDictionary(k => k.Key, k => k.Value with { TempoNaVoltaMs = null });
+        var c = new CockpitState();
+        var orq = new CockpitOrchestrator(c, new[] { Curva() });
+        var melhorMs = Volta / vMelhor * 1000;
+        orq.SemearMelhorVolta(melhorMs, curvas);
+        Assert.Null(orq.TracoMelhorVolta);
+        return (c, orq, new Carro(), melhorMs);
+    }
+
+    [Fact]
+    public void DA_15_Melhor_volta_sem_traco_o_numero_anda_com_o_GPS_pela_volta_da_sessao()
+    {
+        var (c, orq, carro, melhorMs) = MelhorAntigaSemTraco(31);
+        Assert.False(AteALinha(orq, carro, V30));          // saída do box
+        Assert.False(AteALinha(orq, carro, V30));          // 1ª volta (30 m/s): mais lenta, não vira a melhor…
+        var volta1 = carro.Cruzamentos[1] - carro.Cruzamentos[0];
+        Assert.Equal(volta1, orq.ReguaProvisoriaMs);       // …mas empresta o traço
+        Assert.Null(orq.TracoMelhorVolta);                 // que nunca é gravado como o da melhor volta
+        Assert.Equal(melhorMs, orq.MelhorVolta.TempoMs);   // a referência (e a linha de baixo) não muda
+
+        // Volta 2: CADA número contra a verdade (melhor volta = 31 m/s), e muda o tempo todo, não só no fim da curva.
+        var erros = ConferirCadaNumero(c, carro, vRef: 31);
+        var mudancas = 0;
+        c.OnChange((_, _, keys) => { if (keys.Contains("deltaVolta")) mudancas++; });
+        AteS(orq, carro, V30, Volta * 0.5);
+        Assert.Empty(erros);
+        Assert.True(mudancas > 50, $"o número mudou só {mudancas} vezes em meia volta");
+        var d = c.Get().DeltaVolta;
+        Assert.Equal(Tone.Erro, d.Tom);
+        Assert.InRange(d.Centesimos!.Value, 99, 103);       // (Volta/2)·(1/30 − 1/31) = 1,01 s
+
+        // Na linha: o tempo da volta inteira × a melhor volta, exato.
+        Assert.False(AteALinha(orq, carro, V30));
+        var volta2 = carro.Cruzamentos[^1] - carro.Cruzamentos[^2];
+        Assert.Equal(DeltaVoltaInfo.Comparar(volta2, melhorMs), c.Get().DeltaVolta);
+        Assert.Equal(volta1, orq.ReguaProvisoriaMs);       // volta igual não troca a régua
+
+        // Volta mais rápida da sessão (30,5 m/s), ainda mais lenta que a melhor: passa a ser a régua provisória.
+        Func<double, double> v305 = _ => 30.5;
+        Assert.False(AteALinha(orq, carro, v305));
+        Assert.Equal(carro.Cruzamentos[^1] - carro.Cruzamentos[^2], orq.ReguaProvisoriaMs);
+
+        // Volta mais rápida que a melhor (32 m/s): vira a melhor COM traço e a régua provisória sai.
+        Func<double, double> v32 = _ => 32;
+        Assert.True(AteALinha(orq, carro, v32));
+        Assert.NotNull(orq.TracoMelhorVolta);
+        Assert.Null(orq.ReguaProvisoriaMs);
+
+        // Sessão nova: a régua provisória não atravessa.
+        var (_, orq2, carro2, _) = MelhorAntigaSemTraco(31);
+        AteALinha(orq2, carro2, V30);
+        AteALinha(orq2, carro2, V30);
+        Assert.NotNull(orq2.ReguaProvisoriaMs);
+        orq2.SemearMelhorVolta(Volta / 31 * 1000, orq2.MelhorVolta.Curvas.ToDictionary(k => k.Key, k => k.Value));
+        Assert.Null(orq2.ReguaProvisoriaMs);
+    }
+
+    [Fact]
+    public void DA_16_Volta_lenta_demais_nao_empresta_o_traco()
+    {
+        // Melhor volta a 40 m/s; a sessão anda a 30 (33% mais lenta: box, bandeira) → sem régua provisória.
+        var (c, orq, carro, _) = MelhorAntigaSemTraco(40);
+        AteALinha(orq, carro, V30);
+        Assert.False(AteALinha(orq, carro, V30));
+        Assert.Null(orq.ReguaProvisoriaMs);
+        var mudancas = 0;
+        c.OnChange((_, _, keys) => { if (keys.Contains("deltaVolta")) mudancas++; });
+        AteS(orq, carro, V30, Volta * 0.9);
+        Assert.InRange(mudancas, 0, 1);                     // o número não anda com régua nenhuma
+
+        // Controle: a mesma sessão com a melhor volta a 37 m/s (23% mais lenta) empresta.
+        var (_, orq37, carro37, _) = MelhorAntigaSemTraco(37);
+        AteALinha(orq37, carro37, V30);
+        AteALinha(orq37, carro37, V30);
+        Assert.NotNull(orq37.ReguaProvisoriaMs);
+    }
+
     // ── A peça sozinha ───────────────────────────────────────────────
+
+    [Fact]
+    public void DA_17_Esticar_o_traco_para_o_tempo_da_melhor_volta()
+    {
+        var pts = TracoReto(200);
+        var dur = pts[^1].Ms;
+        var e = DeltaAoVivo.Escalado(new TracoVolta(dur, pts), dur * 0.9)!;
+        Assert.Equal(dur * 0.9, e.TempoMs);
+        Assert.Equal(dur * 0.9, e.Pontos[^1].Ms, 6);
+        Assert.Equal(pts[100].Ms * 0.9, e.Pontos[100].Ms, 6);   // o tempo encolhe na mesma proporção em todo ponto
+        Assert.Equal(pts.Select(p => (p.Lat, p.Lng, p.M)), e.Pontos.Select(p => (p.Lat, p.Lng, p.M)));   // o desenho não muda
+
+        Assert.NotNull(DeltaAoVivo.Escalado(new TracoVolta(dur, pts), dur / 1.24));
+        Assert.Null(DeltaAoVivo.Escalado(new TracoVolta(dur, pts), dur / 1.26));   // mais de 25% mais lenta
+        Assert.Null(DeltaAoVivo.Escalado(new TracoVolta(TracoReto(99)[^1].Ms, TracoReto(99)), dur));   // traço ruim
+        Assert.Null(DeltaAoVivo.Escalado(new TracoVolta(dur, pts), double.NaN));
+        Assert.Null(DeltaAoVivo.Escalado(new TracoVolta(dur, pts), 0));
+        Assert.Null(DeltaAoVivo.Escalado(null, dur));
+    }
 
     private static List<PontoTraco> TracoReto(int n, double passoMs = 40)
         => Enumerable.Range(0, n).Select(i => new PontoTraco(-15.77, -47.9 + i * 1e-5, i * passoMs, i * 1.07)).ToList();

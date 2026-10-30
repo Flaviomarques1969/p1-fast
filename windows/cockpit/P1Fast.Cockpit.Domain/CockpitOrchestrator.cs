@@ -82,8 +82,13 @@ public sealed class CockpitOrchestrator
     private LinhaGps? _linhaChegada = new(PistaBrasilia.ChegadaA, PistaBrasilia.ChegadaB);
 
     /// <summary>Traço da melhor volta em uso (a régua do delta ao vivo) — a UI grava quando muda;
-    /// null = referência sem traço (o cartão cai no delta por fim de curva).</summary>
+    /// null = referência sem traço (o cartão usa a régua provisória ou cai no delta por fim de curva).</summary>
     public TracoVolta? TracoMelhorVolta { get; private set; }
+
+    /// <summary>Régua provisória do delta (DeltaAoVivo.Escalado): o tempo da volta da sessão cujo traço, esticado
+    /// para o tempo da melhor volta, faz o número andar enquanto a melhor volta não tem traço. Nunca é gravada
+    /// (não é o traço da melhor volta). null = nenhuma.</summary>
+    public double? ReguaProvisoriaMs { get; private set; }
 
     /// <summary>Semeia a referência gravada da melhor volta (UI, ao abrir a sessão / trocar de pista).
     /// O traço só vale se é DA volta que é a referência (mesmo tempo).</summary>
@@ -93,6 +98,7 @@ public sealed class CockpitOrchestrator
         MirarLuzNaMelhorVolta();
         var daMesmaVolta = traco is not null && _melhorVolta.TempoMs is { } refMs && Math.Abs(traco.TempoMs - refMs) < 1;
         TracoMelhorVolta = _deltaAoVivo.Semear(daMesmaVolta ? traco : null) ? traco : null;
+        ReguaProvisoriaMs = null;
         _cockpit.SetDeltaVolta(DeltaVoltaInfo.Vazio());
     }
 
@@ -116,6 +122,15 @@ public sealed class CockpitOrchestrator
             // SEM traço — nunca o traço da volta antiga, que é de outro tempo.
             var nova = traco is not null && tempoMs is { } tv ? new TracoVolta(tv, traco) : null;
             TracoMelhorVolta = _deltaAoVivo.TrocarReferencia(nova) ? nova : null;
+            ReguaProvisoriaMs = null;
+        }
+        else if (TracoMelhorVolta is null && traco is not null && tempoMs is { } tv
+                 && tv >= ArmazemRecordes.VoltaMinimaPlausivelMs && (ReguaProvisoriaMs is not { } rp || tv < rp)
+                 && _melhorVolta.TempoMs is { } melhorMs && DeltaAoVivo.Escalado(new TracoVolta(tv, traco), melhorMs) is { } provisoria)
+        {
+            // A melhor volta não tem traço: a volta mais rápida da sessão empresta o desenho até ela ganhar o seu.
+            _deltaAoVivo.TrocarReferencia(provisoria);
+            ReguaProvisoriaMs = tv;
         }
         return virou;
     }

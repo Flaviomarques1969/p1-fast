@@ -47,16 +47,19 @@ public sealed record DeltaVoltaInfo(int? Centesimos, Tone Tom)
     public static DeltaVoltaInfo DaDiferenca(double diferencaMs)
     {
         if (!double.IsFinite(diferencaMs)) return Vazio();
-        // O tom sai do número ARREDONDADO que a tela mostra: "0,00" é igual = verde, nunca vermelho.
+        // O tom sai do número ARREDONDADO que a tela mostra: "00" é igual = verde, nunca vermelho.
         var cs = (int)Math.Round(diferencaMs / 10.0, MidpointRounding.AwayFromZero);
         return new DeltaVoltaInfo(Math.Abs(cs), cs <= 0 ? Tone.Bom : Tone.Erro);
     }
 
-    /// <summary>O número do cartão: "0,42"; de 10 s para cima uma casa só ("12,3"); 100 s ou mais = "99,9".</summary>
+    /// <summary>O número do cartão. Abaixo de 1 s só os centésimos, sem o "0," (Flávio 2026-10-30: 0,42 → "42",
+    /// 0,05 → "05", igual → "00"); de 1 s para cima com vírgula ("1,07"); de 10 s para cima uma casa só ("12,3");
+    /// 100 s ou mais = "99,9".</summary>
     public string Texto()
     {
         if (Centesimos is not { } c) return "";
         if (c >= 10000) return "99,9";
+        if (c < 100) return c.ToString("00", System.Globalization.CultureInfo.InvariantCulture);
         var s = c / 100.0;
         return (c >= 1000 ? s.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)
                           : s.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)).Replace('.', ',');

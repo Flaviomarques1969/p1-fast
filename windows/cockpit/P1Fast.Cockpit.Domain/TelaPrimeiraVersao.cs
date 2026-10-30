@@ -19,7 +19,8 @@
 //
 // Cartão do delta no centro (Flávio 2026-10-30, painel p1fast-cartao-delta-mapa-0013: "sem mapa"). Com a chave
 // ligada o vidro do mapa não liga (MapaNaTela) e o centro é do cartão: delta da volta × a melhor volta daquele
-// carro naquela pista, maior que os 2 números, que foram para as bordas de fora.
+// carro naquela pista, maior que os 2 números, que foram para as bordas de fora — 20% menores e cada um no
+// centro do espaço de 2 algarismos (ReducaoDosLados).
 
 namespace P1Fast.Cockpit.Domain;
 
@@ -39,6 +40,10 @@ public static class TelaPrimeiraVersao
 
     /// <summary>Quanto os 2 números cresceram sobre a f251c0be (116 e 92 de fonte).</summary>
     public const double AumentoDosNumeros = 1.4;
+
+    /// <summary>Quanto os 2 números dos lados encolheram sobre os 40% maiores (Flávio 2026-10-30 ~11h: "20%
+    /// menores", junto com o número centrado no espaço de 2 algarismos): 162 → 130 e 129 → 103.</summary>
+    public const double ReducaoDosLados = 0.8;
 
     /// <summary>Os textos escondidos aparecem? Só com a chave desligada.</summary>
     public static bool MostraTextos(bool? ligada = null) => !(ligada ?? Ligada);
@@ -88,22 +93,37 @@ public static class TelaPrimeiraVersao
     }
 
     // Cartão do delta na demonstração (Flávio 2026-10-30): tempo de volta até a curva × o da melhor volta no
-    // mesmo ponto (ms). Passa pelo verde (mais rápido), pelo "0,00" igual (verde) e pelo vermelho (mais lento).
+    // mesmo ponto (ms). Passa pelo verde (mais rápido), pelo "00" igual (verde) e pelo vermelho (mais lento).
     private static readonly (double AtualMs, double MelhorMs)[] DeltasDemo =
     {
-        (41_820, 42_000),   // 0,18 verde
-        (63_420, 63_000),   // 0,42 vermelho
-        (25_000, 25_000),   // 0,00 verde (igual)
+        (41_820, 42_000),   // 18 verde
+        (63_420, 63_000),   // 42 vermelho
+        (25_000, 25_000),   // 00 verde (igual)
         (88_070, 87_000),   // 1,07 vermelho
-        (51_370, 52_000),   // 0,63 verde
-        (70_090, 70_000),   // 0,09 vermelho
+        (51_370, 52_000),   // 63 verde
+        (70_090, 70_000),   // 09 vermelho
     };
+
+    private static (double AtualMs, double MelhorMs) CasoDelta(int cena)
+        => DeltasDemo[((cena % DeltasDemo.Length) + DeltasDemo.Length) % DeltasDemo.Length];
 
     /// <summary>O cartão do delta na cena <paramref name="cena"/> da demonstração (cicla pelos casos).</summary>
     public static DeltaVoltaInfo DeltaVoltaDemo(int cena)
     {
-        var d = DeltasDemo[((cena % DeltasDemo.Length) + DeltasDemo.Length) % DeltasDemo.Length];
+        var d = CasoDelta(cena);
         return DeltaVoltaInfo.Comparar(d.AtualMs, d.MelhorMs);
+    }
+
+    /// <summary>O cartão da demonstração ANDANDO (Flávio 2026-10-30: "o delta tem de andar o tempo todo"): a
+    /// diferença sai da cena <paramref name="cena"/> e chega na seguinte ao longo de <paramref name="fracao"/>
+    /// (0 = a cena, 1 = a seguinte), como o delta ao vivo, que muda a cada GPS. Fração fora de 0..1 encosta na
+    /// ponta; inválida = 0.</summary>
+    public static DeltaVoltaInfo DeltaVoltaDemoAndando(int cena, double fracao)
+    {
+        var f = double.IsFinite(fracao) ? Math.Clamp(fracao, 0, 1) : 0;
+        var (a, b) = (CasoDelta(cena), CasoDelta(cena + 1));
+        var de = a.AtualMs - a.MelhorMs;
+        return DeltaVoltaInfo.DaDiferenca(de + (b.AtualMs - b.MelhorMs - de) * f);
     }
 
     // Linha de baixo do cartão na demonstração: a melhor volta fica; a última muda a cada cena.

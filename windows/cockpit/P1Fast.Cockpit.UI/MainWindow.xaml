@@ -336,7 +336,10 @@
 
                     <!-- ───────── OS 2 NÚMEROS (Flávio 2026-10-29: 40% maiores; 2026-10-30: "mais para os
                          lados externos" — cada um encostado na borda de FORA da sua metade, a 40 da beira,
-                         para o cartão do delta caber no meio). Declarados DEPOIS do vidro do mapa: um número de 2 algarismos
+                         para o cartão do delta caber no meio; 2026-10-30 ~11h: 20% menores e CENTRADOS no espaço
+                         de 2 algarismos — o "8" fica no meio de onde ficaria o "12", não no canto. A caixa tem a
+                         largura de um molde "88" invisível, na mesma fonte, e o número fica no centro dela; 3
+                         algarismos alargam a caixa para dentro da tela). Declarados DEPOIS do vidro do mapa: um número de 2 algarismos
                          passa por cima da borda do mapa em vez de ficar coberto por ela; e ANTES da
                          tela térmica e do crítico, que continuam por cima de tudo. ─────────
                     ───────── FREADA na METADE ESQUERDA (Flávio 2026-10-28) ─────────
@@ -351,13 +354,21 @@
                         <StackPanel.RenderTransform>
                             <TranslateTransform Y="-30"/>
                         </StackPanel.RenderTransform>
-                        <TextBlock x:Name="FreadaNum"
-                                   Text=""
-                                   FontSize="162"
-                                   FontWeight="ExtraBold"
-                                   Foreground="#4FE060"
-                                   HorizontalAlignment="Left"
-                                   Margin="40,0,0,0"/>
+                        <Grid x:Name="FreadaCaixa"
+                              HorizontalAlignment="Left"
+                              Margin="40,0,0,0">
+                            <TextBlock x:Name="FreadaMolde"
+                                       Text="88"
+                                       FontSize="130"
+                                       FontWeight="ExtraBold"
+                                       Opacity="0"/>
+                            <TextBlock x:Name="FreadaNum"
+                                       Text=""
+                                       FontSize="130"
+                                       FontWeight="ExtraBold"
+                                       Foreground="#4FE060"
+                                       HorizontalAlignment="Center"/>
+                        </Grid>
                     </StackPanel>
 
                     <!-- ───────── SAÍDA na METADE DIREITA (Flávio 2026-10-28) ───────── -->
@@ -372,24 +383,33 @@
                         <!-- km/h entre a velocidade de SAÍDA desta passagem e a da MESMA curva na
                              MELHOR VOLTA, sem sinal: verde = saiu mais rápido (ou igual), vermelho =
                              mais lento. Sem palavra. -->
-                        <TextBlock x:Name="SaidaNum"
-                                   Text=""
-                                   FontSize="129"
-                                   FontWeight="ExtraBold"
-                                   Foreground="#4FE060"
-                                   HorizontalAlignment="Right"
-                                   Margin="0,0,40,0"/>
+                        <Grid x:Name="SaidaCaixa"
+                              HorizontalAlignment="Right"
+                              Margin="0,0,40,0">
+                            <TextBlock x:Name="SaidaMolde"
+                                       Text="88"
+                                       FontSize="103"
+                                       FontWeight="ExtraBold"
+                                       Opacity="0"/>
+                            <TextBlock x:Name="SaidaNum"
+                                       Text=""
+                                       FontSize="103"
+                                       FontWeight="ExtraBold"
+                                       Foreground="#4FE060"
+                                       HorizontalAlignment="Center"/>
+                        </Grid>
                     </StackPanel>
 
                     <!-- ───────── CARTÃO DO DELTA no CENTRO (Flávio 2026-10-30): "um cartão 3d com altíssima
                          qualidade com o delta da volta em que ele está x a melhor passagem naquele carro
                          naquela pista". Painel p1fast-cartao-delta-mapa-0013: SEM mapa (o vidro do mapa não
                          liga na 1ª versão), delta CONTÍNUO momento a momento (Domain/DeltaAoVivo.cs), número
-                         MAIOR que os 2 dos lados (180 > 162) e, embaixo, melhor volta (esq.) e última (dir.),
-                         sem rótulo. Segundos com vírgula, SEM sinal: verde = igual ou mais rápido, vermelho =
+                         MAIOR que os 2 dos lados (180 > 130) e, embaixo, melhor volta (esq.) e última (dir.),
+                         sem rótulo. Abaixo de 1 s só os centésimos ("42"), de 1 s para cima com vírgula ("1,07"),
+                         SEM sinal: verde = igual ou mais rápido, vermelho =
                          mais lento (Domain/MelhorVoltaReferencia.cs::DeltaVoltaInfo).
-                         Medidas (tela 956×440): 440 de largura cabe entre a freada de 2 algarismos (40..~235) e
-                         a saída (~765..916); 208 de altura com a aura cabe entre a barra de voltas (termina em
+                         Medidas (tela 956×440): 440 de largura cabe entre a freada de 2 algarismos (40..~196) e
+                         a saída (~792..916); 208 de altura com a aura cabe entre a barra de voltas (termina em
                          74) e a fileira do ápice (começa em 316), na mesma altura dos 2 números (Y −30).
                          Relevo em camadas: aura da cor, sombra de contato, espessura do cartão, corpo de vidro
                          escuro com chanfro de luz, brilho no alto e o número em relevo (sombra + 3 degraus +

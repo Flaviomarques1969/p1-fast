@@ -13,6 +13,14 @@
 // fechamento — eles passam para a volta nova. Sem linha conhecida (pista nova) ou sem o par, a volta
 // começa no último fix.
 //
+// Régua provisória (Flávio 2026-10-30 ~11h: "tem de andar com o GPS o tempo todo"): a melhor volta gravada
+// antes desta peça não tem traço, e sem régua o número só mudaria no fim de cada curva ou na linha — até a 1ª
+// volta mais rápida que ela, que pode não vir. Enquanto isso, a volta mais rápida DA SESSÃO empresta o desenho:
+// o traço dela com o tempo esticado para o tempo da melhor volta (Escalado). A comparação continua sendo × a
+// melhor volta (a linha de baixo do cartão não muda): exata na linha; no meio da volta é ESTIMATIVA — supõe que
+// a melhor volta dividiu o tempo pela pista como a volta da sessão. Volta mais de 25% mais lenta que a melhor
+// (box, bandeira) não empresta.
+//
 // Puro: zero UI, zero I/O, sem relógio próprio (o tempo é o T do GPS). Quem grava o traço é a UI.
 
 namespace P1Fast.Cockpit.Domain;
@@ -35,6 +43,8 @@ public sealed class DeltaAoVivo
     public const int JanelaAtras = 2, JanelaFrente = 40;
     public const int PerdidosParaReancorar = 3;
     public const double ReancoraM = 150;
+
+    public const double TetoReguaProvisoria = 1.25;   // volta da sessão até 25% mais lenta que a melhor empresta o traço
 
     public const double IntervaloEmissaoMs = 100;     // no máximo 10 números por segundo de GPS
     public const double JanelaLinhaMs = 5000;         // onde procurar o par que cruzou a linha
@@ -90,6 +100,17 @@ public sealed class DeltaAoVivo
             if (dt < 0 || dt > BuracoMaximoMs || p.M < pts[k - 1].M) return false;
         }
         return true;
+    }
+
+    /// <summary>Régua provisória: o traço de uma volta da sessão com o tempo esticado para o tempo da melhor volta
+    /// (<paramref name="melhorMs"/>). null = traço que não serve de régua ou volta lenta demais (mais de 25% acima).</summary>
+    public static TracoVolta? Escalado(TracoVolta? daSessao, double melhorMs)
+    {
+        if (daSessao is null || !double.IsFinite(melhorMs) || melhorMs <= 0 || !TracoValido(daSessao.Pontos, daSessao.TempoMs)) return null;
+        if (daSessao.TempoMs > melhorMs * TetoReguaProvisoria) return null;
+        var f = melhorMs / daSessao.TempoMs;
+        var pts = daSessao.Pontos.Select(p => p with { Ms = p.Ms * f }).ToList();
+        return TracoValido(pts, melhorMs) ? new TracoVolta(melhorMs, pts) : null;
     }
 
     /// <summary>Um fix do GPS (o mesmo fluxo filtrado do maestro). Devolve o número novo do cartão, ou

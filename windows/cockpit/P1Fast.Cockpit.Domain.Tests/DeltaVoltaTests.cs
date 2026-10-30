@@ -1,6 +1,6 @@
 // DeltaVolta — cartão do centro do painel do notebook (Flávio 2026-10-30): "delta da volta em que ele está x
 // a melhor passagem naquele carro naquela pista. Verde é igual ou menor o tempo da volta atual x a melhor
-// volta, vermelho abaixo da melhor volta". Trava: as cores (o "0,00" igual é verde; o tom sai do número que
+// volta, vermelho abaixo da melhor volta". Trava: as cores (o "00" igual é verde; o tom sai do número que
 // a tela mostra), o texto sem sinal, a volta de saída do box sem delta, a curva comparada com a MESMA curva
 // da melhor volta, a linha comparando a volta inteira, o tempo por curva só da volta que virou referência,
 // a ida e volta no armazém (e o arquivo antigo, sem o tempo por curva) e a demonstração.
@@ -35,11 +35,11 @@ public class DeltaVoltaTests
     [Fact]
     public void DV_02_O_tom_sai_do_numero_arredondado_que_a_tela_mostra()
     {
-        // 4 ms mais lento aparece "0,00" → verde, nunca "0,00" vermelho.
+        // 4 ms mais lento aparece "00" → verde, nunca "00" vermelho.
         var quase = DeltaVoltaInfo.Comparar(10_004, 10_000);
         Assert.Equal(0, quase.Centesimos);
         Assert.Equal(Tone.Bom, quase.Tom);
-        // 5 ms arredonda para 0,01 → vermelho.
+        // 5 ms arredonda para "01" → vermelho.
         var um = DeltaVoltaInfo.Comparar(10_005, 10_000);
         Assert.Equal(1, um.Centesimos);
         Assert.Equal(Tone.Erro, um.Tom);
@@ -56,14 +56,23 @@ public class DeltaVoltaTests
     }
 
     [Fact]
-    public void DV_04_Texto_com_virgula_sem_sinal_e_curto()
+    public void DV_04_Texto_sem_sinal_curto_e_sem_o_zero_virgula_abaixo_de_1_s()
     {
-        Assert.Equal("0,42", new DeltaVoltaInfo(42, Tone.Erro).Texto());
-        Assert.Equal("0,00", new DeltaVoltaInfo(0, Tone.Bom).Texto());
+        // Flávio 2026-10-30: "sem o 0," — abaixo de 1 s só os centésimos, sempre com 2 algarismos.
+        Assert.Equal("42", new DeltaVoltaInfo(42, Tone.Erro).Texto());
+        Assert.Equal("05", new DeltaVoltaInfo(5, Tone.Bom).Texto());
+        Assert.Equal("00", new DeltaVoltaInfo(0, Tone.Bom).Texto());
+        Assert.Equal("99", new DeltaVoltaInfo(99, Tone.Erro).Texto());
+        Assert.Equal("1,00", new DeltaVoltaInfo(100, Tone.Erro).Texto());    // de 1 s para cima, com vírgula
         Assert.Equal("1,07", new DeltaVoltaInfo(107, Tone.Erro).Texto());
         Assert.Equal("12,3", new DeltaVoltaInfo(1234, Tone.Erro).Texto());   // de 10 s para cima, 1 casa
         Assert.Equal("99,9", new DeltaVoltaInfo(15000, Tone.Erro).Texto());  // teto: cabe no cartão
-        Assert.DoesNotContain(new DeltaVoltaInfo(42, Tone.Bom).Texto(), "+-.");
+        foreach (var c in new[] { 0, 5, 42, 99, 107, 1234, 15000 })
+        {
+            var t = new DeltaVoltaInfo(c, Tone.Bom).Texto();
+            Assert.False(t.IndexOfAny(new[] { '+', '-', '.' }) >= 0, t);
+            Assert.False(t.StartsWith("0,", StringComparison.Ordinal), t);
+        }
     }
 
     // ── Referência: o tempo por curva é só da volta que virou referência ──
@@ -186,7 +195,7 @@ public class DeltaVoltaTests
         Assert.False(orq.FecharVolta(85_000));
         Assert.Equal(new DeltaVoltaInfo(500, Tone.Erro), c.Get().DeltaVolta);
 
-        // Volta 3: igual à melhor na curva → "0,00" verde.
+        // Volta 3: igual à melhor na curva → "00" verde.
         t = UmaVolta(orq, 100, t);
         Assert.Equal(new DeltaVoltaInfo(0, Tone.Bom), c.Get().DeltaVolta);
 
@@ -248,6 +257,54 @@ public class DeltaVoltaTests
         Assert.All(voltas, v => Assert.True(v.UltimaMs >= v.MelhorMs));
         Assert.Equal(TelaPrimeiraVersao.VoltasDemo(0), TelaPrimeiraVersao.VoltasDemo(6));
         Assert.Equal(TelaPrimeiraVersao.VoltasDemo(5), TelaPrimeiraVersao.VoltasDemo(-1));
+    }
+
+    /// <summary>O que o delta da demo tem de fazer entre uma cena e a seguinte (Flávio 2026-10-30: "o delta tem
+    /// de andar o tempo todo"): sair da cena, chegar na seguinte, mudar a cada passo, sem voltar e sem pular.</summary>
+    private static List<string> DemoAndando(Func<int, double, DeltaVoltaInfo> andando, int passos = 20)
+    {
+        static int ComSinal(DeltaVoltaInfo d) => d.Tom == Tone.Erro ? d.Centesimos!.Value : -d.Centesimos!.Value;
+        var erros = new List<string>();
+        for (var c = 0; c < 6; c++)
+        {
+            var (de, para) = (TelaPrimeiraVersao.DeltaVoltaDemo(c), TelaPrimeiraVersao.DeltaVoltaDemo(c + 1));
+            if (andando(c, 0) != de) erros.Add($"cena {c}: não sai da cena");
+            if (andando(c, 1) != para) erros.Add($"cena {c}: não chega na seguinte");
+            var v = Enumerable.Range(0, passos + 1).Select(i => ComSinal(andando(c, (double)i / passos))).ToList();
+            if (v.Distinct().Count() <= passos / 2) erros.Add($"cena {c}: parado");
+            var sentido = Math.Sign(ComSinal(para) - ComSinal(de));
+            var maior = Math.Ceiling(Math.Abs(ComSinal(para) - ComSinal(de)) / (double)passos) + 1;
+            var passadas = v.Zip(v.Skip(1), (a, b) => b - a).ToList();
+            if (passadas.Any(p => Math.Sign(p) == -sentido)) erros.Add($"cena {c}: volta");
+            if (passadas.Any(p => Math.Abs(p) > maior)) erros.Add($"cena {c}: pula");
+        }
+        return erros;
+    }
+
+    [Fact]
+    public void DV_16_Demo_anda_entre_as_cenas_sem_pular()
+    {
+        Assert.Empty(DemoAndando(TelaPrimeiraVersao.DeltaVoltaDemoAndando));
+
+        // No meio da passagem a cor troca como na pista: de 18 verde para 42 vermelho passa pelo "00" verde.
+        var passagem = Enumerable.Range(0, 21).Select(i => TelaPrimeiraVersao.DeltaVoltaDemoAndando(0, i / 20.0)).ToList();
+        Assert.Contains(passagem, d => d.Tom == Tone.Bom && d.Centesimos == 0);
+        Assert.Contains(passagem, d => d.Tom == Tone.Erro);
+
+        // Fração fora de 0..1 encosta na ponta; inválida fica na cena. Cicla como as cenas.
+        Assert.Equal(TelaPrimeiraVersao.DeltaVoltaDemoAndando(3, 1), TelaPrimeiraVersao.DeltaVoltaDemoAndando(3, 7));
+        Assert.Equal(TelaPrimeiraVersao.DeltaVoltaDemoAndando(3, 0), TelaPrimeiraVersao.DeltaVoltaDemoAndando(3, -2));
+        Assert.Equal(TelaPrimeiraVersao.DeltaVoltaDemoAndando(3, 0), TelaPrimeiraVersao.DeltaVoltaDemoAndando(3, double.NaN));
+        Assert.Equal(TelaPrimeiraVersao.DeltaVoltaDemoAndando(0, 0.5), TelaPrimeiraVersao.DeltaVoltaDemoAndando(6, 0.5));
+        Assert.Equal(TelaPrimeiraVersao.DeltaVoltaDemoAndando(5, 0.5), TelaPrimeiraVersao.DeltaVoltaDemoAndando(-1, 0.5));
+
+        // Controles: o delta parado na cena (o que ele viu em 30/10 10:53) e o que salta de uma cena para a outra reprovam.
+        var parado = DemoAndando((c, _) => TelaPrimeiraVersao.DeltaVoltaDemo(c));
+        Assert.Contains("cena 0: parado", parado);
+        Assert.Contains("cena 0: não chega na seguinte", parado);
+        var salta = DemoAndando((c, f) => TelaPrimeiraVersao.DeltaVoltaDemo(f < 0.5 ? c : c + 1));
+        Assert.Contains("cena 0: parado", salta);
+        Assert.Contains("cena 0: pula", salta);
     }
 
     // ── Linha de baixo do cartão: melhor volta e última volta ────────
