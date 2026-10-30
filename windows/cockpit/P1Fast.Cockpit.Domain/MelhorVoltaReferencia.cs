@@ -18,8 +18,61 @@
 
 namespace P1Fast.Cockpit.Domain;
 
-/// <summary>Medidas de uma curva numa volta: onde começou a freada (m até o ápice) e a velocidade de saída.</summary>
-public sealed record ReferenciaCurva(double? FreadaM, double? SaidaKmh);
+/// <summary>Medidas de uma curva numa volta: onde começou a freada (m até o ápice), a velocidade de saída
+/// e quanto tempo de volta já tinha passado no fim da curva (ms desde a linha; null = volta sem início
+/// conhecido ou referência gravada antes do cartão do delta).</summary>
+public sealed record ReferenciaCurva(double? FreadaM, double? SaidaKmh, double? TempoNaVoltaMs = null);
+
+/// <summary>
+/// Cartão do centro (Flávio 2026-10-30): delta da volta em que o piloto está × a melhor volta daquele
+/// carro naquela pista, em centésimos, SEM sinal — a cor diz o lado: verde = igual ou mais rápido,
+/// vermelho = mais lento. Momento a momento pelo traço da melhor volta (DeltaAoVivo); sem traço, no fim de
+/// cada curva (tempo de volta até ali × o da melhor volta no mesmo ponto); na linha, o tempo da volta
+/// fechada × o da melhor. null = cartão em branco.
+/// </summary>
+public sealed record DeltaVoltaInfo(int? Centesimos, Tone Tom)
+{
+    public static DeltaVoltaInfo Vazio() => new(null, Tone.Neutro);
+
+    /// <summary>Compara o tempo de volta até um ponto com o da melhor volta no mesmo ponto (ms).</summary>
+    public static DeltaVoltaInfo Comparar(double? atualMs, double? melhorMs)
+    {
+        if (atualMs is not { } a || melhorMs is not { } m || !double.IsFinite(a) || !double.IsFinite(m) || a <= 0 || m <= 0)
+            return Vazio();
+        return DaDiferenca(a - m);
+    }
+
+    /// <summary>A diferença já calculada (ms; + = mais lento) — o delta ao vivo, que no começo da volta
+    /// compara com o ponto 0 da melhor volta.</summary>
+    public static DeltaVoltaInfo DaDiferenca(double diferencaMs)
+    {
+        if (!double.IsFinite(diferencaMs)) return Vazio();
+        // O tom sai do número ARREDONDADO que a tela mostra: "0,00" é igual = verde, nunca vermelho.
+        var cs = (int)Math.Round(diferencaMs / 10.0, MidpointRounding.AwayFromZero);
+        return new DeltaVoltaInfo(Math.Abs(cs), cs <= 0 ? Tone.Bom : Tone.Erro);
+    }
+
+    /// <summary>O número do cartão: "0,42"; de 10 s para cima uma casa só ("12,3"); 100 s ou mais = "99,9".</summary>
+    public string Texto()
+    {
+        if (Centesimos is not { } c) return "";
+        if (c >= 10000) return "99,9";
+        var s = c / 100.0;
+        return (c >= 1000 ? s.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)
+                          : s.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)).Replace('.', ',');
+    }
+
+    /// <summary>Tempo de volta da linha de baixo do cartão (melhor e última): "1:12,34". A conta é a mesma do
+    /// FormatarTempo da tela térmica (centésimos cortados, não arredondados), para a mesma volta aparecer igual
+    /// nas duas telas. Sem tempo (null, zero, negativo ou inválido) = "" (em branco, nunca "—").</summary>
+    public static string TempoDeVolta(double? ms)
+    {
+        if (ms is not { } v || !double.IsFinite(v) || v <= 0) return "";
+        var total = (long)Math.Round(v);
+        var min = total / 60000; var rem = total % 60000;
+        return $"{min}:{rem / 1000:00},{rem % 1000 / 10:00}";
+    }
+}
 
 /// <summary>Os 2 números grandes do painel: freada (m, sem sinal) à esquerda e saída (km/h, sem
 /// sinal) à direita, cada um com a cor. null = sem referência daquela curva (número em branco).</summary>
@@ -82,14 +135,16 @@ public sealed class ReferenciaMelhorVolta
         TempoMs = t;
     }
 
-    /// <summary>Anota a passagem desta volta. Passar de novo pela mesma curva sobrescreve (fica a última).</summary>
-    public void AnotarPassagem(string segId, double? freadaM, double? saidaKmh)
+    /// <summary>Anota a passagem desta volta. Passar de novo pela mesma curva sobrescreve (fica a última).
+    /// <paramref name="tempoNaVoltaMs"/> = tempo de volta no fim da curva (o cartão do delta).</summary>
+    public void AnotarPassagem(string segId, double? freadaM, double? saidaKmh, double? tempoNaVoltaMs = null)
     {
         if (string.IsNullOrEmpty(segId)) return;
         var f = freadaM is { } fv && double.IsFinite(fv) && fv > 0 ? fv : (double?)null;
         var s = saidaKmh is { } sv && double.IsFinite(sv) && sv > 0 ? sv : (double?)null;
-        if (f is null && s is null) return;
-        _voltaCorrente[segId] = new ReferenciaCurva(f, s);
+        var t = tempoNaVoltaMs is { } tv && double.IsFinite(tv) && tv > 0 ? tv : (double?)null;
+        if (f is null && s is null && t is null) return;
+        _voltaCorrente[segId] = new ReferenciaCurva(f, s, t);
     }
 
     /// <summary>
@@ -107,8 +162,12 @@ public sealed class ReferenciaMelhorVolta
             foreach (var (seg, c) in _voltaCorrente)
             {
                 var antiga = Obter(seg);
-                _referencia[seg] = new ReferenciaCurva(c.FreadaM ?? antiga?.FreadaM, c.SaidaKmh ?? antiga?.SaidaKmh);
+                // Tempo de volta: SÓ desta volta — o de uma volta antiga não soma com o desta (outra base).
+                _referencia[seg] = new ReferenciaCurva(c.FreadaM ?? antiga?.FreadaM, c.SaidaKmh ?? antiga?.SaidaKmh,
+                                                       c.TempoNaVoltaMs);
             }
+            foreach (var seg in _referencia.Keys.Where(k => !_voltaCorrente.ContainsKey(k)).ToList())
+                _referencia[seg] = _referencia[seg] with { TempoNaVoltaMs = null };
             TempoMs = t;
             virou = true;
         }

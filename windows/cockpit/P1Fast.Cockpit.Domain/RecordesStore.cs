@@ -46,7 +46,7 @@ public sealed class FileRecordesStore : IRecordesStore
     private string Caminho(string carroId) => Path.Combine(_dir, SanearCarro(carroId) + "-recordes.json");
 
     // carroId vem de config/CLI; evita que barra/dois-pontos virem subpasta ou caminho inválido.
-    private static string SanearCarro(string carroId)
+    internal static string SanearCarro(string carroId)
     {
         if (string.IsNullOrWhiteSpace(carroId)) return "carro";
         var limpo = new string(carroId.Select(c => char.IsLetterOrDigit(c) || c is '-' or '_' ? c : '_').ToArray());

@@ -118,7 +118,8 @@ public sealed class ArmazemRecordes
 
     // ── Referência da MELHOR VOLTA por curva (Flávio 2026-10-28) ──────────
     // Os 2 números grandes do painel comparam com a mesma curva na melhor volta (MelhorVoltaReferencia).
-    // Chaves: "melhorvolta.tempo" (ms da volta-referência) e "melhorvolta.<segId>.freada|saida".
+    // Chaves: "melhorvolta.tempo" (ms da volta-referência) e "melhorvolta.<segId>.freada|saida|decorrido"
+    // ("decorrido" = tempo de volta no fim da curva, ms — o cartão do delta, Flávio 2026-10-30).
     // É um CONJUNTO de uma volta só: gravar substitui o conjunto inteiro (nada de misturar voltas
     // como as métricas por dado acima, que são independentes).
     public const string PrefixoMelhorVolta = "melhorvolta.";
@@ -134,6 +135,7 @@ public sealed class ArmazemRecordes
         {
             if (c.FreadaM is { } f) Itens[$"{PrefixoMelhorVolta}{seg}.freada"] = new ValorRecorde(f, meta);
             if (c.SaidaKmh is { } s) Itens[$"{PrefixoMelhorVolta}{seg}.saida"] = new ValorRecorde(s, meta);
+            if (c.TempoNaVoltaMs is { } t) Itens[$"{PrefixoMelhorVolta}{seg}.decorrido"] = new ValorRecorde(t, meta);
         }
     }
 
@@ -154,6 +156,7 @@ public sealed class ArmazemRecordes
             {
                 "freada" => c with { FreadaM = v.Valor },
                 "saida"  => c with { SaidaKmh = v.Valor },
+                "decorrido" => c with { TempoNaVoltaMs = v.Valor },
                 _        => c,
             };
         }

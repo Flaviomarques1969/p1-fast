@@ -16,6 +16,10 @@
 // verticais de freio saem da tela e a barra de 17 luzes de baixo passa a ser a luz de FREIO: o mesmo nível 0..9,
 // das PONTAS para o CENTRO (degrau 8 = a luz do centro), as mesmas cores e o mesmo pisca vermelho no ponto. O
 // shift de giro (marcha) não acende nesta versão.
+//
+// Cartão do delta no centro (Flávio 2026-10-30, painel p1fast-cartao-delta-mapa-0013: "sem mapa"). Com a chave
+// ligada o vidro do mapa não liga (MapaNaTela) e o centro é do cartão: delta da volta × a melhor volta daquele
+// carro naquela pista, maior que os 2 números, que foram para as bordas de fora.
 
 namespace P1Fast.Cockpit.Domain;
 
@@ -53,6 +57,9 @@ public static class TelaPrimeiraVersao
     /// <summary>O shift de giro (marcha) acende a barra de baixo? Só com a chave desligada.</summary>
     public static bool ShiftDeGiroNaTela(bool? ligada = null) => !(ligada ?? Ligada);
 
+    /// <summary>O vidro do mapa central liga? Só com a chave desligada — na 1ª versão o centro é do cartão do delta.</summary>
+    public static bool MapaNaTela(bool? ligada = null) => !(ligada ?? Ligada);
+
     /// <summary>Luzes na barra de baixo.</summary>
     public const int LuzesDaBarra = 17;
 
@@ -79,4 +86,32 @@ public static class TelaPrimeiraVersao
         var c = CasosDemo[((cena % CasosDemo.Length) + CasosDemo.Length) % CasosDemo.Length];
         return NumerosInfo.Comparar(c.FreadaM, c.SaidaKmh, new ReferenciaCurva(c.RefFreadaM, c.RefSaidaKmh));
     }
+
+    // Cartão do delta na demonstração (Flávio 2026-10-30): tempo de volta até a curva × o da melhor volta no
+    // mesmo ponto (ms). Passa pelo verde (mais rápido), pelo "0,00" igual (verde) e pelo vermelho (mais lento).
+    private static readonly (double AtualMs, double MelhorMs)[] DeltasDemo =
+    {
+        (41_820, 42_000),   // 0,18 verde
+        (63_420, 63_000),   // 0,42 vermelho
+        (25_000, 25_000),   // 0,00 verde (igual)
+        (88_070, 87_000),   // 1,07 vermelho
+        (51_370, 52_000),   // 0,63 verde
+        (70_090, 70_000),   // 0,09 vermelho
+    };
+
+    /// <summary>O cartão do delta na cena <paramref name="cena"/> da demonstração (cicla pelos casos).</summary>
+    public static DeltaVoltaInfo DeltaVoltaDemo(int cena)
+    {
+        var d = DeltasDemo[((cena % DeltasDemo.Length) + DeltasDemo.Length) % DeltasDemo.Length];
+        return DeltaVoltaInfo.Comparar(d.AtualMs, d.MelhorMs);
+    }
+
+    // Linha de baixo do cartão na demonstração: a melhor volta fica; a última muda a cada cena.
+    private const double MelhorVoltaDemoMs = 81_700;
+    private static readonly double[] UltimasDemoMs = { 82_140, 83_020, 81_930, 84_310, 82_560, 81_880 };
+
+    /// <summary>Melhor volta (esquerda) e última volta (direita) da linha de baixo do cartão na cena
+    /// <paramref name="cena"/> da demonstração (cicla pelos casos).</summary>
+    public static (double MelhorMs, double UltimaMs) VoltasDemo(int cena)
+        => (MelhorVoltaDemoMs, UltimasDemoMs[((cena % UltimasDemoMs.Length) + UltimasDemoMs.Length) % UltimasDemoMs.Length]);
 }

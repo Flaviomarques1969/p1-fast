@@ -73,19 +73,50 @@ public sealed class CockpitOrchestrator
     /// <summary>Referência da melhor volta em uso (tempo + curvas) — a UI grava quando muda.</summary>
     public ReferenciaMelhorVolta MelhorVolta => _melhorVolta;
 
-    /// <summary>Semeia a referência gravada da melhor volta (UI, ao abrir a sessão / trocar de pista).</summary>
-    public void SemearMelhorVolta(double? tempoMs, IReadOnlyDictionary<string, ReferenciaCurva>? curvas)
+    // Cartão do delta (Flávio 2026-10-30): o número contínuo (volta corrente × melhor volta no mesmo
+    // ponto do traçado) e a hora do GPS em que a volta começou, no cruzamento interpolado da linha
+    // (null = ainda não cruzou nesta sessão: volta de saída do box, sem delta).
+    private readonly DeltaAoVivo _deltaAoVivo = new();
+    // Linha de chegada do cruzamento interpolado: Brasília; na pista nova a linha aprendida não chega
+    // ao maestro e a volta começa no último fix (AplicarSegmentosAprendidos zera).
+    private LinhaGps? _linhaChegada = new(PistaBrasilia.ChegadaA, PistaBrasilia.ChegadaB);
+
+    /// <summary>Traço da melhor volta em uso (a régua do delta ao vivo) — a UI grava quando muda;
+    /// null = referência sem traço (o cartão cai no delta por fim de curva).</summary>
+    public TracoVolta? TracoMelhorVolta { get; private set; }
+
+    /// <summary>Semeia a referência gravada da melhor volta (UI, ao abrir a sessão / trocar de pista).
+    /// O traço só vale se é DA volta que é a referência (mesmo tempo).</summary>
+    public void SemearMelhorVolta(double? tempoMs, IReadOnlyDictionary<string, ReferenciaCurva>? curvas, TracoVolta? traco = null)
     {
         _melhorVolta.Semear(tempoMs, curvas);
         MirarLuzNaMelhorVolta();
+        var daMesmaVolta = traco is not null && _melhorVolta.TempoMs is { } refMs && Math.Abs(traco.TempoMs - refMs) < 1;
+        TracoMelhorVolta = _deltaAoVivo.Semear(daMesmaVolta ? traco : null) ? traco : null;
+        _cockpit.SetDeltaVolta(DeltaVoltaInfo.Vazio());
     }
 
     /// <summary>Fecha a volta no cruzamento da linha (tempoMs null = cruzamento que não fecha volta
-    /// válida). Devolve true quando esta volta virou a nova referência — a UI então grava.</summary>
+    /// válida). Devolve true quando esta volta virou a nova referência — a UI então grava (o tempo, as
+    /// curvas e o traço). O cartão do delta mostra o tempo desta volta × o da melhor (antes de ela virar
+    /// a referência), e a volta seguinte começa a contar do cruzamento.</summary>
     public bool FecharVolta(double? tempoMs)
     {
+        var traco = _deltaAoVivo.FecharVolta(_linhaChegada);
+        if (tempoMs is { } t && _melhorVolta.TempoMs is { } melhor)
+        {
+            var delta = DeltaVoltaInfo.Comparar(t, melhor);
+            if (delta.Centesimos is not null) _cockpit.SetDeltaVolta(delta);
+        }
         var virou = _melhorVolta.FecharVolta(tempoMs);
-        if (virou) MirarLuzNaMelhorVolta();
+        if (virou)
+        {
+            MirarLuzNaMelhorVolta();
+            // O traço desta volta vira a régua; traço ruim (buraco de GPS, volta sem início) = referência
+            // SEM traço — nunca o traço da volta antiga, que é de outro tempo.
+            var nova = traco is not null && tempoMs is { } tv ? new TracoVolta(tv, traco) : null;
+            TracoMelhorVolta = _deltaAoVivo.TrocarReferencia(nova) ? nova : null;
+        }
         return virou;
     }
 
@@ -171,6 +202,7 @@ public sealed class CockpitOrchestrator
         _detector = new TrechoDetector(segmentos, OnTrechoEvento);
         _luzFreio = new LuzFreio(segmentos);
         MirarLuzNaMelhorVolta();   // luz nova nasce já mirando a melhor volta (se houver)
+        _linhaChegada = null;      // pista nova: a linha de Brasília não vale; a volta começa no último fix
         return true;
     }
 
@@ -325,6 +357,9 @@ public sealed class CockpitOrchestrator
             var f = _luzFreio.Atualizar(gps.Lat, gps.Lng, gps.Kmh, critico);
             _cockpit.SetFreioFill(f.Lit, f.Flash);
         }
+
+        // Cartão do delta, momento a momento: a volta corrente × a melhor volta no mesmo ponto do traçado.
+        if (_deltaAoVivo.Ingerir(gps) is { } deltaAoVivo) _cockpit.SetDeltaVolta(deltaAoVivo);
 
         _lastGps = gps;
     }
@@ -485,7 +520,16 @@ public sealed class CockpitOrchestrator
         // Os 2 números grandes (Flávio 2026-10-28): freada e saída desta passagem vs a mesma curva
         // na melhor volta; e anota a passagem na volta corrente (vira referência se a volta for a melhor).
         _cockpit.SetNumeros(NumerosInfo.Comparar(onsetM, _pSai, _melhorVolta.Obter(segId)));
-        _melhorVolta.AnotarPassagem(segId, onsetM, _pSai);
+        // Cartão do delta: com o traço da melhor volta o número é contínuo (DeltaAoVivo, no IngestGps);
+        // sem traço (referência gravada antes dele), cai no tempo de volta no fim desta curva × o da
+        // melhor volta no fim da mesma curva. Curva sem referência de tempo deixa o cartão como está.
+        double? tempoNaVoltaMs = _deltaAoVivo.InicioVoltaT is { } t0 && _buf[^1].T > t0 ? _buf[^1].T - t0 : null;
+        if (!_deltaAoVivo.Ativo)
+        {
+            var deltaVolta = DeltaVoltaInfo.Comparar(tempoNaVoltaMs, _melhorVolta.Obter(segId)?.TempoNaVoltaMs);
+            if (deltaVolta.Centesimos is not null) _cockpit.SetDeltaVolta(deltaVolta);
+        }
+        _melhorVolta.AnotarPassagem(segId, onsetM, _pSai, tempoNaVoltaMs);
 
         var total = Math.Max(1, _buf[^1].CumDist);
         var pontosRaw = _buf.Select(b => new PontoPassagem(

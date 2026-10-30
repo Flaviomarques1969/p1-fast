@@ -253,6 +253,7 @@ public sealed partial class MainWindow : Window
                 if (keys.Contains("message"))      ApplyMessage(cur.Message);
                 if (keys.Contains("freio"))        ApplyFreio(cur.Freio);
                 if (keys.Contains("chuva"))        ApplyChuva(cur.Chuva);
+                if (keys.Contains("deltaVolta"))   ApplyDeltaVolta(cur.DeltaVolta);
                 UpdateStatusText();
             });
         });
@@ -263,6 +264,7 @@ public sealed partial class MainWindow : Window
         ApplyNumeros(initial.Numeros);
         ApplyApex(initial.Apex);
         ApplyMessage(initial.Message);
+        ApplyDeltaVolta(initial.DeltaVolta);
 
         // 2.7 — flags conflitantes NÃO passam em silêncio: a precedência real é
         // Demo > Replay > Live > TelaTermica e --producao só vale com --live. Se o operador
@@ -519,7 +521,9 @@ public sealed partial class MainWindow : Window
         _segsAtivos = curvas ?? Array.Empty<TrechoSegmento>();  // ponte do stint (replay E live)
         _barraVoltasAplicada = false;   // redesenha a barra de voltas (placeholder) nesta sessão/loop
         InicializarRecordes();          // armazém de recordes LOCAL (Flávio 2026-07-06): carrega + assina o evento
-        InicializarCoachZoom();         // vidro do mapa central (spec do iMac 2026-07-11) — replay E live
+        // Vidro do mapa central (spec do iMac 2026-07-11) — replay E live. Na 1ª versão o centro é do cartão
+        // do delta (painel p1fast-cartao-delta-mapa-0013): o mapa não liga e o CoachZoomRoot fica em Opacity 0.
+        if (TelaPrimeiraVersao.MapaNaTela()) InicializarCoachZoom();
     }
 
     /// <summary>Amostra de motor (rotação + dados pros alertas). Thread-safe.
@@ -774,7 +778,13 @@ public sealed partial class MainWindow : Window
         // freou antes) — por isso o espelho 2·ref − atual. Na 1ª versão (só os 2 números na tela) a
         // demo usa casos que mostram as cores dos dois lados (TelaPrimeiraVersao.NumerosDemo).
         if (TelaPrimeiraVersao.Ligada)
+        {
             _cockpitState.SetNumeros(TelaPrimeiraVersao.NumerosDemo(index));
+            // Cartão do centro na demo: delta dos dois lados e a linha de baixo (melhor / última volta).
+            _cockpitState.SetDeltaVolta(TelaPrimeiraVersao.DeltaVoltaDemo(index));
+            var (melhorMs, ultimaMs) = TelaPrimeiraVersao.VoltasDemo(index);
+            ApplyVoltasDoCartao(melhorMs, ultimaMs);
+        }
         else
             _cockpitState.SetNumeros(s.FreioAtualM > 0 && s.FreioRefM > 0
                 ? NumerosInfo.Comparar(2 * s.FreioRefM - s.FreioAtualM, null, new ReferenciaCurva(s.FreioRefM, null))

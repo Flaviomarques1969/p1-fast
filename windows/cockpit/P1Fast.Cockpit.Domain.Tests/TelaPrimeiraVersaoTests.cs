@@ -10,6 +10,9 @@
 // 29/10 ~23h50 ("a função de wash sumiu quando chega o ponto da frenagem"): sem a varredura de marcha, a demo
 // perdeu o wash; no ponto de freada ela lava a tela como o freio real (TPV_13). ~0h ("wash branco o mais forte
 // que você puder onde for o wash"): com a chave, o lavado é a tela inteira em branco puro, opaco no pico (TPV_13).
+// 30/10 (painel p1fast-cartao-delta-mapa-0013): os 2 números vão para as bordas de fora e o centro é do cartão do
+// delta da volta, SEM mapa — o vidro do mapa sai da lista do que fica (TPV_03), o cartão entra na posição (TPV_04)
+// e na camada (TPV_06), o mapa só liga pela chave (TPV_14) e o cartão é fiado ao cérebro (TPV_15).
 
 using System.Globalization;
 using System.Text.RegularExpressions;
@@ -104,11 +107,12 @@ public class TelaPrimeiraVersaoTests
     }
 
     // O que ele disse que tinha sumido e devia continuar: a barra de luzes de baixo (agora a luz de freio),
-    // sensores, barra de voltas, mapa, ápice (entrada/freio/vmin/ápice/saída), halo e o lavado da freada.
+    // sensores, barra de voltas, ápice (entrada/freio/vmin/ápice/saída), halo e o lavado da freada. O mapa saiu
+    // em 30/10 ("sem mapa", TPV_14) e o centro passou a ser o cartão do delta, que também não pode nascer escondido.
     private static readonly string[] ResteDaTela =
-        new[] { "HaloRect", "SensorRpm", "SensorGps", "SensorPneus", "StintBar", "CoachZoomRoot", "ApiceRow",
+        new[] { "HaloRect", "SensorRpm", "SensorGps", "SensorPneus", "StintBar", "ApiceRow",
                 "ApexEntradaValor", "ApexFreioValor", "ApexVminValor", "ApexSaidaValor", "ApiceBolaNum",
-                "BrakeWashRect" }
+                "BrakeWashRect", "DeltaVoltaCard", "DvNum", "DvMelhor", "DvUltima" }
         .Concat(Enumerable.Range(1, 17).Select(i => $"Led{i:00}")).ToArray();
 
     /// <summary>Peças do resto que moram dentro de algo nascido escondido (ou de um texto escondido).</summary>
@@ -144,36 +148,132 @@ public class TelaPrimeiraVersaoTests
     private static int Fonte(XDocument doc, string nome) =>
         int.Parse((string)Peca(doc, nome).Attribute("FontSize")!, CultureInfo.InvariantCulture);
 
-    /// <summary>Os 2 números 40% maiores que na f251c0be (116 e 92), cada um no centro da sua metade.</summary>
+    // Largura de um algarismo e da vírgula, em fração da fonte (ESTIMATIVA para o ExtraBold, com folga): dá o pior
+    // caso da conta de espaço — 2 algarismos em cada número dos lados, "0,42"/"12,3" (3 algarismos e a vírgula) no
+    // cartão. O vão do vidro é o raio do canto do corpo do cartão (CornerRadius 28).
+    private const double LarguraDoAlgarismo = 0.6, LarguraDaVirgula = 0.3, VaoDoVidro = 28;
+    private const double BordaDeFora = 40;
+
+    private static double Num(XElement e, string atributo) =>
+        double.Parse((string)e.Attribute(atributo)!, CultureInfo.InvariantCulture);
+
+    /// <summary>Margin do XAML ("l,t,r,b", "h,v" ou um número só) em esquerda, cima, direita, baixo.</summary>
+    private static double[] Margem(XElement e)
+    {
+        if ((string?)e.Attribute("Margin") is not { } m) return new double[4];
+        var p = m.Split(',').Select(x => double.Parse(x, CultureInfo.InvariantCulture)).ToArray();
+        return p.Length switch { 1 => new[] { p[0], p[0], p[0], p[0] }, 2 => new[] { p[0], p[1], p[0], p[1] }, _ => p };
+    }
+
+    /// <summary>Quanto as camadas do cartão (aura, sombra de contato) passam da caixa dele, por lado.</summary>
+    private static double[] Sobra(XElement cartao) =>
+        Enumerable.Range(0, 4).Select(i => cartao.Elements().Select(f => Math.Max(0, -Margem(f)[i])).DefaultIfEmpty(0).Max()).ToArray();
+
+    /// <summary>O Y do TranslateTransform do RenderTransform da peça (0 = sem deslocamento).</summary>
+    private static double DeslocamentoY(XElement e) =>
+        e.Elements().Where(x => x.Name.LocalName.EndsWith(".RenderTransform", StringComparison.Ordinal))
+         .Descendants().Where(x => x.Name.LocalName == "TranslateTransform")
+         .Select(x => x.Attribute("Y") is null ? 0 : Num(x, "Y")).DefaultIfEmpty(0).Single();
+
+    /// <summary>Onde termina a barra de voltas: o topo dela no XAML + a altura das cápsulas, lida do código que as
+    /// monta (MainWindow.BarraVoltas.cs).</summary>
+    private static double FimDaBarraDeVoltas(XDocument doc)
+    {
+        var m = Regex.Match(File.ReadAllText(Path.Combine(PastaUi(), "MainWindow.BarraVoltas.cs")), @"\bBarBlockH\s*=\s*(\d+)");
+        Assert.True(m.Success, "altura das cápsulas da barra de voltas não achada");
+        return Margem(Peca(doc, "StintBar"))[1] + double.Parse(m.Groups[1].Value, CultureInfo.InvariantCulture);
+    }
+
+    /// <summary>Onde começa a fileira do ápice (presa embaixo: altura da tela − margem de baixo − altura).</summary>
+    private static double InicioDoApice(XDocument doc, double alturaDaTela)
+    {
+        var a = Peca(doc, "ApiceRow");
+        Assert.Equal("Bottom", (string?)a.Attribute("VerticalAlignment"));
+        return alturaDaTela - Margem(a)[3] - Num(a, "Height");
+    }
+
+    /// <summary>Os 2 números 40% maiores que na f251c0be (116 e 92), cada um na borda de FORA da sua metade, e o
+    /// cartão do delta no centro, com o número maior que os dois, sem encostar neles, na barra de voltas ou no ápice.</summary>
     private static List<string> ForaDoLugar(XDocument doc)
     {
         var erros = new List<string>();
-        var metade = double.Parse((string)Peca(doc, "DeviceBorder").Attribute("Width")!, CultureInfo.InvariantCulture) / 2;
-        if (Fonte(doc, "FreadaNum") != (int)Math.Round(116 * TelaPrimeiraVersao.AumentoDosNumeros)) erros.Add("fonte da freada");
-        if (Fonte(doc, "SaidaNum") != (int)Math.Round(92 * TelaPrimeiraVersao.AumentoDosNumeros)) erros.Add("fonte da saída");
-        foreach (var (painel, num, lado) in new[] { ("FreadaPanel", "FreadaNum", "Left"), ("SaidaPanel", "SaidaNum", "Right") })
+        var dev = Peca(doc, "DeviceBorder");
+        var (largura, altura) = (Num(dev, "Width"), Num(dev, "Height"));
+        var metade = largura / 2;
+        var (freada, saida) = (Fonte(doc, "FreadaNum"), Fonte(doc, "SaidaNum"));
+        if (freada != (int)Math.Round(116 * TelaPrimeiraVersao.AumentoDosNumeros)) erros.Add("fonte da freada");
+        if (saida != (int)Math.Round(92 * TelaPrimeiraVersao.AumentoDosNumeros)) erros.Add("fonte da saída");
+        var borda = BordaDeFora.ToString(CultureInfo.InvariantCulture);
+        foreach (var (painel, num, lado, margem) in new[] { ("FreadaPanel", "FreadaNum", "Left", $"{borda},0,0,0"),
+                                                            ("SaidaPanel", "SaidaNum", "Right", $"0,0,{borda},0") })
         {
             var p = Peca(doc, painel);
             if ((string?)p.Attribute("HorizontalAlignment") != lado) erros.Add(painel + " fora da sua metade");
             if ((string?)p.Attribute("Width") != metade.ToString(CultureInfo.InvariantCulture)) erros.Add(painel + " não ocupa a metade");
             if (p.Attribute("Margin") is not null) erros.Add(painel + " empurrado por margem");
-            if ((string?)Peca(doc, num).Attribute("HorizontalAlignment") != "Center") erros.Add(num + " não centralizado");
+            var n = Peca(doc, num);
+            if ((string?)n.Attribute("HorizontalAlignment") != lado || (string?)n.Attribute("Margin") != margem) erros.Add(num + " fora da borda de fora");
         }
+
+        var cartao = Peca(doc, "DeltaVoltaCard");
+        var dvNum = Peca(doc, "DvNum");
+        var delta = Fonte(doc, "DvNum");
+        if (delta <= Math.Max(freada, saida)) erros.Add("delta não é o maior número da tela");
+        if (dvNum.Parent!.Elements().Where(e => e.Name.LocalName == "TextBlock").Any(e => Num(e, "FontSize") != delta))
+            erros.Add("relevo do delta com fonte diferente");
+        if ((string?)cartao.Attribute("HorizontalAlignment") != "Center" || (string?)cartao.Attribute("VerticalAlignment") != "Center"
+            || cartao.Attribute("Margin") is not null)
+            erros.Add("cartão fora do centro");
+        var (w, h) = (Num(cartao, "Width"), Num(cartao, "Height"));
+        var s = Sobra(cartao);
+        var fimDaFreada = BordaDeFora + 2 * LarguraDoAlgarismo * freada;
+        var inicioDaSaida = largura - BordaDeFora - 2 * LarguraDoAlgarismo * saida;
+        if (metade - w / 2 - s[0] < fimDaFreada || metade + w / 2 + s[2] > inicioDaSaida) erros.Add("cartão encosta nos números");
+        var y = DeslocamentoY(cartao);
+        if (y != DeslocamentoY(Peca(doc, "FreadaPanel")) || y != DeslocamentoY(Peca(doc, "SaidaPanel")))
+            erros.Add("cartão fora da altura dos números");
+        if ((altura - h) / 2 + y - s[1] < FimDaBarraDeVoltas(doc) || (altura + h) / 2 + y + s[3] > InicioDoApice(doc, altura))
+            erros.Add("cartão encosta na barra de voltas ou no ápice");
+        if ((3 * LarguraDoAlgarismo + LarguraDaVirgula) * delta > w - 2 * VaoDoVidro) erros.Add("delta não cabe no cartão");
         return erros;
     }
 
     [Fact]
-    public void TPV_04_Os_2_numeros_40_por_cento_maiores_no_centro_de_cada_metade()
+    public void TPV_04_Os_2_numeros_nas_bordas_de_fora_e_o_delta_maior_no_centro()
     {
         Assert.Empty(ForaDoLugar(Xaml()));
         Assert.Equal(162, Fonte(Xaml(), "FreadaNum"));
         Assert.Equal(129, Fonte(Xaml(), "SaidaNum"));
+        Assert.True(Fonte(Xaml(), "DvNum") > 162, "o delta tem de ser maior que 162 (painel p1fast-cartao-delta-mapa-0013)");
+        // A régua enxerga o que mede (não está olhando o vazio): a aura/sombra passam da caixa nos 4 lados, a
+        // altura das cápsulas entra no fim da barra de voltas e o ápice começa dentro da tela.
+        var doc = Xaml();
+        Assert.All(Sobra(Peca(doc, "DeltaVoltaCard")), v => Assert.True(v > 0));
+        Assert.True(FimDaBarraDeVoltas(doc) > Margem(Peca(doc, "StintBar"))[1]);
+        var altura = Num(Peca(doc, "DeviceBorder"), "Height");
+        Assert.InRange(InicioDoApice(doc, altura), altura / 2, altura - 1);
 
-        // Controles: a fonte de antes e o número encostado no canto (f251c0be) reprovam.
+        // Controles: cada coisa fora do lugar reprova.
         var antiga = Xaml(); Peca(antiga, "FreadaNum").SetAttributeValue("FontSize", "116");
         Assert.Contains("fonte da freada", ForaDoLugar(antiga));
         var canto = Xaml(); Peca(canto, "SaidaPanel").SetAttributeValue("Margin", "0,0,72,0");
         Assert.Contains("SaidaPanel empurrado por margem", ForaDoLugar(canto));
+        var noMeio = Xaml(); Peca(noMeio, "FreadaNum").SetAttributeValue("HorizontalAlignment", "Center");
+        Peca(noMeio, "FreadaNum").SetAttributeValue("Margin", null);
+        Assert.Contains("FreadaNum fora da borda de fora", ForaDoLugar(noMeio));
+        var menor = Xaml(); Peca(menor, "DvNum").SetAttributeValue("FontSize", "150");
+        Assert.Contains("delta não é o maior número da tela", ForaDoLugar(menor));
+        Assert.Contains("relevo do delta com fonte diferente", ForaDoLugar(menor));
+        var largo = Xaml(); Peca(largo, "DeltaVoltaCard").SetAttributeValue("Width", "560");
+        Assert.Contains("cartão encosta nos números", ForaDoLugar(largo));
+        var alto = Xaml(); Peca(alto, "DeltaVoltaCard").SetAttributeValue("Height", "260");
+        Assert.Contains("cartão encosta na barra de voltas ou no ápice", ForaDoLugar(alto));
+        var deLado = Xaml(); Peca(deLado, "DeltaVoltaCard").SetAttributeValue("HorizontalAlignment", "Left");
+        Assert.Contains("cartão fora do centro", ForaDoLugar(deLado));
+        var gigante = Xaml();
+        foreach (var t in Peca(gigante, "DvNum").Parent!.Elements().Where(e => e.Name.LocalName == "TextBlock"))
+            t.SetAttributeValue("FontSize", "220");
+        Assert.Contains("delta não cabe no cartão", ForaDoLugar(gigante));
     }
 
     // Quem pode tirar os números/lavado da freada da tela: só código guardado pela chave (mensagem e crítico).
@@ -196,27 +296,33 @@ public class TelaPrimeiraVersaoTests
         Assert.False(Guardada(semGuarda));
     }
 
-    /// <summary>Os 2 números estão DEPOIS do mapa (por cima dele) e ANTES da tela térmica e do crítico.</summary>
+    /// <summary>Os 2 números e o cartão do delta estão DEPOIS do mapa (por cima dele, se a chave o religar) e ANTES
+    /// da tela térmica e do crítico.</summary>
     private static bool NumerosNaCamadaCerta(XDocument doc)
     {
         var mapa = Peca(doc, "CoachZoomRoot");
         var termica = Peca(doc, "TermicaOverlay");
         var critico = Peca(doc, "CriticoOverlay");
-        return new[] { "FreadaPanel", "SaidaPanel" }.Select(n => Peca(doc, n))
+        return new[] { "FreadaPanel", "SaidaPanel", "DeltaVoltaCard" }.Select(n => Peca(doc, n))
             .All(p => p.IsAfter(mapa) && p.IsBefore(termica) && p.IsBefore(critico));
     }
 
     [Fact]
-    public void TPV_06_Numeros_por_cima_do_mapa_e_por_baixo_da_termica_e_do_critico()
+    public void TPV_06_Numeros_e_cartao_por_cima_do_mapa_e_por_baixo_da_termica_e_do_critico()
     {
         Assert.True(NumerosNaCamadaCerta(Xaml()));
 
-        // Controle: a freada de volta antes do mapa (como na f251c0be) reprova.
+        // Controles: a freada de volta antes do mapa (como na f251c0be) e o cartão por cima da térmica reprovam.
         var doc = Xaml();
         var freada = Peca(doc, "FreadaPanel");
         freada.Remove();
         Peca(doc, "CoachZoomRoot").AddBeforeSelf(freada);
         Assert.False(NumerosNaCamadaCerta(doc));
+        var porCima = Xaml();
+        var cartao = Peca(porCima, "DeltaVoltaCard");
+        cartao.Remove();
+        Peca(porCima, "TermicaOverlay").AddAfterSelf(cartao);
+        Assert.False(NumerosNaCamadaCerta(porCima));
     }
 
     [Fact]
@@ -562,5 +668,124 @@ public class TelaPrimeiraVersaoTests
         var semReal = src.Replace("            WashFreio();             // + a tela LAVA", "            //WashFreio  // + a tela LAVA");
         Assert.NotEqual(src, semReal);
         Assert.Contains("freio real sem o lavado", LavadoDoFreio(semReal));
+    }
+
+    // ── Cartão do delta no centro, sem mapa (30/10, painel p1fast-cartao-delta-mapa-0013) ─────────────
+
+    private static string ArquivoDaUi(string nome) => File.ReadAllText(Path.Combine(PastaUi(), nome));
+
+    private const string MapaPelaChave = "if (TelaPrimeiraVersao.MapaNaTela()) InicializarCoachZoom();";
+
+    /// <summary>Chamadas que ligam o vidro do mapa sem passar pela chave (a declaração do método não conta).</summary>
+    private static List<string> MapaSemChave(IEnumerable<(string Arquivo, string Linha)> linhas, List<string>? vistas = null)
+    {
+        var soltas = new List<string>();
+        foreach (var (arquivo, l) in linhas)
+        {
+            if (!l.Contains("InicializarCoachZoom(") || l.Contains("void InicializarCoachZoom(")) continue;
+            vistas?.Add(arquivo);
+            if (!l.Contains(MapaPelaChave)) soltas.Add($"{arquivo}: {l.Trim()}");
+        }
+        return soltas;
+    }
+
+    [Fact]
+    public void TPV_14_Com_a_chave_ligada_o_mapa_do_centro_nao_liga()
+    {
+        Assert.False(TelaPrimeiraVersao.MapaNaTela(ligada: true));
+        Assert.True(TelaPrimeiraVersao.MapaNaTela(ligada: false));
+
+        var linhas = LinhasDaUi().ToList();
+        var vistas = new List<string>();
+        var soltas = MapaSemChave(linhas, vistas);
+        Assert.True(soltas.Count == 0, "mapa ligado sem a chave:\n" + string.Join("\n", soltas));
+        Assert.Contains("MainWindow.xaml.cs", vistas);   // a régua acha a chamada de hoje (IniciarFeedReal)
+        Assert.Contains(MapaPelaChave, CorpoDoMetodo(Codigo(), "public void IniciarFeedReal("));
+
+        // O vidro nasce apagado e só o InicializarCoachZoom o acende.
+        Assert.Equal("0", (string?)Peca(Xaml(), "CoachZoomRoot").Attribute("Opacity"));
+        var acende = linhas.Where(x => Regex.IsMatch(x.Linha, @"\bCoachZoomRoot\.Opacity\s*=(?!=)")).ToList();
+        Assert.Single(acende);
+        Assert.Contains(acende[0].Linha, CorpoDoMetodo(ArquivoDaUi("MainWindow.CoachZoom.cs"), "private void InicializarCoachZoom()"));
+
+        // Controles: a chamada de hoje sem a guarda e uma chamada nova solta em outro arquivo reprovam.
+        var semGuarda = linhas.Select(x => (x.Arquivo, x.Linha.Replace(MapaPelaChave, "InicializarCoachZoom();"))).ToList();
+        Assert.Contains("MainWindow.xaml.cs: InicializarCoachZoom();", MapaSemChave(semGuarda));
+        Assert.Contains("MainWindow.Live.cs: InicializarCoachZoom();",
+            MapaSemChave(linhas.Append(("MainWindow.Live.cs", "        InicializarCoachZoom();"))));
+    }
+
+    /// <summary>O que tem de estar fiado para o cartão mostrar o delta do cérebro e a linha de baixo (melhor volta
+    /// = a referência do delta; última = a última volta plausível da sessão).</summary>
+    private static List<string> FiacaoDoCartao(string chave, string src, string cartao, string recordes, XDocument doc)
+    {
+        var erros = new List<string>();
+        var ctor = CorpoDoMetodo(src, "public MainWindow(LaunchOptions options)");
+        if (!Regex.IsMatch(ctor, $@"if \(keys\.Contains\(""{Regex.Escape(chave)}""\)\)\s*ApplyDeltaVolta\(cur\.DeltaVolta\);"))
+            erros.Add("cartão não ouve o cérebro");
+        if (!ctor.Contains("ApplyDeltaVolta(initial.DeltaVolta);")) erros.Add("cartão sem o estado inicial");
+
+        // As camadas do relevo (lidas do XAML) recebem todas o mesmo número.
+        var relevo = Peca(doc, "DvNum").Parent!.Elements().Where(e => e.Name.LocalName == "TextBlock").Select(Nome).OfType<string>().ToHashSet();
+        var apply = CorpoDoMetodo(cartao, "private void ApplyDeltaVolta(DeltaVoltaInfo d)");
+        var arr = Regex.Match(apply, @"foreach \(var t in new\[\] \{ ([^}]*) \}\) t\.Text = texto;");
+        if (!arr.Success || !arr.Groups[1].Value.Split(',').Select(x => x.Trim()).ToHashSet().SetEquals(relevo))
+            erros.Add("camada do relevo sem o número");
+
+        // Demo (chave ligada): o cartão passa pelas cenas e mostra a linha de baixo.
+        var cena = CorpoDoMetodo(src, "private void ApplyScene(int index)");
+        const string se = "if (TelaPrimeiraVersao.Ligada)";
+        var i0 = cena.IndexOf(se, StringComparison.Ordinal);
+        var (ini, fim) = i0 < 0 ? (-1, -1) : Bloco(cena, i0 + se.Length);
+        var bloco = ini < 0 ? "" : cena[ini..fim];
+        if (!bloco.Contains("_cockpitState.SetDeltaVolta(TelaPrimeiraVersao.DeltaVoltaDemo(index));") || !bloco.Contains("ApplyVoltasDoCartao("))
+            erros.Add("demo sem o cartão");
+
+        // Linha de baixo: atualiza quando a volta entra na sessão e quando a melhor é semeada, e lê a referência do delta.
+        var volta = CorpoDoMetodo(recordes, "private void RegistrarVoltaCompleta(double tempoMs)");
+        var add = volta.IndexOf("_sessaoLapsMs.Add(tempoMs);", StringComparison.Ordinal);
+        if (add < 0 || volta.IndexOf("AtualizarVoltasDoCartao();", add, StringComparison.Ordinal) < 0)
+            erros.Add("última volta não chega ao cartão");
+        var semear = CorpoDoMetodo(recordes, "private void SemearRecordesNoCerebro()");
+        var sm = semear.IndexOf("_orquestrador.SemearMelhorVolta(", StringComparison.Ordinal);
+        if (sm < 0 || semear.IndexOf("AtualizarVoltasDoCartao();", sm, StringComparison.Ordinal) < 0)
+            erros.Add("melhor volta semeada não chega ao cartão");
+        var a0 = cartao.IndexOf("private void AtualizarVoltasDoCartao()", StringComparison.Ordinal);
+        var atualizar = a0 < 0 ? "" : cartao[a0..cartao.IndexOf(';', a0)];
+        if (!atualizar.Contains("_orquestrador?.MelhorVolta.TempoMs") || !atualizar.Contains("_sessaoLapsMs[^1]"))
+            erros.Add("linha de baixo fora da referência do delta");
+        return erros;
+    }
+
+    [Fact]
+    public void TPV_15_Cartao_do_delta_fiado_ao_cerebro_a_demo_e_a_linha_de_baixo()
+    {
+        // A chave que o estado emite, lida do próprio estado (não digitada).
+        var estado = new CockpitState();
+        var chaves = new List<string>();
+        estado.OnChange((_, _, keys) => chaves.AddRange(keys));
+        estado.SetDeltaVolta(DeltaVoltaInfo.Comparar(1000, 900));
+        var chave = Assert.Single(chaves);
+
+        var (src, cartao, recordes, doc) = (Codigo(), ArquivoDaUi("MainWindow.DeltaVolta.cs"), ArquivoDaUi("MainWindow.Recordes.cs"), Xaml());
+        Assert.Empty(FiacaoDoCartao(chave, src, cartao, recordes, doc));
+
+        // Controles: cada fio solto reprova.
+        const string despacho = "if (keys.Contains(\"deltaVolta\"))   ApplyDeltaVolta(cur.DeltaVolta);";
+        Assert.Contains(despacho, src);
+        Assert.Contains("cartão não ouve o cérebro", FiacaoDoCartao(chave, src.Replace(despacho, ""), cartao, recordes, doc));
+        Assert.Contains("cartão não ouve o cérebro", FiacaoDoCartao("outraChave", src, cartao, recordes, doc));
+        Assert.Contains("cartão sem o estado inicial",
+            FiacaoDoCartao(chave, src.Replace("ApplyDeltaVolta(initial.DeltaVolta);", ""), cartao, recordes, doc));
+        Assert.Contains("camada do relevo sem o número",
+            FiacaoDoCartao(chave, src, cartao.Replace(", DvNum }", " }"), recordes, doc));
+        Assert.Contains("demo sem o cartão",
+            FiacaoDoCartao(chave, src.Replace("_cockpitState.SetDeltaVolta(TelaPrimeiraVersao.DeltaVoltaDemo(index));", ""), cartao, recordes, doc));
+        const string ultima = "_sessaoLapsMs.Add(tempoMs);\n        AtualizarVoltasDoCartao();";
+        Assert.Contains(ultima, recordes);
+        Assert.Contains("última volta não chega ao cartão",
+            FiacaoDoCartao(chave, src, cartao, recordes.Replace(ultima, "_sessaoLapsMs.Add(tempoMs);"), doc));
+        Assert.Contains("linha de baixo fora da referência do delta",
+            FiacaoDoCartao(chave, src, cartao.Replace("_orquestrador?.MelhorVolta.TempoMs", "SessaoMelhorMs()"), recordes, doc));
     }
 }

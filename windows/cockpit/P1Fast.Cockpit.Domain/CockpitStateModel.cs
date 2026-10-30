@@ -47,6 +47,10 @@ public sealed record CockpitStateModel(
     /// esquerda e saída (km/h) à direita, vs a mesma curva na melhor volta. Vazio = em branco.</summary>
     public NumerosInfo Numeros { get; init; } = NumerosInfo.Vazio();
 
+    /// <summary>Cartão do centro (Flávio 2026-10-30): delta da volta atual × a melhor volta do carro
+    /// naquela pista, sem sinal, verde = igual ou mais rápido, vermelho = mais lento. Vazio = em branco.</summary>
+    public DeltaVoltaInfo DeltaVolta { get; init; } = DeltaVoltaInfo.Vazio();
+
     /// <summary>Retorna o estado default (espelha o que o mockup carrega ao boot).</summary>
     public static CockpitStateModel Default() => new(
         TrechoStatus: TrechoStatus.Neutro,

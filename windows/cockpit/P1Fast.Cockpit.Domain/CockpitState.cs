@@ -369,6 +369,17 @@ public sealed class CockpitState
         Emit(prev, new[] { "numeros" });
     }
 
+    /// <summary>O cartão do delta da volta (centro). Emite "deltaVolta".</summary>
+    public void SetDeltaVolta(DeltaVoltaInfo delta)
+    {
+        ArgumentNullException.ThrowIfNull(delta);
+        AssertEnumDefined(delta.Tom, nameof(delta));
+        if (_state.DeltaVolta == delta) return;
+        var prev = _state;
+        _state = prev with { DeltaVolta = delta };
+        Emit(prev, new[] { "deltaVolta" });
+    }
+
     // ── Helpers estáticos ──────────────────────────────────────────
 
     /// <summary>Quantos LEDs acendem quando mode=LIT e level=N. Map linear; clampa fora do range.</summary>

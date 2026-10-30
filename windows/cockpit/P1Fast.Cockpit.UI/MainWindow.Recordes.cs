@@ -25,6 +25,7 @@ public sealed partial class MainWindow
     private bool _modoReplay;   // item 3.1: true no --replay (armazém em memória, nada persiste)
     private IRecordesStore? _recordesStore;
     private ArmazemRecordes? _recordes;
+    private ITracoMelhorVoltaStore? _tracoStore;   // traço da melhor volta = régua do delta do cartão do centro
     private readonly List<double> _sessaoLapsMs = new();
     private string _sessaoIdRec = "";
 
@@ -46,6 +47,10 @@ public sealed partial class MainWindow
             _recordesStore = _modoReplay ? new MemoriaRecordesStore() : (IRecordesStore)new FileRecordesStore();
             try { _recordes = _recordesStore.Carregar(ChaveArmazem()); }
             catch { _recordes = new ArmazemRecordes { CarroId = ChaveArmazem() }; }
+            // Traço da melhor volta (Flávio 2026-10-30): arquivo à parte, mesma regra do replay (em memória).
+            // Disco com problema = sem traço (o cartão cai no delta por fim de curva), nunca derruba o cockpit.
+            try { _tracoStore = _modoReplay ? new MemoriaTracoMelhorVoltaStore() : new FileTracoMelhorVoltaStore(); }
+            catch { _tracoStore = new MemoriaTracoMelhorVoltaStore(); }
         }
         SemearRecordesNoCerebro();   // item 3.6: dá ao cérebro o recorde ABSOLUTO por trecho (Recorde x Melhor Stint)
         _sessaoLapsMs.Clear();
@@ -53,6 +58,7 @@ public sealed partial class MainWindow
         _lapsRegistradosReplay = 0;
         _ultimoCruzTickLive = 0;
         if (_orquestrador is not null) _orquestrador.PassagemFechada += OnPassagemFechada;
+        AtualizarVoltasDoCartao();   // linha de baixo do cartão: melhor volta semeada, última em branco
     }
 
     // Semeia no cérebro o recorde ABSOLUTO (histórico) de cada trecho, em segundos, a partir do
@@ -69,7 +75,12 @@ public sealed partial class MainWindow
 
         // Os 2 números grandes (Flávio 2026-10-28): referência = curvas da melhor volta gravada.
         var (tempoMs, curvas) = _recordes.LerReferenciaMelhorVolta();
-        _orquestrador.SemearMelhorVolta(tempoMs, curvas);
+        // Cartão do centro (Flávio 2026-10-30): o traço daquela volta dá o delta momento a momento. O maestro
+        // só usa se o tempo do arquivo bater com o da referência (arquivo de volta antiga = recusado).
+        TracoVolta? traco = null;
+        if (tempoMs is not null) { try { traco = _tracoStore?.Carregar(ChaveArmazem()); } catch { traco = null; } }
+        _orquestrador.SemearMelhorVolta(tempoMs, curvas, traco);
+        AtualizarVoltasDoCartao();
     }
 
     private MetadadosRecorde MetaAgora()
@@ -96,11 +107,14 @@ public sealed partial class MainWindow
         {
             _recordes.GravarReferenciaMelhorVolta(refMs, _orquestrador.MelhorVolta.Curvas, MetaAgora());
             SalvarRecordes();
+            SalvarTracoMelhorVolta(_orquestrador.TracoMelhorVolta);
         }
+        AtualizarVoltasDoCartao();   // a melhor pode ter mudado nesta volta
 
         if (_recordes is null || double.IsNaN(tempoMs) || double.IsInfinity(tempoMs)) return;
         if (tempoMs < ArmazemRecordes.VoltaMinimaPlausivelMs) return;   // implausível: descarta
         _sessaoLapsMs.Add(tempoMs);
+        AtualizarVoltasDoCartao();   // última volta = esta
         if (_recordes.AplicarVolta(tempoMs, MetaAgora())) SalvarRecordes();
     }
 
@@ -109,6 +123,19 @@ public sealed partial class MainWindow
         if (_recordesStore is null || _recordes is null) return;
         try { _recordesStore.Salvar(_recordes); }
         catch { /* recorde nunca derruba o cockpit; próxima superação tenta de novo */ }
+    }
+
+    // O traço (~2.000 pontos) vai para o disco fora da thread da tela. Melhor volta sem traço válido não
+    // grava: o arquivo antigo fica e é recusado ao abrir (o tempo dele não bate com o da referência).
+    private void SalvarTracoMelhorVolta(TracoVolta? traco)
+    {
+        if (traco is null || _tracoStore is not { } store) return;
+        var chave = ChaveArmazem();
+        _ = Task.Run(() =>
+        {
+            try { store.Salvar(chave, traco); }
+            catch { /* traço nunca derruba o cockpit; a próxima melhor volta grava de novo */ }
+        });
     }
 
     // PISTA NOVA (PISTA-C): a linha da pista aprendida confirmou → passa a keiar os recordes por essa

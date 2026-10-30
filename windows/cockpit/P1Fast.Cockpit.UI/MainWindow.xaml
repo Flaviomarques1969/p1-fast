@@ -334,8 +334,9 @@
                                    Foreground="#FF45E059" Opacity="0"/>
                     </Grid>
 
-                    <!-- ───────── OS 2 NÚMEROS (Flávio 2026-10-29: 40% maiores, cada um no CENTRO da sua
-                         metade da tela). Declarados DEPOIS do vidro do mapa: um número de 2 algarismos
+                    <!-- ───────── OS 2 NÚMEROS (Flávio 2026-10-29: 40% maiores; 2026-10-30: "mais para os
+                         lados externos" — cada um encostado na borda de FORA da sua metade, a 40 da beira,
+                         para o cartão do delta caber no meio). Declarados DEPOIS do vidro do mapa: um número de 2 algarismos
                          passa por cima da borda do mapa em vez de ficar coberto por ela; e ANTES da
                          tela térmica e do crítico, que continuam por cima de tudo. ─────────
                     ───────── FREADA na METADE ESQUERDA (Flávio 2026-10-28) ─────────
@@ -355,7 +356,8 @@
                                    FontSize="162"
                                    FontWeight="ExtraBold"
                                    Foreground="#4FE060"
-                                   HorizontalAlignment="Center"/>
+                                   HorizontalAlignment="Left"
+                                   Margin="40,0,0,0"/>
                     </StackPanel>
 
                     <!-- ───────── SAÍDA na METADE DIREITA (Flávio 2026-10-28) ───────── -->
@@ -375,8 +377,134 @@
                                    FontSize="129"
                                    FontWeight="ExtraBold"
                                    Foreground="#4FE060"
-                                   HorizontalAlignment="Center"/>
+                                   HorizontalAlignment="Right"
+                                   Margin="0,0,40,0"/>
                     </StackPanel>
+
+                    <!-- ───────── CARTÃO DO DELTA no CENTRO (Flávio 2026-10-30): "um cartão 3d com altíssima
+                         qualidade com o delta da volta em que ele está x a melhor passagem naquele carro
+                         naquela pista". Painel p1fast-cartao-delta-mapa-0013: SEM mapa (o vidro do mapa não
+                         liga na 1ª versão), delta CONTÍNUO momento a momento (Domain/DeltaAoVivo.cs), número
+                         MAIOR que os 2 dos lados (180 > 162) e, embaixo, melhor volta (esq.) e última (dir.),
+                         sem rótulo. Segundos com vírgula, SEM sinal: verde = igual ou mais rápido, vermelho =
+                         mais lento (Domain/MelhorVoltaReferencia.cs::DeltaVoltaInfo).
+                         Medidas (tela 956×440): 440 de largura cabe entre a freada de 2 algarismos (40..~235) e
+                         a saída (~765..916); 208 de altura com a aura cabe entre a barra de voltas (termina em
+                         74) e a fileira do ápice (começa em 316), na mesma altura dos 2 números (Y −30).
+                         Relevo em camadas: aura da cor, sombra de contato, espessura do cartão, corpo de vidro
+                         escuro com chanfro de luz, brilho no alto e o número em relevo (sombra + 3 degraus +
+                         face em degradê). As cores são pintadas pelo código (MainWindow.DeltaVolta.cs); sem
+                         delta = cartão neutro, sem número. -->
+                    <Grid x:Name="DeltaVoltaCard"
+                          Width="440" Height="208"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Center"
+                          IsHitTestVisible="False">
+                        <Grid.RenderTransform>
+                            <TransformGroup>
+                                <ScaleTransform x:Name="DvEscala" CenterX="220" CenterY="104" ScaleX="1" ScaleY="1"/>
+                                <TranslateTransform Y="-30"/>
+                            </TransformGroup>
+                        </Grid.RenderTransform>
+
+                        <!-- aura da cor do estado (3 anéis que somem para fora) -->
+                        <Border x:Name="DvAura3" Margin="-12" CornerRadius="40" BorderThickness="5" BorderBrush="Transparent"/>
+                        <Border x:Name="DvAura2" Margin="-8" CornerRadius="36" BorderThickness="5" BorderBrush="Transparent"/>
+                        <Border x:Name="DvAura1" Margin="-4" CornerRadius="32" BorderThickness="4" BorderBrush="Transparent"/>
+
+                        <!-- sombra de contato embaixo (o cartão "flutua" sobre a tela) -->
+                        <Border Margin="22,22,22,-18" CornerRadius="34" Background="#26000000"/>
+                        <Border Margin="12,14,12,-12" CornerRadius="30" Background="#4D000000"/>
+                        <Border Margin="4,8,4,-6" CornerRadius="28" Background="#80000000"/>
+
+                        <!-- espessura: a lâmina do cartão vista por baixo -->
+                        <Border Margin="0,7,0,-7" CornerRadius="28" BorderThickness="1" BorderBrush="#FF000000">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1">
+                                    <GradientStop Offset="0.0" Color="#FF1A1C20"/>
+                                    <GradientStop Offset="1.0" Color="#FF030304"/>
+                                </LinearGradientBrush>
+                            </Border.Background>
+                        </Border>
+                        <Border x:Name="DvBordaBaixo" Margin="8,0,8,-6" Height="2" VerticalAlignment="Bottom" CornerRadius="1"
+                                Background="Transparent"/>
+
+                        <!-- corpo: vidro escuro com chanfro (claro em cima, escuro embaixo) -->
+                        <Border CornerRadius="28" BorderThickness="1.5">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1">
+                                    <GradientStop Offset="0.0"  Color="#FF2C3036"/>
+                                    <GradientStop Offset="0.42" Color="#FF15171B"/>
+                                    <GradientStop Offset="1.0"  Color="#FF08090B"/>
+                                </LinearGradientBrush>
+                            </Border.Background>
+                            <Border.BorderBrush>
+                                <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1">
+                                    <GradientStop Offset="0.0"  Color="#B3FFFFFF"/>
+                                    <GradientStop Offset="0.32" Color="#29FFFFFF"/>
+                                    <GradientStop Offset="0.72" Color="#0FFFFFFF"/>
+                                    <GradientStop Offset="1.0"  Color="#73000000"/>
+                                </LinearGradientBrush>
+                            </Border.BorderBrush>
+                        </Border>
+                        <!-- tinta da cor subindo de baixo (o vidro "acende" verde ou vermelho) -->
+                        <Border x:Name="DvTinta" Margin="1.5" CornerRadius="26.5" Background="Transparent"/>
+                        <!-- chanfro interno escuro (dá profundidade à borda) -->
+                        <Border Margin="1.5" CornerRadius="26.5" BorderThickness="1" BorderBrush="#59000000"/>
+                        <!-- brilho de vidro na metade de cima -->
+                        <Border Margin="3,3,3,0" Height="92" VerticalAlignment="Top" CornerRadius="25,25,12,12">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1">
+                                    <GradientStop Offset="0.0" Color="#30FFFFFF"/>
+                                    <GradientStop Offset="0.6" Color="#0AFFFFFF"/>
+                                    <GradientStop Offset="1.0" Color="#00FFFFFF"/>
+                                </LinearGradientBrush>
+                            </Border.Background>
+                        </Border>
+                        <!-- filete de luz no topo -->
+                        <Border Margin="44,1.5,44,0" Height="1.2" VerticalAlignment="Top" CornerRadius="1">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5">
+                                    <GradientStop Offset="0.0" Color="#00FFFFFF"/>
+                                    <GradientStop Offset="0.5" Color="#D9FFFFFF"/>
+                                    <GradientStop Offset="1.0" Color="#00FFFFFF"/>
+                                </LinearGradientBrush>
+                            </Border.Background>
+                        </Border>
+
+                        <!-- o número em relevo (fonte 180, maior que os 2 números dos lados): sombra, 3 degraus e
+                             a face. Tight = a caixa do texto é só a altura dos algarismos (a vírgula desce para o
+                             vão entre o número e a linha de baixo). -->
+                        <Grid HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,20,0,0">
+                            <TextBlock x:Name="DvNumSombra" Text="" FontSize="180" FontWeight="ExtraBold" CharacterSpacing="-20"
+                                       TextLineBounds="Tight" Foreground="#A6000000" HorizontalAlignment="Center">
+                                <TextBlock.RenderTransform><TranslateTransform X="1.5" Y="13"/></TextBlock.RenderTransform>
+                            </TextBlock>
+                            <TextBlock x:Name="DvNumFundo3" Text="" FontSize="180" FontWeight="ExtraBold" CharacterSpacing="-20"
+                                       TextLineBounds="Tight" HorizontalAlignment="Center">
+                                <TextBlock.RenderTransform><TranslateTransform Y="7"/></TextBlock.RenderTransform>
+                            </TextBlock>
+                            <TextBlock x:Name="DvNumFundo2" Text="" FontSize="180" FontWeight="ExtraBold" CharacterSpacing="-20"
+                                       TextLineBounds="Tight" HorizontalAlignment="Center">
+                                <TextBlock.RenderTransform><TranslateTransform Y="4.5"/></TextBlock.RenderTransform>
+                            </TextBlock>
+                            <TextBlock x:Name="DvNumFundo1" Text="" FontSize="180" FontWeight="ExtraBold" CharacterSpacing="-20"
+                                       TextLineBounds="Tight" HorizontalAlignment="Center">
+                                <TextBlock.RenderTransform><TranslateTransform Y="2.2"/></TextBlock.RenderTransform>
+                            </TextBlock>
+                            <TextBlock x:Name="DvNum" Text="" FontSize="180" FontWeight="ExtraBold" CharacterSpacing="-20"
+                                       TextLineBounds="Tight" Foreground="#FFFFFFFF" HorizontalAlignment="Center"/>
+                        </Grid>
+
+                        <!-- linha de baixo, dentro do cartão e sem rótulo: melhor volta (a que o delta usa) à
+                             esquerda e última volta à direita, "1:21,70" (DeltaVoltaInfo.TempoDeVolta). -->
+                        <Grid VerticalAlignment="Bottom" Margin="32,0,32,18">
+                            <TextBlock x:Name="DvMelhor" Text="" FontSize="26" FontWeight="SemiBold" TextLineBounds="Tight"
+                                       Foreground="#FFA0A0A0" HorizontalAlignment="Left"/>
+                            <TextBlock x:Name="DvUltima" Text="" FontSize="26" FontWeight="SemiBold" TextLineBounds="Tight"
+                                       Foreground="#FFA0A0A0" HorizontalAlignment="Right"/>
+                        </Grid>
+                    </Grid>
 
 
                     <Border x:Name="AlertBlocoRoot"
