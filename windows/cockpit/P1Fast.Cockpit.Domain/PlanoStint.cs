@@ -34,7 +34,9 @@ public enum TipoVoltaStint
 public sealed record ParadaStint(int Volta, string? Motivo);
 
 /// <summary>Plano do stint aprovado pelo chefe (o subconjunto que a barra usa). Espelha o
-/// objeto plano_stint do envelope; campos ausentes ficam nulos/vazios.</summary>
+/// objeto plano_stint do envelope; campos ausentes ficam nulos/vazios. EnvelopeCriadoEm é o
+/// created_at do envelope (só vem da nuvem): identifica CADA stint do dia — vários stints,
+/// um plano novo antes de cada saída (Flávio 2026-10-29); ver TrocaPlanoStint.</summary>
 public sealed record PlanoStint(
     int Voltas,
     IReadOnlyList<ParadaStint> Paradas,
@@ -43,7 +45,8 @@ public sealed record PlanoStint(
     string? Piloto,
     string? Autodromo,
     string? AprovadoEm,
-    string Origem);
+    string Origem,
+    string? EnvelopeCriadoEm = null);
 
 /// <summary>Traduz o plano_stint do envelope (nuvem) nos tipos de volta da barra. Puro,
 /// sem rede, NUNCA lança — na dúvida devolve null e a UI cai no placeholder.</summary>
@@ -119,7 +122,9 @@ public static class PlanoStintParser
             var hoje = DiaBrasilia(agoraIso ?? DateTimeOffset.UtcNow.ToString("O", CultureInfo.InvariantCulture));
             if (aprovadoDia is null || aprovadoDia != hoje) return null;
 
-            return Validar(planoEl, "nuvem");
+            return Validar(planoEl, "nuvem") is { } plano
+                ? plano with { EnvelopeCriadoEm = createdAt }
+                : null;
         }
         catch
         {

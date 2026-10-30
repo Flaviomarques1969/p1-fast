@@ -33,7 +33,9 @@ public sealed partial class MainWindow
     private Task? _liveReaderTask;   // motor USB numa thread dedicada (fora da thread da UI)
     private Task? _liveHealthTask;   // vigia de saúde da gravação, em fundo (fora da UI)
     private Task? _liveScanTask;     // fila resiliente: sobe sessões pendentes em fundo (fora da UI)
-    private Task? _planoStintTask;   // barra de voltas: 1ª leitura REST do plano real do piloto (etapa 3), em fundo
+    private Task? _planoStintTask;   // barra de voltas: leitura REST do plano real do piloto (etapa 3), em fundo
+    private readonly TrocaPlanoStint _trocaPlanoStint = new();   // vários stints no dia: quando o plano novo entra
+    private const int PlanoStintReleituraMs = 15000;
     private RaceBoxBleReader? _raceBox;
     private bool _liveParado;        // guarda de fechamento (StopLive idempotente)
 
@@ -668,6 +670,9 @@ public sealed partial class MainWindow
     // ÚNICA leitura REST do .exe (PlanoStintReader) — antes ele só publicava. Roda FORA da
     // thread da UI e é best-effort total: qualquer falha vira placeholder, o boot nunca quebra.
     // Só ENFILEIRA a repintura na thread da UI (AplicarPlanoStintReal); nada de tela direto aqui.
+    // Vários stints no dia (Flávio 2026-10-29): relê a cada 15 s até o _liveCts cair; QUANDO o
+    // plano novo entra (carro parado, ou plano desta ida lido com o carro já saindo) e o zerar
+    // das voltas é decisão do TrocaPlanoStint (Domain). Rede caída mantém o plano da barra.
     private void CarregarPlanoStintReal(CancellationToken ct)
     {
         _planoStintTask = System.Threading.Tasks.Task.Run(async () =>
@@ -681,11 +686,39 @@ public sealed partial class MainWindow
                 var carroId = string.IsNullOrWhiteSpace(_options.CarroId)
                     ? PlanoStintReader.CarroIdBubi
                     : _options.CarroId!;
-                var barra = await leitor.BuscarBarraAsync(carroId, BarMaxSlots, ct).ConfigureAwait(false);
-                if (barra is null) return; // sem plano do dia → placeholder
-
-                var blocos = Array.ConvertAll(barra, BlockDoTipoVolta);
-                DispatcherQueue.TryEnqueue(() => AplicarPlanoStintReal(blocos));
+                while (!ct.IsCancellationRequested)
+                {
+                    try
+                    {
+                        var plano = await leitor.BuscarAsync(carroId, ct).ConfigureAwait(false);
+                        SessionEstado? estado;
+                        lock (_liveRecLock) estado = _liveRecorder?.Estado();
+                        var naPista = estado?.Gravando ?? false;
+                        DateTimeOffset? inicioIda = naPista
+                            ? DateTimeOffset.UtcNow - TimeSpan.FromSeconds(estado!.TempoS)
+                            : null;
+                        var decisao = _trocaPlanoStint.Avaliar(plano, naPista, inicioIda);
+                        var barra = PlanoStintParser.ExpandirBarra(decisao?.Plano, BarMaxSlots);
+                        if (decisao is not null && barra is not null)
+                        {
+                            var blocos = Array.ConvertAll(barra, BlockDoTipoVolta);
+                            var zerar = decisao.ZerarVoltas;
+                            DispatcherQueue.TryEnqueue(() =>
+                            {
+                                if (zerar)
+                                {
+                                    // stint novo: recomeça na volta 1, como na abertura do ao vivo
+                                    ResetVoltaAtual();
+                                    _ultimoCruzTickLive = 0;
+                                }
+                                AplicarPlanoStintReal(blocos);
+                            });
+                        }
+                    }
+                    catch (OperationCanceledException) { throw; }
+                    catch { /* best-effort: uma leitura ruim não para o laço nem mexe na barra */ }
+                    await Task.Delay(PlanoStintReleituraMs, ct).ConfigureAwait(false);
+                }
             }
             catch { /* best-effort: barra fica no placeholder, boot nunca quebra */ }
         }, ct);
