@@ -168,7 +168,7 @@
 
 <div class="topo">
   <div><b>Cockpit do Piloto</b> — <span class="real">SUA VOLTA REAL</span>
-    <small>Pista: sua volta real 24/05 (GPS) · <span id="tempo">00:00</span></small>
+    <small>Pista: sua sessão real 21/06 (RaceBox) · <span id="tempo">00:00</span></small>
   </div>
   <div class="hud">
     <div class="item curva"><span class="lbl">Curva</span><span class="val" id="hCurva">—</span></div>
@@ -270,9 +270,10 @@
 
 <script type="module">
 // REPLAY DA VOLTA REAL — 100% local (sem nuvem, sem clique).
-// Pista (curva/ápice/entrada/saída/delta/velocidade) = volta real 24/05 (GPS).
-//   Velocidade é CALCULADA pela posição (o sensor de velocidade do GPS veio zerado).
-// Motor (luz de marcha + água/lambda/acelerador) = sessão real 21/06 (T4000).
+// Pista (curva/ápice/entrada/saída/delta/velocidade) = sessão real 21/06 do RaceBox
+//   (GPS 25 Hz gravado, tocado a 5 Hz como o canal ao vivo; velocidade do próprio RaceBox).
+//   Trocou a volta de 24/05 do GPS do iPhone (1 Hz, com saltos) — Flávio 31/10/2026.
+// Motor (luz de marcha + água/lambda/acelerador) = MESMA sessão 21/06 (T4000).
 // Tudo dado REAL seu. Reusa as peças reais do painel.
 import { CockpitState, ApexEstado, TrechoStatus, Tone } from './cockpit-state.js';
 import { attachRendererToDocument } from './cockpit-renderer.js';
@@ -408,6 +409,9 @@ window.addEventListener('keydown', (e) => {
 });
 
 function velDe(p) {
+  // RaceBox manda a própria velocidade (km/h) — vale mais que distância÷tempo
+  // (o carimbo do Bluetooth chega em rajadas). Flávio 31/10/2026.
+  if (typeof p.kmh === 'number') { prevG = p; return p.kmh; }
   if (prevG) {
     const d = metros({ lat: prevG.lat, lng: prevG.lon }, { lat: p.lat, lng: p.lon });
     const dt = (p.t - prevG.t) / 1000;
@@ -550,7 +554,7 @@ function frame(now) {
   const arr = Array.isArray(jc) ? jc : (jc.segments || jc.curvas || jc.barras || Object.values(jc).find(Array.isArray));
   curvas = arr.map(c => ({ id: c.id, nome: c.nome || c.id, apice: { lat: c.apice_gps.lat, lng: c.apice_gps.lng } }));
 
-  const rv = await fetch('/web/cockpit/fixtures/volta-real-pista-24-05.json');
+  const rv = await fetch('/web/cockpit/fixtures/volta-real-racebox-21-06.json');
   const jv = await rv.json();
   pista = jv.pista; motor = jv.motor; durMax = Math.max(jv.durPista, jv.durMotor);
 

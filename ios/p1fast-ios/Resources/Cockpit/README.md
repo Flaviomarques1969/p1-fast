@@ -18,7 +18,8 @@ pra cá (relativos `./`). Backup congelado do aprovado:
 - `live-data-bridge.js` ← idêntico  (importado)
 - `apice-calculator.js`, `trecho-detector.js` ← SOBRA da vitrine antiga; o painel aprovado
   NÃO importa estes dois (podem ser removidos numa limpeza).
-- `volta-real-pista-24-05.json` ← dados da volta real (GPS + motor) que o replay reproduz
+- `volta-real-racebox-21-06.json` ← sessão real 21/06 (GPS do RaceBox + motor T4000) que a demonstração reproduz
+- `volta-real-pista-24-05.json` ← volta antiga do GPS do iPhone (não usada mais; guardada pra histórico)
 - `BARRAS-BRASILIA-FLAVIO-APROVADO-2026-05-27.json` ← curvas/ápices de Brasília
 
 ## Como atualizar (se o painel web mudar)
