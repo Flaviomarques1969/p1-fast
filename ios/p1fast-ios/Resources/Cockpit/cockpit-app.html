@@ -619,7 +619,8 @@ function pararDemo() {
 function ngps(p) {
   if (!p || typeof p.lat !== 'number' || typeof p.lng !== 'number') return;
   pararDemo(); ultimoDado = performance.now(); esconderAguardando();
-  aplicarGps({ lat: p.lat, lon: p.lng, t: p.tWall ?? Date.now() });
+  // kmh = velocidade do próprio RaceBox (publicada pelo notebook) — 31/10
+  aplicarGps({ lat: p.lat, lon: p.lng, t: p.tWall ?? Date.now(), ...(typeof p.kmh === 'number' ? { kmh: p.kmh } : {}) });
 }
 function nsample(s) {
   if (!s || typeof s.rpm !== 'number') return;
@@ -637,7 +638,10 @@ function nsample(s) {
   try {
     const cb = await import('./cloud-bridge.js');
     cb.onStatusChange((st) => { conn = st; if (aguardandoEl.style.display !== 'none') aguardandoEl.textContent = textoAguardando(); });
-    cb.onGpsPoint(ngps);
+    // FONTE ÚNICA = RaceBox (decisão Flávio 27/10, painel p1fast-gps-fonte-unica-0911 = C):
+    // ponto com source 'iphone…' é descartado — a MESMA regra do cloud-bridge novo e da TV do box.
+    const { pontoGpsAceito } = await import('./gps-fonte-unica.js');
+    cb.onGpsPoint((p) => { if (pontoGpsAceito(p)) ngps(p); });
     cb.onSample(nsample);
     cb.startCloudBridge().catch(() => {});   // s\u00f3 assina; nunca publica
     setInterval(() => {
