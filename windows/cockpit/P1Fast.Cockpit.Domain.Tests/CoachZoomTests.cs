@@ -192,6 +192,47 @@ public class CoachZoomTests
         Assert.Equal(300.0, q.Cabeca[^1].Y, 6);
     }
 
+    [Fact]
+    public void Cerebro_Trail_SaltoLateralDeGps_NaoViraBico()
+    {
+        // carro andando reto 6 px por fix; o fix 10 pula 8 px para o lado e o 11 volta
+        var c = new CoachZoomCerebro();
+        CoachZoomQuadro? q = null;
+        for (var i = 0; i < 16; i++)
+        {
+            var y = i == 10 ? 308.0 : 300.0;
+            q = FixNoDesenho(c, 400 + i * 6, y, 80, i * 1000, i * 1000);
+        }
+        var todos = q!.Cauda.Concat(q.Cabeca.Skip(1)).ToArray();
+        foreach (var p in todos)
+            Assert.True(Math.Abs(p.Y - 300) < 0.01, $"bico ficou no rastro: y={p.Y:F2}");
+    }
+
+    [Fact]
+    public void Cerebro_Trail_CurvaDeVerdade_Preservada()
+    {
+        // curva fechada mas suave (90° em vários fixes) não é tocada pelo filtro
+        var c = new CoachZoomCerebro();
+        CoachZoomQuadro? q = null;
+        for (var i = 0; i <= 12; i++)
+        {
+            var ang = Math.PI / 2 * i / 12;
+            q = FixNoDesenho(c, 400 + 40 * Math.Sin(ang), 300 + 40 * (1 - Math.Cos(ang)), 80, i * 1000, i * 1000);
+        }
+        Assert.Equal(400 + 40.0, q!.Cabeca[^1].X, 3);
+        var meio = q.Cauda.Concat(q.Cabeca.Skip(1)).ToArray()[6];
+        Assert.Equal(400 + 40 * Math.Sin(Math.PI / 4), meio.X, 3);
+    }
+
+    [Fact]
+    public void Cerebro_Trail_FixRepetido_NaoEmpilhaPonto()
+    {
+        var c = new CoachZoomCerebro();
+        CoachZoomQuadro? q = null;
+        for (var i = 0; i < 6; i++) q = FixNoDesenho(c, 400, 300, 0, i * 1000, i * 1000);
+        Assert.Single(q!.Cabeca);
+    }
+
     // ── ghost: âncora espacial + gap circular ───────────────────────
 
     private static GhostVolta GhostDaPista(int n, double passoS)

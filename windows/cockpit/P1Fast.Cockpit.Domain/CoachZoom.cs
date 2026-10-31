@@ -230,7 +230,7 @@ public sealed class CoachZoomCerebro
         }
 
         // rastro: cauda esmaecida + cabeça viva (a ponta é revelada pela tela, por tick)
-        _trail.Add(xy);
+        AdicionarAoRastro(xy);
         if (_trail.Count > TrailMax) _trail.RemoveAt(0);
         var corte = Math.Max(0, _trail.Count - TrailCabeca);
         var cauda = _trail.Take(corte + 1).ToArray();
@@ -240,6 +240,49 @@ public sealed class CoachZoomCerebro
             xy.X, xy.Y, _rumoDeg, _escala, dtWall, _temRumo,
             fatia, cauda, cabeca,
             ghostVisivel, gx, gy, gapOut, lado);
+    }
+
+    // ── rastro sem "picos" (Flávio 2026-10-31) ───────────────────────
+    // O GPS do iPhone (1 Hz, erro de 2–5 m) às vezes joga UM fix para o lado e
+    // o seguinte volta para a linha. Desenhado cru, isso vira um bico na linha
+    // laranja/verde (o Catmull-Rom ainda exagera a ponta). O filtro só mexe no
+    // DESENHO do rastro — rumo, câmera, ghost e gap seguem com o fix bruto.
+    public const double RastroPassoMinPx = 0.5;     // ~0,85 m: fix parado/repetido não vira ponto
+    public const double RastroCosVolta   = -0.2;    // virada > ~100° num ponto = bico de GPS
+    public const double RastroDesvioMinPx = 1.5;    // ~2,5 m fora da reta vizinho↔vizinho
+
+    private void AdicionarAoRastro((double X, double Y) c)
+    {
+        if (_trail.Count > 0)
+        {
+            var u = _trail[^1];
+            var dx = c.X - u.X; var dy = c.Y - u.Y;
+            if (dx * dx + dy * dy < RastroPassoMinPx * RastroPassoMinPx)
+            {
+                _trail[^1] = c;   // mesmo lugar: atualiza a ponta, não empilha ponto
+                return;
+            }
+        }
+        _trail.Add(c);
+        if (_trail.Count >= 3) DesfazerBico(_trail.Count - 2);
+    }
+
+    /// <summary>Se o ponto i faz um "vai e volta" brusco entre os vizinhos, ele era
+    /// um salto de GPS: recoloca no meio dos vizinhos (o carro não anda em zigue-zague).</summary>
+    private void DesfazerBico(int i)
+    {
+        var a = _trail[i - 1]; var b = _trail[i]; var c = _trail[i + 1];
+        double ux = b.X - a.X, uy = b.Y - a.Y, vx = c.X - b.X, vy = c.Y - b.Y;
+        var lu = Math.Sqrt(ux * ux + uy * uy); var lv = Math.Sqrt(vx * vx + vy * vy);
+        if (lu < 1e-9 || lv < 1e-9) return;
+        var cos = (ux * vx + uy * vy) / (lu * lv);
+        if (cos > RastroCosVolta) return;   // curva normal, mantém
+        // distância de b até a reta a→c (bico raso não vale a correção)
+        double wx = c.X - a.X, wy = c.Y - a.Y;
+        var lw = Math.Sqrt(wx * wx + wy * wy);
+        var desvio = lw < 1e-9 ? lu : Math.Abs(wx * (b.Y - a.Y) - wy * (b.X - a.X)) / lw;
+        if (desvio < RastroDesvioMinPx) return;
+        _trail[i] = ((a.X + c.X) / 2, (a.Y + c.Y) / 2);
     }
 
     // ── privadas (ports 1:1) ─────────────────────────────────────────
